@@ -16,13 +16,13 @@ Deliver a polyphonic engine, one legal built-in wavetable oscillator, sub oscill
 
 Deliver oscillators A/B, safe user-WAV import/conversion, three envelopes, four LFOs, bounded modulation matrix, multimode filter, and parameter catalog. Gate: malformed imports rejected, click-safe no-allocation table swap, validated routes, spectral/CPU baseline.
 
-## M3 — Composition and MIDI delivery
+## M3 — Composition and MIDI delivery (automated gate passed; FL Studio human drag/route pending)
 
 Deliver MusicIntent/GeneratedClip, deterministic chords/melody/bass/arp, macros and variations, preview data, MIDI export/drag, and direct output. Gate: determinism/properties, export reopen parity, bounded events, explicit FL steps/results.
 
 ## M4 — Silicon Dreams UI
 
-Deliver original bundled React/TypeScript views and chrome/glass/grid system, optional Three.js with low-graphics/reduced-motion fallback, accessible focus, and snapshot recovery. Gate: offline bundle, resize, hidden animation pause, WebView/audio independence, malformed bridge rejection.
+Deliver original bundled React/TypeScript views and chrome/glass/grid system; live oscillator A/B 2D waveform, optional 3D wavetable-frame/morph surface, current-position/modulation animation, and spectrum feedback; optional Three.js with low-graphics/reduced-motion fallback; accessible focus; and snapshot recovery. Visualizers must consume bounded UI snapshots, pause when hidden, and never read mutable audio state directly. Gate: offline bundle, resize, hidden animation pause, WebView/audio independence, malformed bridge rejection, and visualizer CPU/frame-rate evidence.
 
 ## M5 — Effects and preview
 

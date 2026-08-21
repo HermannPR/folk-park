@@ -37,10 +37,16 @@ The central modulation registry defines source/destination IDs, polarity, full s
 
 The WebView remains an adapter over host parameter attachments and explicit native functions. File choice, confirmation, cancellation, route editing, and status happen on non-audio/UI boundaries. The full 32-route presentation is deferred to M4; the current editor intentionally presents one replace-all reviewed route.
 
+## M3 composition and MIDI boundary
+
+The pure composition engine normalizes a typed `MusicIntent`, derives one shared harmonic plan, and returns a validated bundle of host-independent `GeneratedClip` values. It has no processor, UI, file, network, or provider dependency. A non-real-time session coordinator owns separate candidate and accepted bundles; only an explicit Accept copies candidate state into the delivery boundary.
+
+Piano-roll presentation, SMF export/drag, and direct output all read the same validated events. SMF work and direct schedule construction happen off audio. Direct MIDI uses a fixed double schedule and atomic block-boundary publication; the callback performs bounded message insertion and note tracking without locks or owned-vector work. Accepted clips remain session-only until M6 persistence.
+
 ## ADRs
 
 - ADR-0001: JUCE pin and dependency acquisition.
-- ADR-0002: UI-to-native bridge and bundled resource strategy.
 - ADR-0003: Fixed-capacity immutable wavetable and modulation exchange for M2 (accepted).
-- ADR-0004: History persistence implementation before M6.
-- ADR-0005: AI-provider secret and validation boundary before M7.
+- ADR-0004: Pure deterministic composition and shared MIDI delivery for M3 (accepted).
+
+History persistence and provider-secret decisions remain required before M6 and M7 respectively; no ADR claims completion yet.
