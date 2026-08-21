@@ -1,5 +1,7 @@
 #pragma once
 
+#include "midi/CompositionSession.h"
+#include "midi/MidiDelivery.h"
 #include "synth/SynthEngine.h"
 #include "synth/WavetableImportService.h"
 
@@ -41,7 +43,43 @@ public:
     void setStateInformation(const void* data, int sizeInBytes) override;
 
     juce::AudioProcessorValueTreeState& state() noexcept { return parameters; }
-    void requestPanic() noexcept { panicRequested.store(true, std::memory_order_release); }
+    void requestPanic() noexcept
+    {
+        panicRequested.store(true, std::memory_order_release);
+        directMidiPlayer.requestStop();
+    }
+    [[nodiscard]] juce::Result generateCompositionCandidate(midi::MusicIntent intent)
+    {
+        return compositionSession.generateCandidate(std::move(intent));
+    }
+    [[nodiscard]] juce::Result generateMoreLikeComposition(std::uint32_t variationIndex)
+    {
+        return compositionSession.moreLikeCandidate(variationIndex);
+    }
+    [[nodiscard]] juce::Result generateSurpriseComposition(std::uint32_t surpriseIndex)
+    {
+        return compositionSession.surpriseCandidate(surpriseIndex);
+    }
+    [[nodiscard]] juce::Result acceptCompositionCandidate()
+    {
+        return compositionSession.acceptCandidate();
+    }
+    [[nodiscard]] midi::CompositionSessionSnapshot getCompositionSnapshot() const
+    {
+        return compositionSession.getSnapshot();
+    }
+    [[nodiscard]] midi::PianoRollPreview getCompositionPreview() const
+    {
+        return compositionSession.getCandidatePreview();
+    }
+    [[nodiscard]] juce::File writeAcceptedMidiToTemporaryFile() const;
+    [[nodiscard]] juce::Result writeAcceptedMidiFile(const juce::File& destination) const;
+    [[nodiscard]] juce::Result routeAcceptedMidi();
+    void stopDirectMidi() noexcept { directMidiPlayer.requestStop(); }
+    [[nodiscard]] bool isDirectMidiPlaying() const noexcept
+    {
+        return directMidiPlayer.isPlaying() || directMidiPlayer.hasPendingSchedule();
+    }
     [[nodiscard]] bool publishWavetable(int oscillatorIndex, const synth::WavetableBank& bank) noexcept
     {
         return engine.publishWavetable(oscillatorIndex, bank);
@@ -69,6 +107,8 @@ private:
     juce::AudioProcessorValueTreeState parameters;
     synth::SynthEngine engine;
     synth::WavetableImportService wavetableImportService;
+    midi::CompositionSession compositionSession;
+    midi::DirectMidiPlayer directMidiPlayer;
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> masterGain;
     std::atomic<bool> panicRequested{false};
 

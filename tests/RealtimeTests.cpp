@@ -1,3 +1,5 @@
+#include "midi/Composition.h"
+#include "midi/MidiDelivery.h"
 #include "synth/Modulation.h"
 #include "synth/SynthEngine.h"
 #include "synth/WavetableBank.h"
@@ -83,6 +85,7 @@ void operator delete[](void* memory, std::align_val_t, const std::nothrow_t&) no
 
 int main()
 {
+    using namespace folkpark::midi;
     using namespace folkpark::synth;
     constexpr auto blockSize = 512;
     SynthEngine engine;
@@ -111,10 +114,48 @@ int main()
         return 1;
     }
 
+    MusicIntent directIntent;
+    directIntent.seed = 42;
+    directIntent.requestId = deterministicUuid(directIntent.seed, "realtime-direct-midi");
+    directIntent.partCount = 1;
+    directIntent.parts[0] = PartType::melody;
+    directIntent.constraints.maxPolyphony = 1;
+    directIntent.constraints.maximumEvents = 4;
+    GeneratedClip directClip;
+    directClip.id = deterministicUuid(directIntent.seed, "realtime-direct-midi-clip");
+    directClip.part = PartType::melody;
+    directClip.lengthTicks = compositionPpq * 4;
+    directClip.tempoBpm = directIntent.tempoBpm;
+    directClip.timeSignature = directIntent.timeSignature;
+    directClip.key = directIntent.key;
+    directClip.scale = directIntent.scale;
+    directClip.seed = directIntent.seed;
+    directClip.createdUnixMs = 1;
+    directClip.events.push_back({0, compositionPpq, 60, 100, 1, 1.0f, Articulation::normal});
+    const CompositionBundle directBundle{directIntent, {directClip}};
+    DirectMidiPlayer directPlayer;
+    if (validateBundle(directBundle).failed() || directPlayer.publish(directBundle).failed())
+    {
+        std::cerr << "FAIL: direct MIDI allocation fixture must publish before measurement\n";
+        return 1;
+    }
+    juce::MidiBuffer directOutput;
+    directOutput.ensureSize(2048);
+
     allocationProbe::count.store(0, std::memory_order_relaxed);
     allocationProbe::tracking.store(true, std::memory_order_release);
     for (int block = 0; block < 32; ++block)
+    {
         engine.process(audio, midi, parameters);
+        directOutput.clear();
+        const auto rendered = directPlayer.renderBlock(directOutput, blockSize, 48000.0);
+        if (rendered.overflow)
+        {
+            allocationProbe::tracking.store(false, std::memory_order_release);
+            std::cerr << "FAIL: direct MIDI overflowed during allocation measurement\n";
+            return 1;
+        }
+    }
     allocationProbe::tracking.store(false, std::memory_order_release);
 
     const auto allocations = allocationProbe::count.load(std::memory_order_relaxed);
@@ -123,6 +164,6 @@ int main()
         std::cerr << "FAIL: measured audio rendering allocated " << allocations << " time(s)\n";
         return 1;
     }
-    std::cout << "PASS: 32 audio blocks, including atomic wavetable/matrix activation and table crossfade, allocated 0 times\n";
+    std::cout << "PASS: 32 audio blocks, including synth swaps, table crossfade, and direct MIDI scheduling, allocated 0 times\n";
     return 0;
 }

@@ -1,7 +1,9 @@
 #include "PluginEditor.h"
 
 #include <BinaryData.h>
+#include <cmath>
 #include <cstddef>
+#include <limits>
 #include <span>
 
 namespace folkpark
@@ -28,6 +30,53 @@ juce::String importStatusName(synth::WavetableImportService::Status status)
     }
     return "unknown";
 }
+
+bool boundedNumber(const juce::var& value, double minimum, double maximum, double& output) noexcept
+{
+    if (!value.isInt() && !value.isInt64() && !value.isDouble())
+        return false;
+    output = static_cast<double>(value);
+    return std::isfinite(output) && output >= minimum && output <= maximum;
+}
+
+bool strictBoolean(const juce::var& value, bool& output) noexcept
+{
+    if (!value.isBool())
+        return false;
+    output = static_cast<bool>(value);
+    return true;
+}
+
+juce::var compositionPayload(const PluginProcessor& processor)
+{
+    const auto session = processor.getCompositionSnapshot();
+    const auto preview = processor.getCompositionPreview();
+    auto payload = juce::DynamicObject::Ptr(new juce::DynamicObject());
+    payload->setProperty("ok", session.hasCandidate);
+    payload->setProperty("status", session.status);
+    payload->setProperty("hasCandidate", session.hasCandidate);
+    payload->setProperty("hasAccepted", session.hasAccepted);
+    payload->setProperty("candidateClips", session.candidateClipCount);
+    payload->setProperty("candidateNotes", session.candidateNoteCount);
+    payload->setProperty("acceptedNotes", session.acceptedNoteCount);
+    payload->setProperty("directPlaying", processor.isDirectMidiPlaying());
+    payload->setProperty("previewTruncated", preview.truncated);
+
+    juce::Array<juce::var> notes;
+    notes.ensureStorageAllocated(static_cast<int>(preview.notes.size()));
+    for (const auto& note : preview.notes)
+    {
+        auto object = juce::DynamicObject::Ptr(new juce::DynamicObject());
+        object->setProperty("part", midi::stableId(note.part));
+        object->setProperty("start", note.normalisedStart);
+        object->setProperty("duration", note.normalisedDuration);
+        object->setProperty("pitch", note.normalisedPitch);
+        object->setProperty("velocity", note.normalisedVelocity);
+        notes.add(juce::var(object.get()));
+    }
+    payload->setProperty("notes", juce::var(notes));
+    return juce::var(payload.get());
+}
 }
 
 class PluginEditor::LocalBrowser final : public juce::WebBrowserComponent
@@ -44,7 +93,18 @@ public:
 class PluginEditor::MidiDragButton final : public juce::TextButton
 {
 public:
-    MidiDragButton() : TextButton("Drag M0 MIDI proof into FL Studio") {}
+    explicit MidiDragButton(PluginProcessor& owner)
+        : TextButton("Generate and accept MIDI before dragging"), processor(owner)
+    {
+        setEnabled(false);
+    }
+
+    void updateAvailability(bool available)
+    {
+        setEnabled(available);
+        setButtonText(available ? "Drag accepted M3 MIDI into FL Studio"
+                                : "Generate and accept MIDI before dragging");
+    }
 
     void mouseDown(const juce::MouseEvent& event) override
     {
@@ -56,7 +116,7 @@ public:
     {
         if (!dragStarted && event.getDistanceFromDragStart() > 4)
         {
-            temporaryFile = midi::writeM0ProofMidiToTemporaryFile();
+            temporaryFile = processor.writeAcceptedMidiToTemporaryFile();
             if (temporaryFile.existsAsFile())
             {
                 dragStarted = juce::DragAndDropContainer::performExternalDragDropOfFiles(
@@ -67,6 +127,7 @@ public:
     }
 
 private:
+    PluginProcessor& processor;
     juce::File temporaryFile;
     bool dragStarted = false;
 };
@@ -124,12 +185,12 @@ PluginEditor::PluginEditor(PluginProcessor& owner)
         browser->goToURL(juce::WebBrowserComponent::getResourceProviderRoot());
     }
 
-    midiDrag = std::make_unique<MidiDragButton>();
+    midiDrag = std::make_unique<MidiDragButton>(ownerProcessor);
     addAndMakeVisible(*midiDrag);
 
     setResizable(true, true);
-    setResizeLimits(720, 480, 1600, 1000);
-    setSize(1180, 720);
+    setResizeLimits(720, 560, 1600, 1100);
+    setSize(1180, 900);
     startTimerHz(5);
 }
 
@@ -245,6 +306,169 @@ juce::WebBrowserComponent::Options PluginEditor::browserOptions()
             complete(result.wasOk() ? juce::String("Modulation routes cleared")
                                     : result.getErrorMessage());
         })
+        .withNativeFunction("generateComposition", [this](const auto& arguments, auto complete)
+        {
+            if (arguments.size() != 15)
+            {
+                complete("Composition generation requires 15 bounded intent fields");
+                return;
+            }
+            double seed = 0.0;
+            double tempo = 0.0;
+            double bars = 0.0;
+            std::array<double, 6> macros{};
+            std::array<bool, 4> requestedParts{};
+            if (!boundedNumber(arguments[0], 0.0,
+                               static_cast<double>(std::numeric_limits<std::uint32_t>::max()), seed)
+                || !arguments[1].isString() || !arguments[2].isString()
+                || !boundedNumber(arguments[3], 20.0, 400.0, tempo)
+                || !boundedNumber(arguments[4], 1.0, 64.0, bars))
+            {
+                complete("Composition seed, key, scale, tempo, or bars are invalid");
+                return;
+            }
+            for (std::size_t index = 0; index < macros.size(); ++index)
+            {
+                if (!boundedNumber(arguments[static_cast<int>(5 + index)],
+                                   0.0, 1.0, macros[index]))
+                {
+                    complete("Every composition macro must be a number from 0 to 1");
+                    return;
+                }
+            }
+            for (std::size_t index = 0; index < requestedParts.size(); ++index)
+            {
+                if (!strictBoolean(arguments[static_cast<int>(11 + index)],
+                                   requestedParts[index]))
+                {
+                    complete("Every requested composition part must be true or false");
+                    return;
+                }
+            }
+
+            const auto key = midi::parseKeyRoot(arguments[1].toString());
+            const auto scale = midi::parseScaleType(arguments[2].toString());
+            if (!key.has_value() || !scale.has_value())
+            {
+                complete("Unsupported key or scale");
+                return;
+            }
+            midi::MusicIntent intent;
+            intent.seed = static_cast<std::uint32_t>(seed);
+            intent.requestId = midi::deterministicUuid(intent.seed, "ui-composition-request");
+            intent.key = *key;
+            intent.scale = *scale;
+            intent.tempoBpm = tempo;
+            intent.lengthBars = static_cast<int>(bars);
+            intent.density = static_cast<float>(macros[0]);
+            intent.rhythmComplexity = static_cast<float>(macros[1]);
+            intent.tension = static_cast<float>(macros[2]);
+            intent.humanization = static_cast<float>(macros[3]);
+            intent.repetition = static_cast<float>(macros[4]);
+            intent.variation = static_cast<float>(macros[5]);
+            intent.partCount = 0;
+            constexpr std::array parts{midi::PartType::chords, midi::PartType::melody,
+                                       midi::PartType::bass, midi::PartType::arp};
+            for (std::size_t index = 0; index < requestedParts.size(); ++index)
+                if (requestedParts[index])
+                    intent.parts[intent.partCount++] = parts[index];
+            if (intent.partCount == 0)
+            {
+                complete("Select at least one composition part");
+                return;
+            }
+            const auto result = ownerProcessor.generateCompositionCandidate(std::move(intent));
+            complete(result.wasOk() ? compositionPayload(ownerProcessor)
+                                    : juce::var(result.getErrorMessage()));
+        })
+        .withNativeFunction("moreLikeComposition", [this](const auto& arguments, auto complete)
+        {
+            double index = 0.0;
+            if (arguments.size() != 1 || !boundedNumber(arguments[0], 1.0, 4294967295.0, index))
+            {
+                complete("More Like This requires a positive bounded variation index");
+                return;
+            }
+            const auto result = ownerProcessor.generateMoreLikeComposition(
+                static_cast<std::uint32_t>(index));
+            complete(result.wasOk() ? compositionPayload(ownerProcessor)
+                                    : juce::var(result.getErrorMessage()));
+        })
+        .withNativeFunction("surpriseComposition", [this](const auto& arguments, auto complete)
+        {
+            double index = 0.0;
+            if (arguments.size() != 1 || !boundedNumber(arguments[0], 1.0, 4294967295.0, index))
+            {
+                complete("Surprise Me requires a positive bounded surprise index");
+                return;
+            }
+            const auto result = ownerProcessor.generateSurpriseComposition(
+                static_cast<std::uint32_t>(index));
+            complete(result.wasOk() ? compositionPayload(ownerProcessor)
+                                    : juce::var(result.getErrorMessage()));
+        })
+        .withNativeFunction("acceptComposition", [this](const auto&, auto complete)
+        {
+            const auto result = ownerProcessor.acceptCompositionCandidate();
+            complete(result.wasOk() ? compositionPayload(ownerProcessor)
+                                    : juce::var(result.getErrorMessage()));
+        })
+        .withNativeFunction("getComposition", [this](const auto&, auto complete)
+        {
+            complete(compositionPayload(ownerProcessor));
+        })
+        .withNativeFunction("routeAcceptedMidi", [this](const auto&, auto complete)
+        {
+            const auto result = ownerProcessor.routeAcceptedMidi();
+            complete(result.wasOk() ? juce::String("Accepted MIDI starts on the next audio block")
+                                    : result.getErrorMessage());
+        })
+        .withNativeFunction("stopDirectMidi", [this](const auto&, auto complete)
+        {
+            ownerProcessor.stopDirectMidi();
+            complete("Direct MIDI Stop queued with tracked note-offs");
+        })
+        .withNativeFunction("exportAcceptedMidi", [this](const auto&, auto finish)
+        {
+            if (!ownerProcessor.getCompositionSnapshot().hasAccepted)
+            {
+                finish("Accept a composition before exporting MIDI");
+                return;
+            }
+            if (midiExportChooserActive)
+            {
+                finish("A MIDI export chooser is already open");
+                return;
+            }
+            midiExportChooserActive = true;
+            midiExportChooser = std::make_unique<juce::FileChooser>(
+                "Export accepted folk park MIDI",
+                juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
+                    .getChildFile("folk-park.mid"),
+                "*.mid");
+            const auto safeEditor = juce::Component::SafePointer<PluginEditor>(this);
+            midiExportChooser->launchAsync(
+                juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles
+                    | juce::FileBrowserComponent::warnAboutOverwriting,
+                [safeEditor, completionHandler = std::move(finish)](
+                    const juce::FileChooser& chooser) mutable
+                {
+                    if (safeEditor == nullptr)
+                        return;
+                    safeEditor->midiExportChooserActive = false;
+                    auto file = chooser.getResult();
+                    if (file == juce::File{})
+                    {
+                        completionHandler("MIDI export cancelled");
+                        return;
+                    }
+                    if (file.getFileExtension().isEmpty())
+                        file = file.withFileExtension(".mid");
+                    const auto result = safeEditor->ownerProcessor.writeAcceptedMidiFile(file);
+                    completionHandler(result.wasOk() ? "Accepted MIDI exported to " + file.getFullPathName()
+                                                     : result.getErrorMessage());
+                });
+        })
         .withResourceProvider([](const auto& url)
         {
             return resourceFor(url);
@@ -273,6 +497,8 @@ void PluginEditor::timerCallback()
 
     const auto import = ownerProcessor.getWavetableImportSnapshot();
     const auto routes = ownerProcessor.getConfiguredModulationRoutes();
+    const auto composition = ownerProcessor.getCompositionSnapshot();
+    midiDrag->updateAvailability(composition.hasAccepted);
     auto snapshot = juce::DynamicObject::Ptr(new juce::DynamicObject());
     snapshot->setProperty("product", "folk park");
     snapshot->setProperty("version", FOLK_PARK_VERSION);
@@ -285,6 +511,12 @@ void PluginEditor::timerCallback()
     snapshot->setProperty("importFrames", import.metadata.outputFrameCount);
     snapshot->setProperty("importCycleLength", import.metadata.acceptedCycleLength);
     snapshot->setProperty("modulationRouteCount", static_cast<int>(routes.routeCount));
+    snapshot->setProperty("compositionStatus", composition.status);
+    snapshot->setProperty("compositionHasCandidate", composition.hasCandidate);
+    snapshot->setProperty("compositionHasAccepted", composition.hasAccepted);
+    snapshot->setProperty("compositionCandidateNotes", composition.candidateNoteCount);
+    snapshot->setProperty("compositionAcceptedNotes", composition.acceptedNoteCount);
+    snapshot->setProperty("directMidiPlaying", ownerProcessor.isDirectMidiPlaying());
     browser->emitEventIfBrowserIsVisible("processorSnapshot", juce::var(snapshot.get()));
 }
 

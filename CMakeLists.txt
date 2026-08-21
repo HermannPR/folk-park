@@ -51,6 +51,12 @@ target_sources(FolkPark PRIVATE
     src/plugin/ParameterIds.h
     src/midi/MidiProof.cpp
     src/midi/MidiProof.h
+    src/midi/Composition.cpp
+    src/midi/Composition.h
+    src/midi/CompositionSession.cpp
+    src/midi/CompositionSession.h
+    src/midi/MidiDelivery.cpp
+    src/midi/MidiDelivery.h
     src/synth/SynthEngine.cpp
     src/synth/SynthEngine.h
     src/synth/Modulation.cpp
@@ -94,6 +100,8 @@ target_sources(FolkParkTests PRIVATE
     tests/M0Tests.cpp
     src/midi/MidiProof.cpp
     src/midi/MidiProof.h
+    src/midi/Composition.cpp
+    src/midi/Composition.h
     src/synth/SynthEngine.cpp
     src/synth/SynthEngine.h
     src/synth/Modulation.cpp
@@ -119,9 +127,59 @@ target_link_libraries(FolkParkTests PRIVATE
 enable_testing()
 add_test(NAME FolkParkNativeTests COMMAND FolkParkTests)
 
+juce_add_console_app(FolkParkCompositionTests PRODUCT_NAME "folk park composition tests")
+target_sources(FolkParkCompositionTests PRIVATE
+    tests/CompositionTests.cpp
+    src/midi/Composition.cpp
+    src/midi/Composition.h)
+target_include_directories(FolkParkCompositionTests PRIVATE src)
+target_compile_definitions(FolkParkCompositionTests PRIVATE JUCE_USE_CURL=0)
+target_link_libraries(FolkParkCompositionTests PRIVATE
+    juce::juce_core
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)
+add_test(NAME FolkParkCompositionPropertyTests COMMAND FolkParkCompositionTests)
+
+juce_add_console_app(FolkParkMidiDeliveryTests PRODUCT_NAME "folk park MIDI delivery tests")
+target_sources(FolkParkMidiDeliveryTests PRIVATE
+    tests/MidiDeliveryTests.cpp
+    src/midi/Composition.cpp
+    src/midi/Composition.h
+    src/midi/CompositionSession.cpp
+    src/midi/CompositionSession.h
+    src/midi/MidiDelivery.cpp
+    src/midi/MidiDelivery.h)
+target_include_directories(FolkParkMidiDeliveryTests PRIVATE src)
+target_compile_definitions(FolkParkMidiDeliveryTests PRIVATE JUCE_USE_CURL=0)
+target_link_libraries(FolkParkMidiDeliveryTests PRIVATE
+    juce::juce_audio_formats
+    juce::juce_core
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)
+add_test(NAME FolkParkMidiDeliveryParityTests COMMAND FolkParkMidiDeliveryTests)
+
+juce_add_console_app(FolkParkAssistantModelTests PRODUCT_NAME "folk park assistant model tests")
+target_sources(FolkParkAssistantModelTests PRIVATE
+    tests/AssistantModelsTests.cpp
+    src/assistant/AssistantModels.cpp
+    src/assistant/AssistantModels.h
+    src/midi/Composition.cpp
+    src/midi/Composition.h)
+target_include_directories(FolkParkAssistantModelTests PRIVATE src)
+target_compile_definitions(FolkParkAssistantModelTests PRIVATE JUCE_USE_CURL=0)
+target_link_libraries(FolkParkAssistantModelTests PRIVATE
+    juce::juce_core
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)
+add_test(NAME FolkParkAssistantSchemaModelTests COMMAND FolkParkAssistantModelTests)
+
 juce_add_console_app(FolkParkRealtimeTests PRODUCT_NAME "folk park real-time allocation tests")
 target_sources(FolkParkRealtimeTests PRIVATE
     tests/RealtimeTests.cpp
+    src/midi/Composition.cpp
+    src/midi/Composition.h
+    src/midi/MidiDelivery.cpp
+    src/midi/MidiDelivery.h
     src/synth/SynthEngine.cpp
     src/synth/SynthEngine.h
     src/synth/Modulation.cpp
@@ -134,6 +192,7 @@ target_include_directories(FolkParkRealtimeTests PRIVATE src)
 target_compile_definitions(FolkParkRealtimeTests PRIVATE JUCE_USE_CURL=0)
 target_link_libraries(FolkParkRealtimeTests PRIVATE
     juce::juce_audio_basics
+    juce::juce_audio_formats
     juce::juce_core
     juce::juce_dsp
     juce::juce_recommended_config_flags
@@ -150,6 +209,12 @@ target_sources(FolkParkPluginTests PRIVATE
     src/plugin/ParameterIds.h
     src/midi/MidiProof.cpp
     src/midi/MidiProof.h
+    src/midi/Composition.cpp
+    src/midi/Composition.h
+    src/midi/CompositionSession.cpp
+    src/midi/CompositionSession.h
+    src/midi/MidiDelivery.cpp
+    src/midi/MidiDelivery.h
     src/synth/SynthEngine.cpp
     src/synth/SynthEngine.h
     src/synth/Modulation.cpp

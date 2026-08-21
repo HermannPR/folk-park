@@ -168,6 +168,63 @@ void testUiIndependenceAndPanic()
     expect(openAudio.getMagnitude(0, 0, openAudio.getNumSamples()) <= 1.0e-9f,
            "Panic must return plug-in output to silence");
 }
+
+void testCompositionAcceptanceAndProcessorRouting()
+{
+    using namespace folkpark;
+    PluginProcessor processor;
+    midi::MusicIntent intent;
+    intent.seed = 7007;
+    intent.requestId = midi::deterministicUuid(intent.seed, "processor-composition-test");
+    expect(processor.generateCompositionCandidate(intent).wasOk(),
+           "Processor must accept a bounded composition intent on the message thread");
+    const auto candidate = processor.getCompositionSnapshot();
+    expect(candidate.hasCandidate && !candidate.hasAccepted && candidate.candidateNoteCount > 0,
+           "Processor must preserve generation as an unaccepted candidate");
+    expect(processor.writeAcceptedMidiToTemporaryFile() == juce::File{},
+           "Unaccepted candidate must not be available to drag or export");
+    expect(processor.routeAcceptedMidi().failed(),
+           "Unaccepted candidate must not route directly to the host");
+    expect(processor.acceptCompositionCandidate().wasOk(),
+           "Explicit processor acceptance must enable delivery");
+
+    const auto temporary = processor.writeAcceptedMidiToTemporaryFile();
+    expect(temporary.existsAsFile() && temporary.getSize() > 0,
+           "Accepted processor composition must produce a verified drag file");
+    if (temporary.existsAsFile())
+        expect(temporary.deleteFile(), "Processor test must clean up its temporary drag file");
+
+    processor.prepareToPlay(48000.0, 512);
+    expect(processor.routeAcceptedMidi().wasOk(),
+           "Accepted composition must publish a direct-MIDI schedule");
+    auto foundGeneratedMidi = false;
+    auto foundGeneratedAudio = false;
+    juce::AudioBuffer<float> audio(2, 512);
+    for (int block = 0; block < 160 && !foundGeneratedMidi; ++block)
+    {
+        juce::MidiBuffer midiOutput;
+        midiOutput.ensureSize(2048);
+        processor.processBlock(audio, midiOutput);
+        foundGeneratedMidi = !midiOutput.isEmpty();
+        foundGeneratedAudio = foundGeneratedAudio
+            || audio.getMagnitude(0, 0, audio.getNumSamples()) > 1.0e-7f;
+    }
+    expect(foundGeneratedMidi && foundGeneratedAudio,
+           "Direct accepted MIDI must reach both the host output and the synth engine");
+    processor.stopDirectMidi();
+    juce::MidiBuffer stopped;
+    stopped.ensureSize(2048);
+    processor.processBlock(audio, stopped);
+    expect(!processor.isDirectMidiPlaying(),
+           "Direct MIDI Stop must complete on the next processor block");
+
+    juce::MemoryBlock state;
+    processor.getStateInformation(state);
+    PluginProcessor restored;
+    restored.setStateInformation(state.getData(), static_cast<int>(state.getSize()));
+    expect(!restored.getCompositionSnapshot().hasAccepted,
+           "M3 session MIDI must not pretend to persist before M6 history support");
+}
 }
 
 int main()
@@ -175,8 +232,9 @@ int main()
     juce::ScopedJuceInitialiser_GUI initialiseGui;
     testStateRoundTrip();
     testUiIndependenceAndPanic();
+    testCompositionAcceptanceAndProcessorRouting();
 
     if (failures == 0)
-        std::cout << "PASS: M1/M2 parameter and route state, editor independence, and panic handoff\n";
+        std::cout << "PASS: M1/M2 state plus M3 candidate acceptance, delivery, routing, and session boundary\n";
     return failures == 0 ? 0 : 1;
 }

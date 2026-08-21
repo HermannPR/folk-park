@@ -417,6 +417,7 @@ void PluginProcessor::prepareToPlay(double newSampleRate, int maximumExpectedSam
     const auto initialGain = juce::Decibels::decibelsToGain(
         masterGainParameter->load(std::memory_order_relaxed), -60.0f);
     masterGain.setCurrentAndTargetValue(initialGain);
+    directMidiPlayer.reset();
 }
 
 void PluginProcessor::releaseResources()
@@ -424,6 +425,7 @@ void PluginProcessor::releaseResources()
     activeSampleRate = 0.0;
     activeBlockSize = 0;
     engine.reset();
+    directMidiPlayer.reset();
 }
 
 bool PluginProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
@@ -437,6 +439,10 @@ void PluginProcessor::processBlock(juce::AudioBuffer<float>& audio, juce::MidiBu
     juce::ScopedNoDenormals noDenormals;
     juce::ignoreUnused(activeSampleRate, activeBlockSize);
     if (panicRequested.exchange(false, std::memory_order_acq_rel))
+        engine.panic();
+
+    const auto directResult = directMidiPlayer.renderBlock(midi, audio.getNumSamples(), activeSampleRate);
+    if (directResult.overflow)
         engine.panic();
 
     auto synthParameters = readSynthParameters();
@@ -459,6 +465,28 @@ void PluginProcessor::processBlock(juce::AudioBuffer<float>& audio, juce::MidiBu
         for (int channel = 0; channel < channelCount; ++channel)
             audio.setSample(channel, sample, audio.getSample(channel, sample) * gain);
     }
+}
+
+juce::File PluginProcessor::writeAcceptedMidiToTemporaryFile() const
+{
+    const auto accepted = compositionSession.getAcceptedBundle();
+    return accepted.has_value() ? midi::writeMidiToTemporaryFile(*accepted) : juce::File{};
+}
+
+juce::Result PluginProcessor::writeAcceptedMidiFile(const juce::File& destination) const
+{
+    const auto accepted = compositionSession.getAcceptedBundle();
+    if (!accepted.has_value())
+        return juce::Result::fail("Accept a composition before exporting MIDI");
+    return midi::writeMidiFile(*accepted, destination);
+}
+
+juce::Result PluginProcessor::routeAcceptedMidi()
+{
+    const auto accepted = compositionSession.getAcceptedBundle();
+    if (!accepted.has_value())
+        return juce::Result::fail("Accept a composition before routing MIDI");
+    return directMidiPlayer.publish(*accepted);
 }
 
 synth::ParameterSnapshot PluginProcessor::readSynthParameters() const noexcept
