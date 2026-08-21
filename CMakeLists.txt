@@ -48,8 +48,11 @@ target_sources(FolkPark PRIVATE
     src/plugin/PluginEditor.h
     src/plugin/PluginProcessor.cpp
     src/plugin/PluginProcessor.h
+    src/plugin/ParameterIds.h
     src/midi/MidiProof.cpp
-    src/midi/MidiProof.h)
+    src/midi/MidiProof.h
+    src/synth/SynthEngine.cpp
+    src/synth/SynthEngine.h)
 
 target_include_directories(FolkPark PRIVATE src)
 
@@ -78,7 +81,9 @@ juce_add_console_app(FolkParkTests PRODUCT_NAME "folk park native tests")
 target_sources(FolkParkTests PRIVATE
     tests/M0Tests.cpp
     src/midi/MidiProof.cpp
-    src/midi/MidiProof.h)
+    src/midi/MidiProof.h
+    src/synth/SynthEngine.cpp
+    src/synth/SynthEngine.h)
 target_include_directories(FolkParkTests PRIVATE src)
 target_compile_definitions(FolkParkTests PRIVATE JUCE_WEB_BROWSER=1 JUCE_USE_CURL=0)
 target_link_libraries(FolkParkTests PRIVATE
@@ -88,4 +93,48 @@ target_link_libraries(FolkParkTests PRIVATE
     juce::juce_recommended_warning_flags)
 
 enable_testing()
-add_test(NAME FolkParkM0Tests COMMAND FolkParkTests)
+add_test(NAME FolkParkNativeTests COMMAND FolkParkTests)
+
+juce_add_console_app(FolkParkPluginTests PRODUCT_NAME "folk park plug-in tests")
+target_sources(FolkParkPluginTests PRIVATE
+    tests/PluginTests.cpp
+    src/plugin/PluginEditor.cpp
+    src/plugin/PluginEditor.h
+    src/plugin/PluginProcessor.cpp
+    src/plugin/PluginProcessor.h
+    src/plugin/ParameterIds.h
+    src/midi/MidiProof.cpp
+    src/midi/MidiProof.h
+    src/synth/SynthEngine.cpp
+    src/synth/SynthEngine.h)
+target_include_directories(FolkParkPluginTests PRIVATE src)
+target_compile_definitions(FolkParkPluginTests PRIVATE
+    JUCE_WEB_BROWSER=1
+    JUCE_USE_CURL=0
+    JUCE_VST3_CAN_REPLACE_VST2=0
+    FOLK_PARK_VERSION="${PROJECT_VERSION}"
+    FOLK_PARK_JUCE_COMMIT="${FOLK_PARK_JUCE_COMMIT}")
+target_link_libraries(FolkParkPluginTests PRIVATE
+    FolkParkAssets
+    juce::juce_audio_utils
+    juce::juce_gui_extra
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)
+add_test(NAME FolkParkPluginStateAndUiTests COMMAND FolkParkPluginTests)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    juce_add_console_app(FolkParkVST3SmokeTests PRODUCT_NAME "folk park VST3 smoke tests")
+    target_sources(FolkParkVST3SmokeTests PRIVATE tests/Vst3SmokeTests.cpp)
+    target_compile_definitions(FolkParkVST3SmokeTests PRIVATE
+        JUCE_PLUGINHOST_AU=0
+        JUCE_PLUGINHOST_VST3=1
+        JUCE_USE_CURL=0)
+    target_link_libraries(FolkParkVST3SmokeTests PRIVATE
+        juce::juce_audio_processors
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_warning_flags)
+    add_dependencies(FolkParkVST3SmokeTests FolkPark_VST3)
+    add_test(
+        NAME FolkParkBuiltVST3MidiSmokeTest
+        COMMAND FolkParkVST3SmokeTests "$<TARGET_BUNDLE_DIR:FolkPark_VST3>")
+endif()

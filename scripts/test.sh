@@ -7,5 +7,5 @@ export PATH="${python_user_base}/bin:${PATH}"
 
 cd "${project_root}"
 cmake --preset macos-x86_64-debug
-cmake --build --preset macos-x86_64-debug --target FolkParkTests
+cmake --build --preset macos-x86_64-debug --target FolkParkTests FolkParkPluginTests
 ctest --preset macos-x86_64-debug
