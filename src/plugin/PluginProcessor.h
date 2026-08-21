@@ -4,6 +4,7 @@
 #include "midi/CompositionSession.h"
 #include "midi/MidiDelivery.h"
 #include "midi/PreviewMidi.h"
+#include "render/OfflinePreviewRenderer.h"
 #include "synth/SynthEngine.h"
 #include "synth/WavetableImportService.h"
 
@@ -106,6 +107,13 @@ public:
     }
     [[nodiscard]] juce::File writeAcceptedMidiToTemporaryFile() const;
     [[nodiscard]] juce::Result writeAcceptedMidiFile(const juce::File& destination) const;
+    [[nodiscard]] juce::Result requestAcceptedWavRender(const juce::File& destination,
+                                                        bool allowOverwrite);
+    void cancelAcceptedWavRender() { offlinePreviewService.cancel(); }
+    [[nodiscard]] render::OfflinePreviewService::Snapshot getAcceptedWavRenderSnapshot() const
+    {
+        return offlinePreviewService.getSnapshot();
+    }
     [[nodiscard]] juce::Result routeAcceptedMidi();
     void stopDirectMidi() noexcept { directMidiPlayer.requestStop(); }
     [[nodiscard]] bool isDirectMidiPlaying() const noexcept
@@ -144,6 +152,7 @@ public:
 private:
     [[nodiscard]] synth::ParameterSnapshot readSynthParameters() const noexcept;
     [[nodiscard]] effects::Parameters readEffectsParameters(double tempoBpm) const noexcept;
+    [[nodiscard]] render::OfflinePreviewSnapshot makeOfflinePreviewSnapshot(double tempoBpm) const;
 
     juce::UndoManager undoManager;
     juce::AudioProcessorValueTreeState parameters;
@@ -153,6 +162,7 @@ private:
     midi::CompositionSession compositionSession;
     midi::DirectMidiPlayer directMidiPlayer;
     midi::PreviewMidiQueue previewMidiQueue;
+    render::OfflinePreviewService offlinePreviewService;
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> masterGain;
     std::atomic<bool> panicRequested{false};
 
@@ -245,6 +255,7 @@ private:
     synth::ModulationSnapshot configuredModulationRoutes;
     mutable std::mutex wavetableUiMutex;
     std::array<WavetableUiSnapshot, 2> wavetableUiSnapshots{};
+    std::array<std::shared_ptr<const synth::WavetableBank>, 2> currentWavetables{};
 
     double activeSampleRate = 0.0;
     int activeBlockSize = 0;

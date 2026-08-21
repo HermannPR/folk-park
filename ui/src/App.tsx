@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { getNativeFunction } from "@juce/index.js";
-import { HostCombo, HostSlider, useHostNormalized } from "./host-controls.tsx";
+import { HostCombo, HostSlider, HostToggle, useHostNormalized } from "./host-controls.tsx";
 import { PianoKeyboard } from "./PianoKeyboard.tsx";
 import { ModulationPanel } from "./ModulationPanel.tsx";
 import { parseComposition, parseUiSnapshot, type CompositionSnapshot, type UiSnapshot } from "./protocol.ts";
@@ -25,6 +25,8 @@ const native = {
   exportAcceptedMidi: getNativeFunction("exportAcceptedMidi"),
   routeAcceptedMidi: getNativeFunction("routeAcceptedMidi"),
   stopDirectMidi: getNativeFunction("stopDirectMidi"),
+  renderAcceptedWav: getNativeFunction("renderAcceptedWav"),
+  cancelAcceptedWav: getNativeFunction("cancelAcceptedWav"),
 };
 
 type Preferences = { lowGraphics: boolean; reducedMotion: boolean };
@@ -169,6 +171,44 @@ function ComposeView({ initial, announce }: { initial: CompositionSnapshot; anno
   </div>;
 }
 
+function FxView({ snapshot, announce }: { snapshot: UiSnapshot; announce: (message: string) => void }) {
+  const busy = snapshot.renderStatus === "rendering";
+  return <div className="fx-layout">
+    <section className="surface effect-card">
+      <div className="section-heading"><div><span>01</span><h2>Distortion</h2></div><small>First</small></div>
+      <div className="effect-controls"><HostToggle id="dist-bypass" relay="distBypass" label="Distortion" /><HostSlider id="dist-drive" relay="distDrive" label="Drive" decimals={1} /><HostSlider id="dist-mix" relay="distMix" label="Mix" decimals={2} /><HostSlider id="dist-output" relay="distOutput" label="Output" decimals={1} /></div>
+    </section>
+    <section className="surface effect-card">
+      <div className="section-heading"><div><span>02</span><h2>Chorus</h2></div><small>Stereo modulation</small></div>
+      <div className="effect-controls"><HostToggle id="chorus-bypass" relay="chorusBypass" label="Chorus" /><HostSlider id="chorus-rate" relay="chorusRate" label="Rate" decimals={2} /><HostSlider id="chorus-depth" relay="chorusDepth" label="Depth" decimals={1} /><HostSlider id="chorus-mix" relay="chorusMix" label="Mix" decimals={2} /></div>
+    </section>
+    <section className="surface effect-card">
+      <div className="section-heading"><div><span>03</span><h2>Delay</h2></div><small>Host tempo</small></div>
+      <div className="effect-controls"><HostToggle id="delay-bypass" relay="delayBypass" label="Delay" /><HostCombo id="delay-division" relay="delayDivision" label="Division" /><HostSlider id="delay-feedback" relay="delayFeedback" label="Feedback" decimals={2} /><HostSlider id="delay-mix" relay="delayMix" label="Mix" decimals={2} /></div>
+    </section>
+    <section className="surface effect-card">
+      <div className="section-heading"><div><span>04</span><h2>Reverb</h2></div><small>Space</small></div>
+      <div className="effect-controls"><HostToggle id="reverb-bypass" relay="reverbBypass" label="Reverb" /><HostSlider id="reverb-room" relay="reverbRoomSize" label="Room size" decimals={2} /><HostSlider id="reverb-damping" relay="reverbDamping" label="Damping" decimals={2} /><HostSlider id="reverb-mix" relay="reverbMix" label="Mix" decimals={2} /></div>
+    </section>
+    <section className="surface effect-card">
+      <div className="section-heading"><div><span>05</span><h2>Compressor</h2></div><small>Dynamics</small></div>
+      <div className="effect-controls effect-controls-six"><HostToggle id="comp-bypass" relay="compBypass" label="Compressor" /><HostSlider id="comp-threshold" relay="compThreshold" label="Threshold" decimals={1} /><HostSlider id="comp-ratio" relay="compRatio" label="Ratio" decimals={1} /><HostSlider id="comp-attack" relay="compAttack" label="Attack" decimals={1} /><HostSlider id="comp-release" relay="compRelease" label="Release" decimals={0} /><HostSlider id="comp-makeup" relay="compMakeup" label="Makeup" decimals={1} /><HostSlider id="comp-mix" relay="compMix" label="Mix" decimals={2} /></div>
+    </section>
+    <section className="surface effect-card">
+      <div className="section-heading"><div><span>06</span><h2>Parametric EQ</h2></div><small>Last</small></div>
+      <div className="effect-controls effect-controls-six"><HostToggle id="eq-bypass" relay="eqBypass" label="EQ" /><HostSlider id="eq-low" relay="eqLowGain" label="Low shelf" decimals={1} /><HostSlider id="eq-mid-frequency" relay="eqMidFrequency" label="Mid frequency" decimals={0} /><HostSlider id="eq-mid-gain" relay="eqMidGain" label="Mid gain" decimals={1} /><HostSlider id="eq-mid-q" relay="eqMidQ" label="Mid Q" decimals={2} /><HostSlider id="eq-high" relay="eqHighGain" label="High shelf" decimals={1} /></div>
+    </section>
+    <section className="surface render-card">
+      <div className="section-heading"><div><span>WAV</span><h2>Accepted composition preview</h2></div><small>{snapshot.renderStatus}</small></div>
+      <p>{snapshot.renderMessage}</p>
+      {snapshot.renderDestination && <code title={snapshot.renderDestination}>{snapshot.renderDestination}</code>}
+      {snapshot.renderDuration > 0 && <small>{snapshot.renderDuration.toFixed(2)} seconds · 48 kHz · stereo 24-bit</small>}
+      <div className="actions"><button className="primary" disabled={!snapshot.composition.hasAccepted || busy} onClick={() => void native.renderAcceptedWav().then((value) => announce(String(value)))}>Render accepted WAV</button><button disabled={!busy} onClick={() => void native.cancelAcceptedWav().then((value) => announce(String(value)))}>Cancel render</button></div>
+      <p className="render-note">Uses a separate offline synth and effect chain. It never resets or seeks the voices currently playing in FL Studio.</p>
+    </section>
+  </div>;
+}
+
 function PlannedView({ milestone, title, children }: { milestone: string; title: string; children: React.ReactNode }) {
   return <section className="surface planned"><span>{milestone}</span><h2>{title}</h2><p>{children}</p><div className="skeleton"><i /><i /><i /><i /></div></section>;
 }
@@ -198,7 +238,16 @@ export default function App() {
       if (typeof payload === "object" && payload !== null && "activeVoices" in payload) {
         const voices = Number((payload as { activeVoices: unknown }).activeVoices);
         if (Number.isFinite(voices) && voices >= 0 && voices <= 16)
-          setSnapshot((current) => current === null ? null : { ...current, activeVoices: voices });
+          setSnapshot((current) => {
+            if (current === null) return null;
+            const update = payload as Record<string, unknown>;
+            const renderStatus = typeof update.renderStatus === "string" ? update.renderStatus : current.renderStatus;
+            const renderMessage = typeof update.renderMessage === "string" ? update.renderMessage : current.renderMessage;
+            const renderDestination = typeof update.renderDestination === "string" ? update.renderDestination : current.renderDestination;
+            const duration = Number(update.renderDuration);
+            const renderDuration = Number.isFinite(duration) && duration >= 0 && duration <= 900 ? duration : current.renderDuration;
+            return { ...current, activeVoices: voices, renderStatus, renderMessage, renderDestination, renderDuration };
+          });
       }
     });
     return () => window.__JUCE__.backend.removeEventListener?.("processorSnapshot", listener);
@@ -207,7 +256,7 @@ export default function App() {
   return <div className="app-shell">
     <div className="atmosphere" aria-hidden="true"><i /><i /><i /></div>
     <header className="app-header">
-      <div className="brand"><span>Silicon Dreams</span><h1>folk park</h1><small>0.1 · M4 interface build</small></div>
+      <div className="brand"><span>Silicon Dreams</span><h1>folk park</h1><small>0.1 · M5 effects + isolated WAV preview</small></div>
       <div className="preset-stack"><button className="preset"><span>Current sound</span><strong>Init / session</strong><i>⌄</i></button><label className="assistant-preview"><span>Jarvis sound helper · M7</span><input disabled placeholder="Describe a sound — guided workflow coming" /></label></div>
       <div className="header-status"><StatusPill good={snapshot !== null}>{snapshot === null ? "Bridge" : `${snapshot.activeVoices} voices`}</StatusPill><StatusPill good={snapshot?.architecture === "x86_64"}>x86_64</StatusPill><button onClick={() => void native.undo().then((value) => announce(String(value)))}>Undo</button><button onClick={() => void native.redo().then((value) => announce(String(value)))}>Redo</button><button className="panic" onClick={() => void native.panic().then((value) => announce(String(value)))}>Panic</button></div>
     </header>
@@ -222,7 +271,7 @@ export default function App() {
       {snapshot === null ? <section className="surface recovery"><h2>Native snapshot unavailable</h2><p>{error}</p><button onClick={() => void refresh()}>Retry complete recovery</button></section> : <>
         {tab === "SYNTH" && <SynthView snapshot={snapshot} visible={visible} preferences={preferences} announce={announce} refresh={refresh} publishSnapshot={setSnapshot} />}
         {tab === "COMPOSE" && <ComposeView initial={snapshot.composition} announce={announce} />}
-        {tab === "FX" && <PlannedView milestone="M5" title="Effects workspace is prepared">The ordered distortion, chorus, delay, reverb, compressor, and EQ engine arrives in M5. This navigation surface is intentionally honest and does not pretend the effects exist.</PlannedView>}
+        {tab === "FX" && <FxView snapshot={snapshot} announce={announce} />}
         {tab === "HISTORY" && <PlannedView milestone="M6" title="History and preset persistence are prepared">Accepted clips remain session memory until the transactional M6 repository and migrations pass restart, failure, and recovery tests.</PlannedView>}
         {tab === "SETTINGS" && <section className="surface settings"><div className="section-heading"><div><span>UI</span><h2>Performance + accessibility</h2></div><small>Local presentation only</small></div><label><input type="checkbox" checked={preferences.lowGraphics} onChange={(event) => setPreferences((value) => ({ ...value, lowGraphics: event.currentTarget.checked }))} />Low Graphics · 2D canvas at 12 FPS</label><label><input type="checkbox" checked={preferences.reducedMotion} onChange={(event) => setPreferences((value) => ({ ...value, reducedMotion: event.currentTarget.checked }))} />Reduced Motion · render only on state changes</label><button onClick={() => void refresh()}>Request complete native snapshot</button><p>No remote fonts, trackers, CDNs, providers, or runtime assets are loaded.</p></section>}
       </>}

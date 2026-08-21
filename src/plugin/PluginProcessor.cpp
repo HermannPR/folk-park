@@ -257,11 +257,14 @@ PluginProcessor::PluginProcessor()
           return publishWavetable(oscillatorIndex, bank);
       })
 {
-    if (const auto builtIn = synth::WavetableBank::createBuiltIn())
+    if (auto builtIn = synth::WavetableBank::createBuiltIn())
     {
         const auto preview = makeWavetableUiSnapshot(*builtIn);
+        const auto immutable = std::shared_ptr<const synth::WavetableBank>(std::move(builtIn));
         wavetableUiSnapshots[0] = preview;
         wavetableUiSnapshots[1] = preview;
+        currentWavetables[0] = immutable;
+        currentWavetables[1] = immutable;
     }
     const auto raw = [this](const char* id)
     {
@@ -348,11 +351,13 @@ bool PluginProcessor::publishWavetable(int oscillatorIndex,
     if (oscillatorIndex < 0 || oscillatorIndex >= static_cast<int>(wavetableUiSnapshots.size())
         || !bank.isFiniteAndNormalised())
         return false;
+    const auto immutable = std::make_shared<const synth::WavetableBank>(bank);
     if (!engine.publishWavetable(oscillatorIndex, bank))
         return false;
     const auto preview = makeWavetableUiSnapshot(bank);
     const std::lock_guard lock(wavetableUiMutex);
     wavetableUiSnapshots[static_cast<std::size_t>(oscillatorIndex)] = preview;
+    currentWavetables[static_cast<std::size_t>(oscillatorIndex)] = immutable;
     return true;
 }
 
@@ -581,6 +586,16 @@ juce::Result PluginProcessor::writeAcceptedMidiFile(const juce::File& destinatio
     return midi::writeMidiFile(*accepted, destination);
 }
 
+juce::Result PluginProcessor::requestAcceptedWavRender(const juce::File& destination,
+                                                       bool allowOverwrite)
+{
+    const auto accepted = compositionSession.getAcceptedBundle();
+    if (!accepted.has_value())
+        return juce::Result::fail("Accept a composition before rendering WAV audio");
+    return offlinePreviewService.request(*accepted,
+        makeOfflinePreviewSnapshot(accepted->intent.tempoBpm), destination, allowOverwrite);
+}
+
 juce::Result PluginProcessor::routeAcceptedMidi()
 {
     const auto accepted = compositionSession.getAcceptedBundle();
@@ -685,6 +700,20 @@ effects::Parameters PluginProcessor::readEffectsParameters(double tempoBpm) cons
     result.eqHighGainDb = load(effectParameters.eqHighGain);
     result.tempoBpm = tempoBpm;
     return result;
+}
+
+render::OfflinePreviewSnapshot PluginProcessor::makeOfflinePreviewSnapshot(double tempoBpm) const
+{
+    render::OfflinePreviewSnapshot snapshot;
+    snapshot.synthParameters = readSynthParameters();
+    snapshot.synthParameters.tempoBpm = tempoBpm;
+    snapshot.effectParameters = readEffectsParameters(tempoBpm);
+    snapshot.modulation = getConfiguredModulationRoutes();
+    snapshot.masterGainDb = masterGainParameter->load(std::memory_order_relaxed);
+    const std::lock_guard lock(wavetableUiMutex);
+    snapshot.wavetableA = currentWavetables[0];
+    snapshot.wavetableB = currentWavetables[1];
+    return snapshot;
 }
 
 juce::Result PluginProcessor::setModulationRoutes(std::span<const synth::ModulationRoute> routes)

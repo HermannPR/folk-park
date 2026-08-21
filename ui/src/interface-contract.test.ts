@@ -58,3 +58,16 @@ test("composition editing and the 32-route modulation workspace stay explicit an
   assert.match(modulation, /Discard changes/);
   assert.doesNotMatch(modulation, /https?:\/\//);
 });
+
+test("M5 exposes the complete ordered effect chain and isolated accepted WAV action", async () => {
+  const app = await readFile(resolve(sourceRoot, "App.tsx"), "utf8");
+  const controls = await readFile(resolve(sourceRoot, "host-controls.tsx"), "utf8");
+  for (const relay of ["distBypass", "chorusBypass", "delayBypass", "reverbBypass",
+    "compBypass", "eqBypass"])
+    assert.match(app, new RegExp(`relay="${relay}"`));
+  assert.match(app, /Render accepted WAV/);
+  assert.match(app, /separate offline synth and effect chain/);
+  assert.match(app, /never resets or seeks/);
+  assert.match(controls, /getToggleState/);
+  assert.doesNotMatch(app, /Effects workspace is prepared/);
+});
