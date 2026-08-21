@@ -26,10 +26,10 @@ The DOCX is the master product and engineering contract. Read it without modifyi
 ## Repository and Git rules
 
 - Private GitHub repository: `HermannPR/folk-park`.
-- Current checkpoint branch: `feat/m5-effects-preview`.
+- Current working branch: `feat/m6-presets-history`, stacked on the final M5 checkpoint.
 - Current checkpoint commit when this handoff was written: `1c13e21 Verified and documented the M5 checkpoint`.
 - M5 draft pull request: <https://github.com/HermannPR/folk-park/pull/5>, based exactly on `feat/m4-silicon-dreams-ui`.
-- The next branch should be `feat/m6-presets-history`, based on the final M5 checkpoint.
+- M6 work must remain stacked on `feat/m5-effects-preview`; its draft PR base must be that exact branch.
 - Keep each stage buildable and commit meaningful stages separately. The user prefers a commit at every stage.
 - Use concise impersonal commit subjects such as `Established ...`, `Implemented ...`, `Hardened ...`, or `Verified ...`. Do not write subjects such as `I established ...`.
 - Review `git status` and the exact diff before every commit. Stage exact paths; do not use `git add .` or `git add -A`.
@@ -73,9 +73,11 @@ Outstanding M5 human checks include FL Studio effect audibility/order, bypass tr
 - AI composition may propose chords, melodies, bass, arpeggios, MIDI, samples, and sound changes, but provider access is opt-in and offline/manual workflows remain complete.
 - Preserving or bypassing Serum 2 licensing is not a product feature. Folk Park uses its own format and legal assets.
 
-## Active next milestone: M6 presets and history
+## Active milestone: M6 presets and history
 
-No M6 code had been started when this handoff was written. A read-only preflight confirmed the M5 branch was clean and macOS SDK provides `sqlite3.h` at `/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sqlite3.h`. Recheck the linkable SQLite library before choosing it and record the dependency decision in an ADR.
+M6 contract work has started on `feat/m6-presets-history`. ADR-0007 freezes the permissive pre-M6 preset placeholder as the oldest supported schema version 1 and establishes schema version 2 as the first production contract, with a pure deterministic v1-to-v2 migration. The current macOS SDK provides `sqlite3.h` and `libsqlite3.tbd`; M6 will use that system library behind `HistoryRepository`, never from DSP or the audio callback. `LICENSES.md` records the system boundary.
+
+The first M6 stage established `schemas/preset.schema.json`, `schemas/preset-v1.schema.json`, `docs/PRESET_FORMAT.md`, and `docs/adr/0007-m6-persistence-and-migrations.md`. Both schemas parse as JSON, the Debug preset configures, and the unchanged Debug regression suite passes 8/8. The next implementation stage is the native immutable preset model, bounded codec/migration, atomic store, content-addressed asset validation, and adversarial fixtures/tests.
 
 M6 must deliver:
 
@@ -141,7 +143,7 @@ Only report commands actually run. Full milestone verification must also inspect
 2. Run `git status --short --branch`, `git log --oneline --decorate -12`, and `git remote -v`.
 3. Confirm the repository is private before the next push or PR action.
 4. Confirm M5 remains reproducible enough for the intended M6 change; do not rerun every expensive gate before the first documentation commit unless a dependency changed.
-5. Create `feat/m6-presets-history` from the final M5 head.
+5. Continue on `feat/m6-presets-history`; do not recreate or rebase it unless repository evidence contradicts this handoff.
 6. Maintain a plan with one in-progress stage and update this handoff when reality changes.
 7. Implement one bounded stage, run its focused tests plus relevant regression tests, inspect the diff, commit exact paths, and push the checkpoint.
 8. At the M6 gate, update `docs/PROGRESS.md`, this file, README current/coming-soon language if necessary, and `evidence/m6/verification.md`.
