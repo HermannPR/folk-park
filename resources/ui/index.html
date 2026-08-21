@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>folk park M2</title>
+    <title>folk park M3</title>
     <style>
       :root { color-scheme: dark; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
       * { box-sizing: border-box; }
@@ -38,6 +38,14 @@
       .dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: #ffb84d; box-shadow: 0 0 16px #ffb84d; }
       .dot.ok { background: #6af5b0; box-shadow: 0 0 16px #6af5b0; }
       .note { margin: 10px 0 0; color: #948da9; font-size: 11px; }
+      .compose-settings { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 9px; }
+      .compose-settings input[type="number"] { width: 100%; margin-top: 8px; border: 1px solid #ffffff2e; border-radius: 8px; padding: 7px; color: white; background: #171326; }
+      .parts { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; color: #d8d3e9; font-size: 12px; }
+      .parts label { display: flex; gap: 6px; align-items: center; }
+      .preview { position: relative; height: 190px; margin-top: 12px; overflow: hidden; border: 1px solid #ffffff1f; border-radius: 14px; background: repeating-linear-gradient(90deg, transparent 0, transparent calc(6.25% - 1px), #ffffff0b calc(6.25% - 1px), #ffffff0b 6.25%), repeating-linear-gradient(0deg, #080912 0, #080912 11px, #0d0f1a 12px); }
+      .preview-note { position: absolute; min-width: 2px; min-height: 3px; border-radius: 2px; opacity: .9; }
+      .preview-note.chords { background: #9b87ff; } .preview-note.melody { background: #6af5b0; } .preview-note.bass { background: #ffb84d; } .preview-note.arp { background: #67c7ff; }
+      .compose-status { min-height: 38px; margin-top: 10px; color: #d8d3e9; font-size: 12px; }
       @media (max-width: 840px) { header { display: block; } .summary { text-align: left; } .grid { grid-template-columns: 1fr; } .wide { grid-column: auto; } .controls, .route { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     </style>
   </head>
@@ -45,8 +53,8 @@
     <main>
       <div class="shell">
         <header>
-          <div><div class="eyebrow">Silicon Dreams / current M2 engineering UI</div><h1>folk park</h1></div>
-          <p class="summary">Dual wavetable synthesis, reviewed WAV import, multimode filtering, and bounded modulation. The guided AI sound walkthrough is specified for M7 and is not active yet.</p>
+          <div><div class="eyebrow">Silicon Dreams / current M3 engineering UI</div><h1>folk park</h1></div>
+          <p class="summary">Dual-wavetable synthesis plus deterministic chords, melody, bass, arpeggios, piano-roll preview, and accepted MIDI delivery. The guided AI sound walkthrough is specified for M7 and is not active yet.</p>
         </header>
         <div class="grid">
           <section class="panel">
@@ -89,6 +97,30 @@
             <p id="route-status" class="note">0 routes active. Applying here replaces the current matrix with this one reviewed route.</p>
           </section>
           <section class="panel wide">
+            <h2>Compose — deterministic MIDI candidate</h2>
+            <p class="note">Generate locally, inspect the preview, then explicitly Accept. Drag, export, and direct routing always use the same accepted notes.</p>
+            <div class="compose-settings">
+              <div class="control"><label for="compose-seed">Seed</label><input id="compose-seed" type="number" min="0" max="4294967295" step="1" value="12345" /></div>
+              <div class="control"><label for="compose-key">Key</label><select id="compose-key"><option>C</option><option>C#</option><option>D</option><option>D#</option><option>E</option><option>F</option><option>F#</option><option>G</option><option>G#</option><option>A</option><option>A#</option><option>B</option></select></div>
+              <div class="control"><label for="compose-scale">Scale</label><select id="compose-scale"><option value="major">Major</option><option value="natural_minor" selected>Natural minor</option><option value="harmonic_minor">Harmonic minor</option><option value="dorian">Dorian</option><option value="mixolydian">Mixolydian</option><option value="pentatonic_major">Pentatonic major</option><option value="pentatonic_minor">Pentatonic minor</option></select></div>
+              <div class="control"><label for="compose-tempo">BPM</label><input id="compose-tempo" type="number" min="20" max="400" step="0.1" value="124" /></div>
+              <div class="control"><label for="compose-bars">Bars</label><input id="compose-bars" type="number" min="1" max="64" step="1" value="4" /></div>
+            </div>
+            <div class="controls" style="margin-top:9px">
+              <div class="control"><label for="compose-density">Density <output id="compose-density-value">0.55</output></label><input id="compose-density" type="range" min="0" max="1" step="0.01" value="0.55" /></div>
+              <div class="control"><label for="compose-rhythm">Rhythm <output id="compose-rhythm-value">0.45</output></label><input id="compose-rhythm" type="range" min="0" max="1" step="0.01" value="0.45" /></div>
+              <div class="control"><label for="compose-tension">Tension <output id="compose-tension-value">0.70</output></label><input id="compose-tension" type="range" min="0" max="1" step="0.01" value="0.70" /></div>
+              <div class="control"><label for="compose-human">Humanize <output id="compose-human-value">0.12</output></label><input id="compose-human" type="range" min="0" max="1" step="0.01" value="0.12" /></div>
+              <div class="control"><label for="compose-repeat">Repetition <output id="compose-repeat-value">0.60</output></label><input id="compose-repeat" type="range" min="0" max="1" step="0.01" value="0.60" /></div>
+              <div class="control"><label for="compose-variation">Variation <output id="compose-variation-value">0.40</output></label><input id="compose-variation" type="range" min="0" max="1" step="0.01" value="0.40" /></div>
+            </div>
+            <div class="parts"><label><input id="part-chords" type="checkbox" checked />Chords</label><label><input id="part-melody" type="checkbox" checked />Melody</label><label><input id="part-bass" type="checkbox" checked />Bass</label><label><input id="part-arp" type="checkbox" checked />Arpeggio</label></div>
+            <div class="actions"><button id="compose-generate" class="primary" type="button">Generate candidate</button><button id="compose-more" type="button">More Like This</button><button id="compose-surprise" type="button">Surprise Me</button><button id="compose-accept" class="primary" type="button">Accept candidate</button><button id="compose-export" type="button">Export accepted MIDI</button><button id="compose-route" type="button">Route accepted MIDI</button><button id="compose-stop" type="button">Stop</button></div>
+            <div id="compose-status" class="compose-status">No composition generated. Accepted actions are disabled by the native boundary.</div>
+            <div id="piano-roll" class="preview" role="img" aria-label="Generated MIDI piano-roll preview"></div>
+            <p class="note">Preview colors: chords purple, melody green, bass amber, arpeggio blue. Offline WAV preview arrives in M5; this M3 view is MIDI only.</p>
+          </section>
+          <section class="panel wide">
             <div class="actions"><button id="probe" type="button">Check native bridge</button><button id="panic" type="button">Panic / all notes off</button></div>
             <div class="status-grid">
               <div class="status"><span id="function-dot" class="dot"></span><span id="function-message">Waiting for native function…</span></div>
@@ -113,6 +145,14 @@
       const cancelWavetableImport = getNativeFunction("cancelWavetableImport");
       const setModulationRoute = getNativeFunction("setModulationRoute");
       const clearModulationRoutes = getNativeFunction("clearModulationRoutes");
+      const generateComposition = getNativeFunction("generateComposition");
+      const moreLikeComposition = getNativeFunction("moreLikeComposition");
+      const surpriseComposition = getNativeFunction("surpriseComposition");
+      const acceptComposition = getNativeFunction("acceptComposition");
+      const getComposition = getNativeFunction("getComposition");
+      const exportAcceptedMidi = getNativeFunction("exportAcceptedMidi");
+      const routeAcceptedMidi = getNativeFunction("routeAcceptedMidi");
+      const stopDirectMidi = getNativeFunction("stopDirectMidi");
       function showNativeMessage(message) { functionMessage.textContent = message; functionDot.classList.add("ok"); }
       function connectSlider(elementId, relayName, decimals = 2) {
         const input = document.querySelector(`#${elementId}`);
@@ -163,12 +203,34 @@
       document.querySelector("#mod-destination").replaceChildren(...modulationDestinations.map((name, index) => new Option(name, index)));
       const amount = document.querySelector("#mod-amount");
       amount.addEventListener("input", () => { document.querySelector("#mod-amount-value").textContent = Number(amount.value).toFixed(2); });
+      for (const id of ["compose-density", "compose-rhythm", "compose-tension", "compose-human", "compose-repeat", "compose-variation"]) {
+        const input = document.querySelector(`#${id}`);
+        input.addEventListener("input", () => { document.querySelector(`#${id}-value`).textContent = Number(input.value).toFixed(2); });
+      }
+      const compositionStatus = document.querySelector("#compose-status");
+      const pianoRoll = document.querySelector("#piano-roll");
+      let variationIndex = 1;
+      let surpriseIndex = 1;
+      function renderComposition(payload) {
+        if (!payload || typeof payload === "string") { compositionStatus.textContent = payload || "Composition request failed"; return; }
+        compositionStatus.textContent = `${payload.status}. Candidate: ${payload.candidateNotes || 0} notes / accepted: ${payload.acceptedNotes || 0} notes${payload.previewTruncated ? " (preview sampled)" : ""}.`;
+        pianoRoll.replaceChildren(...(payload.notes || []).map((note) => {
+          const element = document.createElement("span");
+          element.className = `preview-note ${note.part}`;
+          element.style.left = `${note.start * 100}%`;
+          element.style.width = `${Math.max(0.2, note.duration * 100)}%`;
+          element.style.bottom = `${note.pitch * 94}%`;
+          element.style.height = `${Math.max(3, 3 + note.velocity * 3)}px`;
+          return element;
+        }));
+      }
       window.__JUCE__.backend.addEventListener("processorSnapshot", (snapshot) => {
         eventMessage.textContent = `Native event: ${snapshot.activeVoices} active voices / ${snapshot.state}`;
         eventDot.classList.add("ok");
         const metadata = snapshot.importFile ? ` ${snapshot.importFile}; ${snapshot.importFrames} frames × ${snapshot.importCycleLength} samples.` : "";
         importStatus.textContent = `${snapshot.importStatus}: ${snapshot.importMessage}.${metadata}`;
         routeStatus.textContent = `${snapshot.modulationRouteCount} route(s) active. Applying here replaces the current matrix with this one reviewed route.`;
+        compositionStatus.textContent = `${snapshot.compositionStatus}. Candidate: ${snapshot.compositionCandidateNotes} notes / accepted: ${snapshot.compositionAcceptedNotes} notes${snapshot.directMidiPlaying ? " / direct MIDI playing" : ""}.`;
       });
       getProductInfo().then((info) => showNativeMessage(`Native function: ${info.product} ${info.version} (${info.architecture})`));
       document.querySelector("#probe").addEventListener("click", async () => { const info = await getProductInfo(); showNativeMessage(`Native function: ${info.product} ${info.version} (${info.architecture})`); });
@@ -182,6 +244,22 @@
         showNativeMessage(message);
       });
       document.querySelector("#clear-routes").addEventListener("click", async () => showNativeMessage(await clearModulationRoutes()));
+      document.querySelector("#compose-generate").addEventListener("click", async () => renderComposition(await generateComposition(
+        Number(document.querySelector("#compose-seed").value), document.querySelector("#compose-key").value,
+        document.querySelector("#compose-scale").value, Number(document.querySelector("#compose-tempo").value),
+        Number(document.querySelector("#compose-bars").value), Number(document.querySelector("#compose-density").value),
+        Number(document.querySelector("#compose-rhythm").value), Number(document.querySelector("#compose-tension").value),
+        Number(document.querySelector("#compose-human").value), Number(document.querySelector("#compose-repeat").value),
+        Number(document.querySelector("#compose-variation").value), document.querySelector("#part-chords").checked,
+        document.querySelector("#part-melody").checked, document.querySelector("#part-bass").checked,
+        document.querySelector("#part-arp").checked)));
+      document.querySelector("#compose-more").addEventListener("click", async () => renderComposition(await moreLikeComposition(variationIndex++)));
+      document.querySelector("#compose-surprise").addEventListener("click", async () => renderComposition(await surpriseComposition(surpriseIndex++)));
+      document.querySelector("#compose-accept").addEventListener("click", async () => renderComposition(await acceptComposition()));
+      document.querySelector("#compose-export").addEventListener("click", async () => showNativeMessage(await exportAcceptedMidi()));
+      document.querySelector("#compose-route").addEventListener("click", async () => showNativeMessage(await routeAcceptedMidi()));
+      document.querySelector("#compose-stop").addEventListener("click", async () => showNativeMessage(await stopDirectMidi()));
+      getComposition().then(renderComposition);
     </script>
   </body>
 </html>

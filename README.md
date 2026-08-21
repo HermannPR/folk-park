@@ -8,7 +8,15 @@ The finished 0.1 product combines a playable dual-wavetable instrument with comp
 
 The visual direction is the original **Silicon Dreams** interface: a fast, bundled, offline-capable synth/compose workspace rather than a copy of Serum or another proprietary product.
 
-## What works now — M2 checkpoint
+The intended final workflow is one connected instrument:
+
+1. Build and play a sound manually with the complete synth, modulation, effects, and preset controls, with live original 2D/3D wavetable and spectrum feedback for both oscillators.
+2. Generate seeded chords, melody, bass, or arpeggios; inspect them in a piano roll; request a related or surprising variation; then explicitly accept the result.
+3. Drag or export standards-compliant MIDI to FL Studio, or route accepted MIDI to another instrument.
+4. Optionally ask the guided assistant for help. It asks focused sound-design questions, returns bounded parameter changes with reasons and uncertainty, supports reversible A/B audition, and waits for explicit acceptance.
+5. Save projects with searchable presets, history, migrations, and missing-asset recovery before the signed Release 0.1 package is called complete.
+
+## What works now — M3 checkpoint
 
 - Intel `x86_64` Debug and Release builds for Standalone and VST3.
 - A deterministic 16-voice engine with released/quietest-then-oldest voice stealing.
@@ -21,22 +29,31 @@ The visual direction is the original **Silicon Dreams** interface: a fast, bundl
 - Bundled WebView controls using host-aware parameter attachments, safe WAV review/confirm actions, modulation actions, panic, and live native status; audio behavior is tested with the editor open and closed.
 - Native synth/processor/import/state tests, zero-allocation audio instrumentation, spectral and CPU evidence, plus a Release smoke test that loads the built VST3 as an external host and renders finite stereo audio from MIDI.
 - pluginval strictness 5 validation across editor, state, automation, buses, and the required sample-rate/block-size matrix.
+- Strict version 1 `MusicIntent` and `GeneratedClip` schemas and typed models with key, scale, tempo, meter, bars, requested parts, genre/emotion, six composition macros, arpeggiator settings, note range, polyphony, event caps, seed, generator version, and parent lineage.
+- Deterministic offline chord progressions with triads/sevenths, functional movement, V-I cadence, inversions, and bounded voice leading; chord-aware melodies with contour, motifs, rests, passing tones, and leap limits; bounded bass; and five seeded arpeggio orders.
+- `More Like This` preserves musical context and parent IDs while producing a controlled difference. `Surprise Me` produces a separate bounded candidate. Neither replaces accepted material.
+- A condensed Compose UI with seed/key/scale/BPM/bars, density/rhythm/tension/humanization/repetition/variation, part selection, colored piano-roll preview, candidate status, and an explicit Accept action.
+- One accepted `GeneratedClip` bundle feeds all MIDI delivery paths: multitrack SMF with tempo/time-signature metadata and explicit note-offs, reopen verification at multiple PPQ resolutions, temporary-file drag, save chooser export, and fixed-schedule direct MIDI with correct block offsets and tracked Stop note-offs.
+- Direct accepted MIDI also drives the internal synth. Publication is atomic at an audio-block boundary, and measured composition scheduling adds zero allocations to the callback with a pre-sized host MIDI buffer.
+- Strict `SoundIntent` and `ParameterProposal` schemas plus typed validators are present as the foundation for the requested guided sound walkthrough. The conversational assistant, provider integration, A/B audition, and parameter application are not implemented yet.
 
-The current build is a verified M2 engineering checkpoint, not the complete 0.1 instrument. FL Studio insertion, playability, automation, state reopen, import behavior in a real project, and MIDI routing remain explicitly marked as human tests until they are performed in FL Studio.
+The current build is a verified M3 engineering checkpoint, not the complete 0.1 instrument. Debug passed 6/6 automated suites; Release passed 7/7 including loading and rendering through the actual built VST3; pluginval 1.0.4 strictness 5 passed. FL Studio insertion, playability, automation, state reopen, MIDI drag, and direct routing remain explicitly marked as human tests until they are performed in FL Studio.
+
+Accepted compositions currently live in session memory and are deliberately not written into plug-in state until M6 history/persistence exists. Direct MIDI starts on the next audio block at the accepted clip tempo; transport-synchronized start/reposition behavior remains a host-level limitation to verify and refine. The M3 preview is MIDI-only; isolated WAV audition is M5.
 
 ## Coming soon and later
 
 | Milestone | Producer-facing result | Status |
 | --- | --- | --- |
-| M2 | Dual wavetable oscillators, safe user-WAV import, envelopes/LFOs, modulation matrix, multimode filter | Current; automated gates passed, FL Studio human run pending |
-| M3 | Deterministic chord, melody, bass, and arpeggio generation with MIDI preview/export/drag | Coming next |
-| M4 | Full responsive Silicon Dreams React interface and accessible low-graphics mode | Planned |
+| M2 | Dual wavetable oscillators, safe user-WAV import, envelopes/LFOs, modulation matrix, multimode filter | Implemented foundation; FL Studio human run pending |
+| M3 | Deterministic chord, melody, bass, and arpeggio generation with candidate preview, acceptance, MIDI export/drag/direct route | Current; automated gates passed, FL Studio human drag/route run pending |
+| M4 | Full responsive Silicon Dreams React interface, original live 2D/3D wavetable and spectrum views, interactive composition editing, accessible low-graphics mode | Coming next |
 | M5 | Distortion, chorus, synced delay, reverb, compressor, EQ, and isolated WAV preview | Planned |
 | M6 | Searchable presets, reversible history, migrations, and crash-safe persistence | Planned |
 | M7 | Offline Jarvis text workflow and guided AI sound walkthrough; optional secure provider | Planned |
 | M8 | FL Studio matrix, performance hardening, packaging, legal/asset audit, and release documentation | Planned |
 
-The guided sound workflow is specified now in [docs/PRODUCT_AMENDMENTS.md](docs/PRODUCT_AMENDMENTS.md), but it is not yet implemented. M3 will define the validated musical-intent schemas it builds on; M4/M6 add the interaction and reversible preview/history foundations; M7 adds the offline conversation and optional secure provider.
+The guided sound workflow is specified in [docs/PRODUCT_AMENDMENTS.md](docs/PRODUCT_AMENDMENTS.md). M3 now provides its strict intent/proposal schema foundation; M4/M6 add the production interaction and reversible preview/history foundations; M7 adds the offline conversation and optional secure provider.
 
 ## Product principles
 

@@ -3,15 +3,64 @@
   "$id": "https://folkpark.audio/schemas/generated-clip-v1.json",
   "title": "folk park GeneratedClip",
   "type": "object",
-  "required": ["schemaVersion", "id", "part", "ppq", "seed", "generatorVersion", "events"],
+  "required": [
+    "schemaVersion", "id", "part", "ppq", "lengthTicks", "tempoBpm",
+    "timeSignature", "key", "scale", "seed", "generatorVersion",
+    "parentClipId", "createdUnixMs", "events", "chordLabels"
+  ],
   "properties": {
     "schemaVersion": { "const": 1 },
-    "id": { "type": "string", "format": "uuid" },
+    "id": { "type": "string", "format": "uuid", "maxLength": 36 },
     "part": { "enum": ["chords", "melody", "bass", "arp"] },
     "ppq": { "type": "integer", "minimum": 24, "maximum": 9600 },
-    "seed": { "type": "integer", "minimum": 0 },
-    "generatorVersion": { "type": "string" },
-    "events": { "type": "array", "maxItems": 16384, "items": { "type": "object" } }
+    "lengthTicks": { "type": "integer", "minimum": 1, "maximum": 983040 },
+    "tempoBpm": { "type": "number", "minimum": 20, "maximum": 400 },
+    "timeSignature": {
+      "type": "object",
+      "required": ["numerator", "denominator"],
+      "properties": {
+        "numerator": { "type": "integer", "minimum": 2, "maximum": 12 },
+        "denominator": { "enum": [2, 4, 8, 16] }
+      },
+      "additionalProperties": false
+    },
+    "key": { "enum": ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"] },
+    "scale": { "enum": ["major", "natural_minor", "harmonic_minor", "dorian", "mixolydian", "pentatonic_major", "pentatonic_minor"] },
+    "seed": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+    "generatorVersion": { "type": "string", "minLength": 1, "maxLength": 32 },
+    "parentClipId": { "type": ["string", "null"], "maxLength": 36 },
+    "createdUnixMs": { "type": "integer", "minimum": 0 },
+    "events": {
+      "type": "array", "maxItems": 16384,
+      "items": {
+        "type": "object",
+        "required": ["startTick", "durationTicks", "pitch", "velocity", "channel", "probability", "articulation"],
+        "properties": {
+          "startTick": { "type": "integer", "minimum": 0 },
+          "durationTicks": { "type": "integer", "minimum": 1 },
+          "pitch": { "type": "integer", "minimum": 0, "maximum": 127 },
+          "velocity": { "type": "integer", "minimum": 1, "maximum": 127 },
+          "channel": { "type": "integer", "minimum": 1, "maximum": 16 },
+          "probability": { "type": "number", "minimum": 0, "maximum": 1 },
+          "articulation": { "enum": ["normal", "staccato", "legato", "accent"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "chordLabels": {
+      "type": "array", "maxItems": 512,
+      "items": {
+        "type": "object",
+        "required": ["startTick", "durationTicks", "symbol", "scaleDegree"],
+        "properties": {
+          "startTick": { "type": "integer", "minimum": 0 },
+          "durationTicks": { "type": "integer", "minimum": 1 },
+          "symbol": { "type": "string", "minLength": 1, "maxLength": 24 },
+          "scaleDegree": { "type": "integer", "minimum": 1, "maximum": 7 }
+        },
+        "additionalProperties": false
+      }
+    }
   },
   "additionalProperties": false
 }

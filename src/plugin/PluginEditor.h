@@ -2,7 +2,6 @@
 
 #include "PluginProcessor.h"
 #include "ParameterIds.h"
-#include "midi/MidiProof.h"
 
 #include <juce_gui_extra/juce_gui_extra.h>
 
@@ -58,6 +57,8 @@ private:
     juce::WebComboBoxParameterAttachment filterModeAttachment;
     std::unique_ptr<juce::FileChooser> wavetableChooser;
     bool wavetableChooserActive = false;
+    std::unique_ptr<juce::FileChooser> midiExportChooser;
+    bool midiExportChooserActive = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginEditor)
 };

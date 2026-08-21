@@ -2,10 +2,45 @@
 
 ## Current checkpoint
 
-- Milestone: M2 — Dual wavetable and modulation foundation
-- Status: automated engine, import, real-time, processor, built-VST3, architecture, signature, visual, and validator gates passed; physical Standalone and FL Studio human runs remain required
+- Milestone: M3 — Deterministic composition and MIDI delivery
+- Status: automated composition, schema, export parity, direct scheduling, real-time, processor, built-VST3, architecture, visual, and validator gates passed; physical Standalone interaction and FL Studio human drag/routing runs remain required
 - Date: 2026-08-20 (America/Monterrey)
-- Branch: `feat/m2-dual-wavetable-modulation`, stacked on the still-unmerged M1 branch
+- Branch: `feat/m3-composition-midi`, stacked on the still-unmerged M2 branch
+
+## Implemented M3 checkpoint
+
+- Added strict version 1 `MusicIntent` and `GeneratedClip` schemas and C++ models with UUIDs, seed/version metadata, key/scale/tempo/meter/bars, requested parts, genre/emotion, normalized macros, arpeggiator configuration, note/polyphony/event bounds, and parent lineage.
+- Added one deterministic shared harmonic plan and bounded chord, melody, bass, and arpeggio generators. Chords include functional weighting, inversions, seventh/tension selection, voice-leading cost, and V-I cadence. Melody includes contour, chord tones, passing tones, rests, motifs, variation, and leap limits. Bass and five arp order modes remain monophonic with complete note lifecycles.
+- Added deterministic bounded humanization plus `More Like This` lineage and `Surprise Me` candidate generation. Supported-key/scale, odd-meter, tight-range, maximum-bar/event-cap, density, ordering, overlap, and malformed-fixture properties are tested.
+- Added a non-real-time composition session with distinct candidate and accepted state. Acceptance is required before drag, save export, or direct output; later candidates cannot silently replace the accepted bundle.
+- Added one shared SMF delivery path with tempo/time-signature metadata, per-part tracks, explicit note-offs, canonical low-PPQ quantization, reopen comparison at PPQ 96/480/960/1920, verified temporary drag files, and save export.
+- Added a fixed double-buffered direct-MIDI schedule with atomic next-block activation, correct sample offsets, tracked Stop note-offs, internal-synth playback, and host MIDI output. The measured callback remains allocation-free with a pre-sized host buffer.
+- Added the condensed M3 Compose UI with seed/key/scale/BPM/bars, six macros, part selection, colored piano-roll projection, generation/variation/accept controls, export, direct route, Stop, live status, and accepted-only native drag strip.
+- Added strict `SoundIntent` and `ParameterProposal` schemas and typed validators for the requested guided sound walkthrough. They require bounded text/values, unique parameter IDs, explanation/confidence, and explicit acceptance; the assistant itself remains M7.
+
+## M3 commands and exact results
+
+- Debug configure/build for Standalone, VST3, native, composition-property, MIDI-delivery, assistant-model, real-time-allocation, and processor/UI tests: PASS with no project compiler warnings.
+- `ctest --preset macos-x86_64-debug --output-on-failure`: PASS, 6/6.
+- Release configure/build for the same targets plus built-bundle host smoke: PASS with no project compiler warnings.
+- `ctest --preset macos-x86_64-release --output-on-failure`: PASS, 7/7.
+- Release built-VST3 smoke: PASS; the actual VST3 scanned, instantiated, and rendered finite stereo audio from MIDI.
+- Audio allocation instrumentation: PASS; 32 measured blocks including synth publication/crossfade and direct MIDI scheduling allocated zero times.
+- pluginval 1.0.4 strictness 5: `SUCCESS`; editor, editor-while-processing, state, automation, buses, and 44.1/48/96 kHz at 64/128/256/512/1024 samples passed.
+- Release Standalone visual inspection: PASS for the M3 header, composition entry, explicit accepted-only drag state, and retained screenshot. Complete interactive generation remains a human check.
+
+## M3 evidence
+
+- `evidence/m3/verification.md`
+- `evidence/m3/pluginval/pluginval-release-strictness-5.txt`
+- `evidence/m3/standalone-m3.png`
+- `tests/CompositionTests.cpp`
+- `tests/MidiDeliveryTests.cpp`
+- `tests/AssistantModelsTests.cpp`
+- `tests/RealtimeTests.cpp`
+- `tests/PluginTests.cpp`
+
+## Previous M2 checkpoint
 
 ## Implemented M2 checkpoint
 
@@ -19,7 +54,7 @@
 - Added host parameters append-only after the M0/M1 IDs, route state serialization with transactional validation, safe import processor APIs, host-tempo reading, and a condensed M2 WebView editor.
 - Added spectral rejection, dual-oscillator/stereo, multimode extremes, deterministic noise, every LFO source/shape, three-envelope release, aggressive automation, CPU, imported-WAV, state, and allocation coverage.
 
-## Commands and exact results
+## M2 commands and exact results
 
 - Debug configure/build for Standalone, VST3, native, real-time-allocation, and processor tests: PASS with no project compiler warnings.
 - `ctest --preset macos-x86_64-debug --output-on-failure`: PASS, 3/3.
@@ -49,6 +84,9 @@
 - Standalone physical keyboard/audio-device playability: NOT RUN.
 - FL Studio discovery/insertion, dual-oscillator playability, every exposed control, automation write/read, save-close-reopen state, panic/no-stuck-note, editor reopen/resize/scroll, and MIDI routing/drag: HUMAN RUN REQUIRED.
 - WAV import through the real macOS chooser, preview/confirm/cancel, table audition, FL project save/reopen limitation, and failure recovery: HUMAN RUN REQUIRED.
+- M3 candidate generation/preview/accept interaction in the physical Standalone: HUMAN RUN REQUIRED.
+- M3 `.mid` drag into the FL Studio piano roll/channel workflow and musical parity after import: HUMAN RUN REQUIRED.
+- M3 Wrapper output-port routing into a second FL instrument, timing/note-off/Stop/panic behavior, and save-close-reopen session limitation: HUMAN RUN REQUIRED.
 - M1's outstanding FL Studio human matrix remains outstanding; M2 automation does not turn it into a pass.
 
 ## Risks and limitations
@@ -59,8 +97,11 @@
 - User-drawn LFOs and oversampling are optional M2 items and were deliberately deferred. Composition, effects, preset library/history, and AI assistance are not implemented yet.
 - The CPU number is a reproducible local baseline, not a guarantee for every host/audio-device configuration. FL Studio profiling is still required.
 - pluginval's optional separate Steinberg-validator subtest was skipped because no validator executable path is installed.
+- Accepted compositions are session memory only until M6; project reopen intentionally restores synth parameters/routes but not M3 candidate/accepted clips.
+- Direct MIDI begins at the next audio block using clip tempo. Host transport synchronization, reposition, and loop semantics are not claimed in M3.
+- The M3 piano roll is a bounded view-only projection. Interactive editing belongs to M4, and isolated audio/WAV preview belongs to M5.
 - JUCE distribution licensing, final identity, signing/notarization, privacy, and asset-rights gates remain unresolved; builds are private local engineering artifacts only.
 
 ## Next smallest verifiable task
 
-Run the explicit Standalone and FL Studio M1/M2 human matrix with the installed verified VST3 and record every result. After that, begin M3 on a new stacked branch with deterministic composition schemas, tests, MIDI preview/export/drag, and the intent types needed by the later guided assistant.
+Install the verified M3 VST3, run the explicit Standalone and FL Studio M1-M3 human matrix, and record every result. Then begin M4 on a new stacked branch with the full responsive Silicon Dreams interface, interactive composition presentation, accessibility, and snapshot recovery.

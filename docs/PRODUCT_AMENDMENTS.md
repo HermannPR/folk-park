@@ -15,3 +15,15 @@ Folk Park must offer an optional assistant that helps the producer reach a sound
 - Later composition assistance may use the same conversational pattern for samples, chords, melodies, bass, arpeggios, MIDI, and sound generation, while preserving deterministic validated delivery and explicit producer action.
 
 Planned milestone placement: define schemas alongside M3 composition models, build the production interaction in M4, add reversible preview/history support in M6, and implement the offline text/provider workflow in M7.
+
+## 2026-08-20 — Live wavetable and spectrum visualization
+
+Folk Park must make oscillator behavior visually understandable with an original visualization system comparable in usefulness—not appearance or proprietary implementation—to modern wavetable synthesizers.
+
+- Oscillators A and B each receive a readable live 2D waveform view and an optional 3D wavetable frame/morph surface.
+- The view shows current table position and bounded modulation movement; a spectrum view helps reveal harmonic changes and alias control.
+- Imported wavetables use the same reviewed visualization after conversion, without exposing unsafe or unbounded source data to the WebView.
+- Rendering uses bounded native snapshots, never mutable audio-thread objects. It pauses or reduces work when hidden and has reduced-motion and low-graphics fallbacks.
+- The Silicon Dreams presentation, geometry, colors, interaction, assets, and code must remain original and must not copy Serum/Serum 2 trade dress or proprietary behavior.
+
+Planned milestone placement: implement the production visualization and performance/accessibility gates in M4, then reuse the same isolated analysis surfaces for M5 effects and WAV preview where appropriate.
