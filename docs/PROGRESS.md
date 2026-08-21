@@ -2,12 +2,49 @@
 
 ## Current checkpoint
 
-- Milestone: M4 — Silicon Dreams UI, live wavetable visualization, and safe audition
-- Status: UI, Debug, Release, built-VST3, architecture, signature, offline, visual, held-key, and pluginval gates passed; FL Studio human insertion/focus/resize/drag/routing runs remain required
+- Milestone: M5 — ordered effects and isolated accepted-composition WAV rendering
+- Status: UI, Debug, Release, built/installed VST3, effect DSP, offline isolation, WAV contract, architecture, signature, visual, and pluginval gates passed; FL Studio human effects/tempo/automation/WAV runs remain required
 - Date: 2026-08-21 (America/Monterrey)
-- Branch: `feat/m4-silicon-dreams-ui`, stacked on M3 draft PR #3
+- Branch: `feat/m5-effects-preview`, stacked on M4 draft PR #4
 
-## Implemented M4 checkpoint
+## Implemented M5 checkpoint
+
+- Added the fixed Distortion → Chorus → tempo-synced Delay → Reverb → Compressor → Parametric EQ chain. Every stage has independent bypass, bounded settings, a wet/dry or equivalent blend, and a 10 ms click-safe transition.
+- Appended 29 stable host parameters after the 73 existing IDs. All six effects default to bypass, state round-trips all new values, and older/new default sounds remain gain-safe.
+- Added finite-value/default substitution at the DSP boundary, feedback caps, bounded output, deterministic reset, supported-rate/block-size coverage, isolated-stage effectiveness, exact tempo-delay timing, and serial-chain tests.
+- Included all six enabled effects in the callback allocation probe; 32 measured blocks still allocate zero times.
+- Added accepted-only offline rendering with separate synth/effect/MIDI instances, immutable current A/B banks, current parameter/route/master snapshots, a bounded 12-second tail, and a 15-minute maximum output.
+- Streamed stereo 24-bit/48 kHz WAV data to a temporary sibling, reopened and validated header/rate/depth/length before destination replacement, required explicit overwrite authorization, and removed temporary work on cancellation/failure.
+- Added a live-isolation regression: an active synth remained bit-identical to an untouched control engine across a complete offline WAV render.
+- Replaced the FX placeholder with the complete host-aware effect workspace plus accepted-WAV destination chooser, live status/duration/path, and cancellation.
+
+## M5 commands and exact results
+
+- Clean `npm ci --ignore-scripts`: PASS; audit reports 0 vulnerabilities.
+- UI TypeScript and interface/effects contracts: PASS, 8/8.
+- Visual analysis benchmark: 10,000 iterations over 16 × 96 samples in 1093.936 ms, or 109.394 microseconds per analysis on this Intel Mac.
+- Production Vite bundle: PASS; `app.js` 787.76 kB (205.58 kB gzip), `app.css` 13.51 kB, and a 0.40 kB local index.
+- `ctest --preset macos-x86_64-debug --output-on-failure`: PASS, 8/8.
+- `ctest --preset macos-x86_64-release --output-on-failure`: PASS, 9/9, including external-host load and finite stereo render through the actual built VST3.
+- Release Standalone and VST3: thin `x86_64` Mach-O. The VST3 local ad-hoc signature verifies; the private Standalone engineering artifact remains unsigned.
+- pluginval 1.0.4 strictness 5: `SUCCESS` for editor lifecycle, processing, state, automation, buses, and 44.1/48/96 kHz × 64/128/256/512/1024 samples.
+- Installed user VST3: PASS; installed and validated build binary SHA-256 both equal `5ff08476376a4d37e0224623741c3e42a5e15cb52118b6259f33705c965126ac` and the installed bundle independently renders finite stereo audio.
+- Release Standalone inspection: PASS for bundled M5 header, six ordered FX sections, safe bypass defaults, scroll access to the WAV panel, and clean close.
+
+## M5 evidence
+
+- `evidence/m5/verification.md`
+- `evidence/m5/pluginval/pluginval-release-strictness-5.txt`
+- `evidence/m5/standalone-m5-synth.png`
+- `evidence/m5/standalone-m5-fx.png`
+- `evidence/m5/standalone-m5-fx-render.png`
+- `tests/EffectsTests.cpp`
+- `tests/OfflinePreviewTests.cpp`
+- `tests/RealtimeTests.cpp`
+
+## Previous M4 checkpoint
+
+### Implemented M4 checkpoint
 
 - Added pinned React/React DOM/TypeScript/Vite/Three.js dependencies and a reproducible offline production bundle embedded as three JUCE resources. No development server, CDN, remote font, tracker, or runtime network origin is used.
 - Replaced the condensed page with the responsive Silicon Dreams Synth/Compose/FX/History/Settings information architecture. M5–M7 views remain explicit placeholders.
@@ -19,7 +56,7 @@
 - Added bounded composition-note pitch/start/duration/velocity editing. Candidate edits are validated, stable-sorted, and published transactionally; the accepted bundle remains immutable and editing requires a new explicit acceptance.
 - Expanded the version 1 complete UI snapshot to include actual A/B table frames, all parameters, routes, composition state, status, architecture, and voices. Malformed/future/non-finite/duplicate/oversize snapshots are rejected before view replacement.
 
-## M4 commands and exact results
+### M4 commands and exact results
 
 - Clean `npm ci --ignore-scripts`: PASS; audit reports 0 vulnerabilities.
 - UI TypeScript check and interface contracts: PASS, 7/7.
@@ -32,7 +69,7 @@
 - Installed user VST3: PASS; installed and validated build binary SHA-256 both equal `58169e6dcfda3ee50298e6994ac6b9441cbc5c887d2b5fa0e0bae26932848188`.
 - Release visual/interaction inspection: PASS for actual A/B visuals, C2–B5 layout, computer mapping, held-key single voice, release-to-zero, responsive compact scrolling, route publication, candidate generation, and bounded note editing.
 
-## M4 evidence
+### M4 evidence
 
 - `evidence/m4/verification.md`
 - `evidence/m4/pluginval/pluginval-release-strictness-5.txt`
@@ -123,6 +160,8 @@
 - FL Studio discovery/insertion, dual-oscillator playability, every exposed control, automation write/read, save-close-reopen state, panic/no-stuck-note, editor reopen/resize/scroll, and MIDI routing/drag: HUMAN RUN REQUIRED.
 - M4 four-octave pointer play, A–P focus ownership, macOS hold/repeat behavior, Oct−/Oct+ mapping, compact horizontal keyboard scroll, low-graphics/reduced-motion behavior, and editor close while holding notes inside FL Studio: HUMAN RUN REQUIRED.
 - M4 actual A/B visual response to host automation/import, full matrix review/apply/discard, immediate Undo/Redo, candidate note editing, and accepted-versus-candidate delivery inside FL Studio: HUMAN RUN REQUIRED.
+- M5 audible ordered effects, independent bypass/click behavior, host-tempo delay changes, automation write/read, save-close-reopen, and CPU use inside FL Studio: HUMAN RUN REQUIRED.
+- M5 accepted WAV chooser/render/cancel/import/playback, expected length/tail, current-sound parity, and live-voice isolation inside the FL wrapper: HUMAN RUN REQUIRED.
 - WAV import through the real macOS chooser, preview/confirm/cancel, table audition, FL project save/reopen limitation, and failure recovery: HUMAN RUN REQUIRED.
 - M3 candidate generation/preview/accept interaction in the physical Standalone: HUMAN RUN REQUIRED.
 - M3 `.mid` drag into the FL Studio piano roll/channel workflow and musical parity after import: HUMAN RUN REQUIRED.
@@ -134,15 +173,15 @@
 - A confirmed imported wavetable lives in bounded session memory only. Source audio or converted table persistence is intentionally deferred to M6; reopening a project currently restores parameters/routes but uses the built-in table. The UI states the review boundary but cannot yet warn on project reopen.
 - The M4 interface edits all 32 route slots, but host automation of route structure is not supported; route changes are reviewed native transactions stored in plug-in state.
 - Three.js is a presentation dependency only. The measured local analysis cost and frame caps do not replace FL Studio CPU/GPU profiling on the target machine.
-- User-drawn LFOs and oversampling are optional M2 items and were deliberately deferred. Composition, effects, preset library/history, and AI assistance are not implemented yet.
+- User-drawn LFOs and oversampling are optional M2 items and were deliberately deferred. Preset library/history and AI assistance are not implemented yet.
 - The CPU number is a reproducible local baseline, not a guarantee for every host/audio-device configuration. FL Studio profiling is still required.
 - pluginval's optional separate Steinberg-validator subtest was skipped because no validator executable path is installed.
 - Accepted compositions are session memory only until M6; project reopen intentionally restores synth parameters/routes but not M3 candidate/accepted clips.
 - Direct MIDI begins at the next audio block using clip tempo. Host transport synchronization, reposition, and loop semantics are not claimed in M3.
-- The M4 piano roll supports bounded note editing, but isolated audio/WAV preview still belongs to M5.
+- M5 preview is an exported, validated WAV rather than an internal transport. Audition/import behavior in FL Studio remains a human workflow check.
 - The Vite build reports direct `eval` in JUCE's pinned `check_native_interop.js` Android compatibility helper. The macOS bundle loads only embedded local resources; no project source or runtime URL uses a remote origin.
 - JUCE distribution licensing, final identity, signing/notarization, privacy, and asset-rights gates remain unresolved; builds are private local engineering artifacts only.
 
 ## Next smallest verifiable task
 
-Run the installed M4 VST3 through the explicit FL Studio M1–M4 human matrix and record every result. Then begin M5 on a new stacked branch with ordered bypassable effects and isolated WAV preview while keeping the M4 UI/audio boundaries intact.
+Run the installed M5 VST3 through the explicit FL Studio M1–M5 human matrix and record every result. Then begin M6 on a new stacked branch with transactional preset/history persistence, migrations, and imported-asset recovery.

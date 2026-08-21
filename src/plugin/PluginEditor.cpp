@@ -31,6 +31,20 @@ juce::String importStatusName(synth::WavetableImportService::Status status)
     return "unknown";
 }
 
+juce::String renderStatusName(render::OfflinePreviewService::Status status)
+{
+    using Status = render::OfflinePreviewService::Status;
+    switch (status)
+    {
+        case Status::idle: return "idle";
+        case Status::rendering: return "rendering";
+        case Status::rendered: return "rendered";
+        case Status::failed: return "failed";
+        case Status::cancelled: return "cancelled";
+    }
+    return "unknown";
+}
+
 bool boundedNumber(const juce::var& value, double minimum, double maximum, double& output) noexcept
 {
     if (!value.isInt() && !value.isInt64() && !value.isDouble())
@@ -117,6 +131,7 @@ juce::var completeUiSnapshot(PluginProcessor& processor)
 {
     const auto import = processor.getWavetableImportSnapshot();
     const auto routes = processor.getConfiguredModulationRoutes();
+    const auto rendered = processor.getAcceptedWavRenderSnapshot();
     auto snapshot = juce::DynamicObject::Ptr(new juce::DynamicObject());
     snapshot->setProperty("schemaVersion", 1);
     snapshot->setProperty("product", "folk park");
@@ -125,6 +140,10 @@ juce::var completeUiSnapshot(PluginProcessor& processor)
     snapshot->setProperty("activeVoices", processor.getActiveVoiceCount());
     snapshot->setProperty("importStatus", importStatusName(import.status));
     snapshot->setProperty("importMessage", import.message);
+    snapshot->setProperty("renderStatus", renderStatusName(rendered.status));
+    snapshot->setProperty("renderMessage", rendered.message);
+    snapshot->setProperty("renderDestination", rendered.destination);
+    snapshot->setProperty("renderDuration", rendered.durationSeconds);
     snapshot->setProperty("modulationRouteCount", static_cast<int>(routes.routeCount));
     snapshot->setProperty("modulationRoutes", modulationPayload(routes));
     snapshot->setProperty("composition", compositionPayload(processor));
@@ -263,7 +282,36 @@ PluginEditor::PluginEditor(PluginProcessor& owner)
       lfo1ShapeAttachment(*owner.state().getParameter(parameterIds::lfoShape[0]), lfo1ShapeRelay, owner.state().undoManager),
       lfo2ShapeAttachment(*owner.state().getParameter(parameterIds::lfoShape[1]), lfo2ShapeRelay, owner.state().undoManager),
       lfo3ShapeAttachment(*owner.state().getParameter(parameterIds::lfoShape[2]), lfo3ShapeRelay, owner.state().undoManager),
-      lfo4ShapeAttachment(*owner.state().getParameter(parameterIds::lfoShape[3]), lfo4ShapeRelay, owner.state().undoManager)
+      lfo4ShapeAttachment(*owner.state().getParameter(parameterIds::lfoShape[3]), lfo4ShapeRelay, owner.state().undoManager),
+      distortionBypassAttachment(*owner.state().getParameter(parameterIds::distortionBypass), distortionBypassRelay, owner.state().undoManager),
+      distortionDriveAttachment(*owner.state().getParameter(parameterIds::distortionDrive), distortionDriveRelay, owner.state().undoManager),
+      distortionMixAttachment(*owner.state().getParameter(parameterIds::distortionMix), distortionMixRelay, owner.state().undoManager),
+      distortionOutputAttachment(*owner.state().getParameter(parameterIds::distortionOutput), distortionOutputRelay, owner.state().undoManager),
+      chorusBypassAttachment(*owner.state().getParameter(parameterIds::chorusBypass), chorusBypassRelay, owner.state().undoManager),
+      chorusRateAttachment(*owner.state().getParameter(parameterIds::chorusRate), chorusRateRelay, owner.state().undoManager),
+      chorusDepthAttachment(*owner.state().getParameter(parameterIds::chorusDepth), chorusDepthRelay, owner.state().undoManager),
+      chorusMixAttachment(*owner.state().getParameter(parameterIds::chorusMix), chorusMixRelay, owner.state().undoManager),
+      delayBypassAttachment(*owner.state().getParameter(parameterIds::delayBypass), delayBypassRelay, owner.state().undoManager),
+      delayDivisionAttachment(*owner.state().getParameter(parameterIds::delayDivision), delayDivisionRelay, owner.state().undoManager),
+      delayFeedbackAttachment(*owner.state().getParameter(parameterIds::delayFeedback), delayFeedbackRelay, owner.state().undoManager),
+      delayMixAttachment(*owner.state().getParameter(parameterIds::delayMix), delayMixRelay, owner.state().undoManager),
+      reverbBypassAttachment(*owner.state().getParameter(parameterIds::reverbBypass), reverbBypassRelay, owner.state().undoManager),
+      reverbRoomSizeAttachment(*owner.state().getParameter(parameterIds::reverbRoomSize), reverbRoomSizeRelay, owner.state().undoManager),
+      reverbDampingAttachment(*owner.state().getParameter(parameterIds::reverbDamping), reverbDampingRelay, owner.state().undoManager),
+      reverbMixAttachment(*owner.state().getParameter(parameterIds::reverbMix), reverbMixRelay, owner.state().undoManager),
+      compressorBypassAttachment(*owner.state().getParameter(parameterIds::compressorBypass), compressorBypassRelay, owner.state().undoManager),
+      compressorThresholdAttachment(*owner.state().getParameter(parameterIds::compressorThreshold), compressorThresholdRelay, owner.state().undoManager),
+      compressorRatioAttachment(*owner.state().getParameter(parameterIds::compressorRatio), compressorRatioRelay, owner.state().undoManager),
+      compressorAttackAttachment(*owner.state().getParameter(parameterIds::compressorAttack), compressorAttackRelay, owner.state().undoManager),
+      compressorReleaseAttachment(*owner.state().getParameter(parameterIds::compressorRelease), compressorReleaseRelay, owner.state().undoManager),
+      compressorMakeupAttachment(*owner.state().getParameter(parameterIds::compressorMakeup), compressorMakeupRelay, owner.state().undoManager),
+      compressorMixAttachment(*owner.state().getParameter(parameterIds::compressorMix), compressorMixRelay, owner.state().undoManager),
+      eqBypassAttachment(*owner.state().getParameter(parameterIds::eqBypass), eqBypassRelay, owner.state().undoManager),
+      eqLowGainAttachment(*owner.state().getParameter(parameterIds::eqLowGain), eqLowGainRelay, owner.state().undoManager),
+      eqMidFrequencyAttachment(*owner.state().getParameter(parameterIds::eqMidFrequency), eqMidFrequencyRelay, owner.state().undoManager),
+      eqMidGainAttachment(*owner.state().getParameter(parameterIds::eqMidGain), eqMidGainRelay, owner.state().undoManager),
+      eqMidQAttachment(*owner.state().getParameter(parameterIds::eqMidQ), eqMidQRelay, owner.state().undoManager),
+      eqHighGainAttachment(*owner.state().getParameter(parameterIds::eqHighGain), eqHighGainRelay, owner.state().undoManager)
 {
     fallback.setText("folk park M2 - native fallback editor", juce::dontSendNotification);
     fallback.setJustificationType(juce::Justification::centred);
@@ -333,6 +381,35 @@ juce::WebBrowserComponent::Options PluginEditor::browserOptions()
         .withOptionsFrom(lfo2ShapeRelay)
         .withOptionsFrom(lfo3ShapeRelay)
         .withOptionsFrom(lfo4ShapeRelay)
+        .withOptionsFrom(distortionBypassRelay)
+        .withOptionsFrom(distortionDriveRelay)
+        .withOptionsFrom(distortionMixRelay)
+        .withOptionsFrom(distortionOutputRelay)
+        .withOptionsFrom(chorusBypassRelay)
+        .withOptionsFrom(chorusRateRelay)
+        .withOptionsFrom(chorusDepthRelay)
+        .withOptionsFrom(chorusMixRelay)
+        .withOptionsFrom(delayBypassRelay)
+        .withOptionsFrom(delayDivisionRelay)
+        .withOptionsFrom(delayFeedbackRelay)
+        .withOptionsFrom(delayMixRelay)
+        .withOptionsFrom(reverbBypassRelay)
+        .withOptionsFrom(reverbRoomSizeRelay)
+        .withOptionsFrom(reverbDampingRelay)
+        .withOptionsFrom(reverbMixRelay)
+        .withOptionsFrom(compressorBypassRelay)
+        .withOptionsFrom(compressorThresholdRelay)
+        .withOptionsFrom(compressorRatioRelay)
+        .withOptionsFrom(compressorAttackRelay)
+        .withOptionsFrom(compressorReleaseRelay)
+        .withOptionsFrom(compressorMakeupRelay)
+        .withOptionsFrom(compressorMixRelay)
+        .withOptionsFrom(eqBypassRelay)
+        .withOptionsFrom(eqLowGainRelay)
+        .withOptionsFrom(eqMidFrequencyRelay)
+        .withOptionsFrom(eqMidGainRelay)
+        .withOptionsFrom(eqMidQRelay)
+        .withOptionsFrom(eqHighGainRelay)
         .withNativeFunction("getUiSnapshot", [this](const auto&, auto complete)
         {
             complete(completeUiSnapshot(ownerProcessor));
@@ -719,6 +796,71 @@ juce::WebBrowserComponent::Options PluginEditor::browserOptions()
                                                      : result.getErrorMessage());
                 });
         })
+        .withNativeFunction("renderAcceptedWav", [this](const auto& arguments, auto finish)
+        {
+            if (!arguments.isEmpty())
+            {
+                finish("Render accepted WAV takes no arguments");
+                return;
+            }
+            if (!ownerProcessor.getCompositionSnapshot().hasAccepted)
+            {
+                finish("Accept a composition before rendering WAV audio");
+                return;
+            }
+            if (wavExportChooserActive)
+            {
+                finish("A WAV destination chooser is already open");
+                return;
+            }
+            wavExportChooserActive = true;
+            wavExportChooser = std::make_unique<juce::FileChooser>(
+                "Render accepted folk park WAV",
+                juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
+                    .getChildFile("folk-park-preview.wav"),
+                "*.wav");
+            const auto safeEditor = juce::Component::SafePointer<PluginEditor>(this);
+            wavExportChooser->launchAsync(
+                juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles
+                    | juce::FileBrowserComponent::warnAboutOverwriting,
+                [safeEditor, completionHandler = std::move(finish)](
+                    const juce::FileChooser& chooser) mutable
+                {
+                    if (safeEditor == nullptr)
+                        return;
+                    safeEditor->wavExportChooserActive = false;
+                    auto file = chooser.getResult();
+                    if (file == juce::File{})
+                    {
+                        completionHandler("WAV rendering cancelled before any file was written");
+                        return;
+                    }
+                    if (file.getFileExtension().isEmpty())
+                    {
+                        const auto withExtension = file.withFileExtension(".wav");
+                        if (withExtension.existsAsFile())
+                        {
+                            completionHandler("That .wav file already exists; choose it explicitly so macOS can confirm replacement");
+                            return;
+                        }
+                        file = withExtension;
+                    }
+                    const auto result = safeEditor->ownerProcessor.requestAcceptedWavRender(file, true);
+                    completionHandler(result.wasOk()
+                        ? "Accepted composition queued for isolated 24-bit WAV rendering"
+                        : result.getErrorMessage());
+                });
+        })
+        .withNativeFunction("cancelAcceptedWav", [this](const auto& arguments, auto complete)
+        {
+            if (!arguments.isEmpty())
+            {
+                complete("Cancel accepted WAV takes no arguments");
+                return;
+            }
+            ownerProcessor.cancelAcceptedWavRender();
+            complete("Offline WAV cancellation requested; live voices were not touched");
+        })
         .withResourceProvider([](const auto& url)
         {
             return resourceFor(url);
@@ -746,6 +888,7 @@ void PluginEditor::timerCallback()
     const auto import = ownerProcessor.getWavetableImportSnapshot();
     const auto routes = ownerProcessor.getConfiguredModulationRoutes();
     const auto composition = ownerProcessor.getCompositionSnapshot();
+    const auto rendered = ownerProcessor.getAcceptedWavRenderSnapshot();
     midiDrag->updateAvailability(composition.hasAccepted);
     auto snapshot = juce::DynamicObject::Ptr(new juce::DynamicObject());
     snapshot->setProperty("schemaVersion", 1);
@@ -766,6 +909,10 @@ void PluginEditor::timerCallback()
     snapshot->setProperty("compositionCandidateNotes", composition.candidateNoteCount);
     snapshot->setProperty("compositionAcceptedNotes", composition.acceptedNoteCount);
     snapshot->setProperty("directMidiPlaying", ownerProcessor.isDirectMidiPlaying());
+    snapshot->setProperty("renderStatus", renderStatusName(rendered.status));
+    snapshot->setProperty("renderMessage", rendered.message);
+    snapshot->setProperty("renderDestination", rendered.destination);
+    snapshot->setProperty("renderDuration", rendered.durationSeconds);
     browser->emitEventIfBrowserIsVisible("processorSnapshot", juce::var(snapshot.get()));
 }
 

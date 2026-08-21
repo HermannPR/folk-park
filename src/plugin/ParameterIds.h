@@ -61,4 +61,34 @@ inline constexpr std::array lfoSyncDivision{
 inline constexpr std::array lfoPhase{"lfo1Phase", "lfo2Phase", "lfo3Phase", "lfo4Phase"};
 inline constexpr std::array lfoTempoSync{"lfo1TempoSync", "lfo2TempoSync", "lfo3TempoSync", "lfo4TempoSync"};
 inline constexpr std::array lfoRetrigger{"lfo1Retrigger", "lfo2Retrigger", "lfo3Retrigger", "lfo4Retrigger"};
+
+inline constexpr auto distortionBypass = "distBypass";
+inline constexpr auto distortionDrive = "distDrive";
+inline constexpr auto distortionMix = "distMix";
+inline constexpr auto distortionOutput = "distOutput";
+inline constexpr auto chorusBypass = "chorusBypass";
+inline constexpr auto chorusRate = "chorusRate";
+inline constexpr auto chorusDepth = "chorusDepth";
+inline constexpr auto chorusMix = "chorusMix";
+inline constexpr auto delayBypass = "delayBypass";
+inline constexpr auto delayDivision = "delayDivision";
+inline constexpr auto delayFeedback = "delayFeedback";
+inline constexpr auto delayMix = "delayMix";
+inline constexpr auto reverbBypass = "reverbBypass";
+inline constexpr auto reverbRoomSize = "reverbRoomSize";
+inline constexpr auto reverbDamping = "reverbDamping";
+inline constexpr auto reverbMix = "reverbMix";
+inline constexpr auto compressorBypass = "compBypass";
+inline constexpr auto compressorThreshold = "compThreshold";
+inline constexpr auto compressorRatio = "compRatio";
+inline constexpr auto compressorAttack = "compAttack";
+inline constexpr auto compressorRelease = "compRelease";
+inline constexpr auto compressorMakeup = "compMakeup";
+inline constexpr auto compressorMix = "compMix";
+inline constexpr auto eqBypass = "eqBypass";
+inline constexpr auto eqLowGain = "eqLowGain";
+inline constexpr auto eqMidFrequency = "eqMidFrequency";
+inline constexpr auto eqMidGain = "eqMidGain";
+inline constexpr auto eqMidQ = "eqMidQ";
+inline constexpr auto eqHighGain = "eqHighGain";
 }
