@@ -18,6 +18,7 @@ if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/JUCE/CMakeLists.txt")
 endif()
 
 add_subdirectory(third_party/JUCE EXCLUDE_FROM_ALL)
+find_package(SQLite3 REQUIRED)
 
 juce_add_binary_data(FolkParkAssets
     NAMESPACE FolkParkAssets
@@ -202,6 +203,24 @@ target_link_libraries(FolkParkPresetTests PRIVATE
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags)
 add_test(NAME FolkParkPresetPersistenceTests COMMAND FolkParkPresetTests)
+
+juce_add_console_app(FolkParkHistoryTests PRODUCT_NAME "folk park history tests")
+target_sources(FolkParkHistoryTests PRIVATE
+    tests/HistoryTests.cpp
+    src/persistence/CompositionJson.cpp
+    src/persistence/CompositionJson.h
+    src/persistence/HistoryRepository.cpp
+    src/persistence/HistoryRepository.h
+    src/midi/Composition.cpp
+    src/midi/Composition.h)
+target_include_directories(FolkParkHistoryTests PRIVATE src)
+target_compile_definitions(FolkParkHistoryTests PRIVATE JUCE_USE_CURL=0)
+target_link_libraries(FolkParkHistoryTests PRIVATE
+    SQLite3::SQLite3
+    juce::juce_core
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)
+add_test(NAME FolkParkHistoryRepositoryTests COMMAND FolkParkHistoryTests)
 
 juce_add_console_app(FolkParkCompositionTests PRODUCT_NAME "folk park composition tests")
 target_sources(FolkParkCompositionTests PRIVATE
