@@ -11,7 +11,7 @@ A preset contains:
 - exactly the complete normalized C++ parameter catalog through M5, split into 73 synth/modulation values and 29 values in the six ordered effect records;
 - up to 32 validated modulation routes;
 - the fixed Distortion, Chorus, Delay, Reverb, Compressor, EQ order and state;
-- bounded content-addressed wavetable/sample asset references with lowercase SHA-256, byte length, preset-relative path, and safe recovery display metadata;
+- up to two content-addressed user-WAV wavetable references with lowercase SHA-256, byte length, preset-relative path, and safe recovery display metadata; a general sample oscillator requires a future schema because it is outside Release 0.1;
 - optional bounded WAV preview metadata;
 - original schema version and ordered migration-step provenance;
 - inert unknown top-level fields preserved for compatible future metadata.
@@ -25,7 +25,7 @@ The native codec must reject input before publication when any of these checks f
 - maximum preset bytes, JSON nesting depth, member count, array count, or string length;
 - malformed UTF-8/JSON, duplicate security-sensitive IDs, non-finite numbers, missing required fields, or unsupported schema version;
 - unknown nested fields in asset/path, route, effect, or parameter records;
-- absolute paths, backslashes, empty segments, `.`/`..`, percent-encoded traversal, or anything outside `assets/<lowercase-sha256>.wav|fkwt`;
+- absolute paths, backslashes, empty segments, `.`/`..`, percent-encoded traversal, or anything outside `assets/<lowercase-sha256>.wav`;
 - a file, decoded WAV, converted table, or declared length outside the documented bound;
 - a declared hash/length that does not match the selected local asset;
 - symlink resolution outside the preset/asset root.

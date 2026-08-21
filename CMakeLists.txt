@@ -51,6 +51,9 @@ target_sources(FolkPark PRIVATE
     src/plugin/PluginProcessor.cpp
     src/plugin/PluginProcessor.h
     src/plugin/ParameterIds.h
+    src/common/ParameterIds.h
+    src/persistence/Preset.cpp
+    src/persistence/Preset.h
     src/render/OfflinePreviewRenderer.cpp
     src/render/OfflinePreviewRenderer.h
     src/midi/MidiProof.cpp
@@ -174,6 +177,31 @@ target_link_libraries(FolkParkOfflinePreviewTests PRIVATE
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags)
 add_test(NAME FolkParkOfflinePreviewIsolationTests COMMAND FolkParkOfflinePreviewTests)
+
+juce_add_console_app(FolkParkPresetTests PRODUCT_NAME "folk park preset tests")
+target_sources(FolkParkPresetTests PRIVATE
+    tests/PresetTests.cpp
+    src/persistence/Preset.cpp
+    src/persistence/Preset.h
+    src/common/ParameterIds.h
+    src/synth/Modulation.cpp
+    src/synth/Modulation.h
+    src/synth/WavetableBank.cpp
+    src/synth/WavetableBank.h
+    src/synth/WavetableConverter.cpp
+    src/synth/WavetableConverter.h)
+target_include_directories(FolkParkPresetTests PRIVATE src)
+target_compile_definitions(FolkParkPresetTests PRIVATE
+    JUCE_USE_CURL=0
+    FOLK_PARK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(FolkParkPresetTests PRIVATE
+    juce::juce_audio_formats
+    juce::juce_core
+    juce::juce_cryptography
+    juce::juce_dsp
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)
+add_test(NAME FolkParkPresetPersistenceTests COMMAND FolkParkPresetTests)
 
 juce_add_console_app(FolkParkCompositionTests PRODUCT_NAME "folk park composition tests")
 target_sources(FolkParkCompositionTests PRIVATE
