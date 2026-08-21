@@ -1,0 +1,37 @@
+folk park M0 verification
+Date: 2026-08-20 America/Monterrey
+Machine: Intel x86_64, macOS 15.7.9 (24G830)
+Toolchain: Apple clang 17.0.0, macOS SDK 15.5, CMake 4.4.2, Ninja 1.13.0, JUCE 8.0.13 @ 7c9d3783b127263d72bb65fe0a7e2dc8a02a7ac2
+Host installed: FL Studio 26.1.4.5356, x86_64-capable
+
+Clean configure/build command family:
+  ./scripts/bootstrap_macos.sh
+  ./scripts/build_x86_64.sh
+
+Final build result:
+  Debug Standalone: PASS, Mach-O 64-bit executable x86_64
+  Debug VST3: PASS, Mach-O 64-bit bundle x86_64
+  Release Standalone: PASS, Mach-O 64-bit executable x86_64
+  Release VST3: PASS, Mach-O 64-bit bundle x86_64
+  Release VST3 codesign verification: valid on disk; satisfies Designated Requirement; ad-hoc/local only
+  Release VST3 binary SHA-256: 9a5326bdeb94eaafb1307988e50eea4d89ff3aa76e78023bd4d1ba0b2cd992ac
+
+Automated tests:
+  Debug FolkParkM0Tests: PASS (deterministic MIDI bytes, reopen, PPQ, note-on/note-off lifecycle)
+  Release FolkParkM0Tests: PASS
+
+Validator:
+  pluginval 1.0.4, strictness 5: SUCCESS
+  Report SHA-256: 10fb59b06a41a12a7cda60d8704e82dee756a67da2a6281d5fc685fae49c68b1
+  Covered: scan, cold/warm open, editor, editor while processing, state, automation, parameter access, stereo buses, and audio processing at 44.1/48/96 kHz with 64/128/256/512/1024-sample blocks.
+  Explicit gap: pluginval's optional separate Steinberg validator subtest was skipped because no validator path was installed.
+
+Bundled WebView proof:
+  Visual: evidence/m0/standalone-webview-bridge.png
+  SHA-256: 15224aae43a1d1dc6034ad00401f7eb0e760b644686eab0524fc1ee804b3a534
+  Shows: x86_64 native function, native event, offline bundled shell, explicit MIDI drag control.
+  Source scan outside third_party/build: no localhost or 127.0.0.1 development-server reference.
+
+Human status:
+  FL Studio discovery, sound, MIDI drag/routing, project restore, automation, focus, and render cases: HUMAN RUN REQUIRED.
+  M0 shell intentionally emits silence. A playable synth begins at M1.

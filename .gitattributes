@@ -1,0 +1,2 @@
+# Preserve validator output byte-for-byte, including formatting emitted by the tool.
+evidence/m0/pluginval/*.txt whitespace=-trailing-space
