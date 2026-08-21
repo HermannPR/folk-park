@@ -1,0 +1,11 @@
+# Third-party licenses and asset provenance
+
+No folk park binary is authorized for public distribution at this checkpoint.
+
+| Component | Pin | Purpose | License status |
+| --- | --- | --- | --- |
+| JUCE | 8.0.13, `7c9d3783b127263d72bb65fe0a7e2dc8a02a7ac2` | Plug-in framework, DSP/platform/UI integration | JUCE 8 license choice remains an owner decision before distribution. Starter, Indie, Pro, and Educational terms have different eligibility. |
+| VST3 SDK as bundled by JUCE | JUCE pin above | VST3 target | VST 3.8+ SDK is MIT-licensed; trademark usage remains subject to Steinberg guidelines. |
+| React/TypeScript/Vite | Not added yet | Bundled WebView UI | Pin, lock, and record before addition. |
+
+Project-created waveforms and UI assets must have provenance recorded here. User-imported WAV files remain user-owned and are not committed. Serum factory assets, names, artwork, source code, and private preset payloads are prohibited.

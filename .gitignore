@@ -1,0 +1,29 @@
+# Build products
+/build/
+/out/
+/artifacts/
+/evidence/**/generated/
+
+# Apple and IDE metadata
+.DS_Store
+*.xcuserstate
+.idea/
+.vscode/
+.zed/
+
+# Web UI dependencies and output
+/ui/node_modules/
+/ui/dist/
+
+# Local credentials and environment
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# Runtime user data
+*.db
+*.db-shm
+*.db-wal
+*.folkparkpreset.tmp
