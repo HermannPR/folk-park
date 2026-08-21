@@ -1,0 +1,66 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "macos-x86_64-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_OSX_ARCHITECTURES": "x86_64",
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "12.0",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "macos-x86_64-debug",
+      "inherits": "macos-x86_64-base",
+      "displayName": "Intel macOS Debug",
+      "binaryDir": "${sourceDir}/build/macos-x86_64-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "macos-x86_64-release",
+      "inherits": "macos-x86_64-base",
+      "displayName": "Intel macOS Release",
+      "binaryDir": "${sourceDir}/build/macos-x86_64-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "macos-x86_64-debug",
+      "configurePreset": "macos-x86_64-debug",
+      "jobs": 6
+    },
+    {
+      "name": "macos-x86_64-release",
+      "configurePreset": "macos-x86_64-release",
+      "jobs": 6
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "macos-x86_64-debug",
+      "configurePreset": "macos-x86_64-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "macos-x86_64-release",
+      "configurePreset": "macos-x86_64-release",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

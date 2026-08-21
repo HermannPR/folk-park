@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>folk park M0</title>
+    <style>
+      :root { color-scheme: dark; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; color: #f4f2ff; background: radial-gradient(circle at 72% 22%, #312367 0, transparent 32%), linear-gradient(145deg, #080a12, #151227 62%, #080a12); }
+      main { min-height: 100vh; display: grid; place-items: center; padding: 42px; }
+      .panel { width: min(840px, 100%); padding: 42px; border: 1px solid #ffffff2e; border-radius: 28px; background: linear-gradient(135deg, #ffffff14, #ffffff05); box-shadow: inset 0 1px #ffffff38, 0 30px 90px #0009; backdrop-filter: blur(24px); }
+      .eyebrow { color: #a99aff; letter-spacing: .22em; text-transform: uppercase; font-size: 12px; }
+      h1 { margin: 10px 0 4px; font-size: clamp(48px, 8vw, 88px); font-weight: 650; letter-spacing: -.055em; }
+      p { color: #c8c2dc; line-height: 1.55; max-width: 620px; }
+      .status { display: flex; gap: 10px; align-items: center; margin-top: 28px; padding: 14px 16px; border-radius: 14px; background: #05060b88; }
+      .dot { width: 9px; height: 9px; border-radius: 50%; background: #ffb84d; box-shadow: 0 0 18px #ffb84d; }
+      .dot.ok { background: #6af5b0; box-shadow: 0 0 18px #6af5b0; }
+      button { margin-top: 24px; border: 1px solid #b9adff66; border-radius: 999px; padding: 11px 18px; color: white; background: #7966e733; font: inherit; cursor: pointer; }
+      button:focus-visible { outline: 3px solid #cfc7ff; outline-offset: 3px; }
+      code { color: #cfc7ff; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="panel">
+        <div class="eyebrow">Silicon Dreams / engineering shell</div>
+        <h1>folk park</h1>
+        <p>An original wavetable instrument and deterministic composition assistant. This M0 interface proves a bundled, offline C++ ↔ JavaScript bridge; it is not the production synth UI.</p>
+        <button id="probe" type="button">Check native bridge</button>
+        <div class="status"><span id="function-dot" class="dot"></span><span id="function-message">Waiting for native function…</span></div>
+        <div class="status"><span id="event-dot" class="dot"></span><span id="event-message">Waiting for C++ event…</span></div>
+        <p><small>MIDI drag proof remains an explicit producer action using the native strip below the WebView.</small></p>
+      </section>
+    </main>
+    <script type="module">
+      import { getNativeFunction } from "./juce.js";
+
+      const functionMessage = document.querySelector("#function-message");
+      const functionDot = document.querySelector("#function-dot");
+      const eventMessage = document.querySelector("#event-message");
+      const eventDot = document.querySelector("#event-dot");
+      const getProductInfo = getNativeFunction("getProductInfo");
+
+      window.__JUCE__.backend.addEventListener("processorSnapshot", (snapshot) => {
+        eventMessage.textContent = `Native event: ${snapshot.product} ${snapshot.version} / ${snapshot.state}`;
+        eventDot.classList.add("ok");
+      });
+
+      getProductInfo().then((info) => {
+        functionMessage.textContent = `Native function: ${info.product} ${info.version} (${info.architecture})`;
+        functionDot.classList.add("ok");
+      });
+
+      document.querySelector("#probe").addEventListener("click", async () => {
+        const info = await getProductInfo();
+        functionMessage.textContent = `Native function: ${info.product} ${info.version} (${info.architecture})`;
+        functionDot.classList.add("ok");
+      });
+    </script>
+  </body>
+</html>
