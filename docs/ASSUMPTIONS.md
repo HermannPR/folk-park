@@ -7,9 +7,9 @@
 - Full Xcode is not currently selected; `/Library/Developer/CommandLineTools` is active.
 - FL Studio 26.1.4.5356 is installed and contains an x86_64 host binary.
 - Node 24.18.1 and npm 11.16.0 are installed.
-- CMake, Ninja, JUCE, and GitHub CLI were absent at initial inspection.
+- CMake, Ninja, JUCE, and GitHub CLI were absent at initial inspection; user-local CMake/Ninja/GitHub CLI and pinned JUCE were subsequently installed or bootstrapped for this repository.
 
-## Product defaults used for M0
+## Product defaults used through M1
 
 - User-facing name is `folk park`; code/CMake name is `FolkPark`; version is 0.1.0.
 - Bundle identifier remains the provisional `com.folkpark.audio.folkpark`.

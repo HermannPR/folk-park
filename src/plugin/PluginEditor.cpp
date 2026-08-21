@@ -56,9 +56,25 @@ private:
 };
 
 PluginEditor::PluginEditor(PluginProcessor& owner)
-    : AudioProcessorEditor(&owner)
+    : AudioProcessorEditor(&owner),
+      ownerProcessor(owner),
+      masterGainAttachment(*owner.state().getParameter(parameterIds::masterGain),
+                           masterGainRelay,
+                           owner.state().undoManager),
+      cutoffAttachment(*owner.state().getParameter(parameterIds::filterCutoff),
+                       cutoffRelay,
+                       owner.state().undoManager),
+      attackAttachment(*owner.state().getParameter(parameterIds::ampAttack),
+                       attackRelay,
+                       owner.state().undoManager),
+      releaseAttachment(*owner.state().getParameter(parameterIds::ampRelease),
+                        releaseRelay,
+                        owner.state().undoManager),
+      waveformAttachment(*owner.state().getParameter(parameterIds::oscillatorWaveform),
+                         waveformRelay,
+                         owner.state().undoManager)
 {
-    fallback.setText("folk park M0 — native fallback editor", juce::dontSendNotification);
+    fallback.setText("folk park M1 — native fallback editor", juce::dontSendNotification);
     fallback.setJustificationType(juce::Justification::centred);
     fallback.setColour(juce::Label::textColourId, juce::Colours::white);
     addAndMakeVisible(fallback);
@@ -89,6 +105,11 @@ juce::WebBrowserComponent::Options PluginEditor::browserOptions()
 {
     return juce::WebBrowserComponent::Options{}
         .withNativeIntegrationEnabled()
+        .withOptionsFrom(masterGainRelay)
+        .withOptionsFrom(cutoffRelay)
+        .withOptionsFrom(attackRelay)
+        .withOptionsFrom(releaseRelay)
+        .withOptionsFrom(waveformRelay)
         .withNativeFunction("getProductInfo", [](const auto&, auto complete)
         {
             auto info = juce::DynamicObject::Ptr(new juce::DynamicObject());
@@ -96,6 +117,11 @@ juce::WebBrowserComponent::Options PluginEditor::browserOptions()
             info->setProperty("version", FOLK_PARK_VERSION);
             info->setProperty("architecture", "x86_64");
             complete(juce::var(info.get()));
+        })
+        .withNativeFunction("panic", [this](const auto&, auto complete)
+        {
+            ownerProcessor.requestPanic();
+            complete("Panic queued safely for the next audio block");
         })
         .withResourceProvider([](const auto& url)
         {
@@ -128,6 +154,7 @@ void PluginEditor::timerCallback()
     snapshot->setProperty("product", "folk park");
     snapshot->setProperty("version", FOLK_PARK_VERSION);
     snapshot->setProperty("state", "bundled bridge online");
+    snapshot->setProperty("activeVoices", ownerProcessor.getActiveVoiceCount());
     browser->emitEventIfBrowserIsVisible("processorSnapshot", juce::var(snapshot.get()));
     ++snapshotAttempts;
 }

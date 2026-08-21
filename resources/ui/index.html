@@ -3,47 +3,104 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>folk park M0</title>
+    <title>folk park M1</title>
     <style>
       :root { color-scheme: dark; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
       * { box-sizing: border-box; }
       body { margin: 0; min-height: 100vh; color: #f4f2ff; background: radial-gradient(circle at 72% 22%, #312367 0, transparent 32%), linear-gradient(145deg, #080a12, #151227 62%, #080a12); }
-      main { min-height: 100vh; display: grid; place-items: center; padding: 42px; }
-      .panel { width: min(840px, 100%); padding: 42px; border: 1px solid #ffffff2e; border-radius: 28px; background: linear-gradient(135deg, #ffffff14, #ffffff05); box-shadow: inset 0 1px #ffffff38, 0 30px 90px #0009; backdrop-filter: blur(24px); }
+      main { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+      .panel { width: min(960px, 100%); padding: 30px 34px; border: 1px solid #ffffff2e; border-radius: 28px; background: linear-gradient(135deg, #ffffff14, #ffffff05); box-shadow: inset 0 1px #ffffff38, 0 30px 90px #0009; backdrop-filter: blur(24px); }
       .eyebrow { color: #a99aff; letter-spacing: .22em; text-transform: uppercase; font-size: 12px; }
-      h1 { margin: 10px 0 4px; font-size: clamp(48px, 8vw, 88px); font-weight: 650; letter-spacing: -.055em; }
+      h1 { margin: 6px 0 2px; font-size: clamp(42px, 7vw, 72px); font-weight: 650; letter-spacing: -.055em; }
       p { color: #c8c2dc; line-height: 1.55; max-width: 620px; }
-      .status { display: flex; gap: 10px; align-items: center; margin-top: 28px; padding: 14px 16px; border-radius: 14px; background: #05060b88; }
+      .controls { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 22px 0; }
+      .control { min-width: 0; padding: 12px; border: 1px solid #ffffff1f; border-radius: 14px; background: #05060b66; }
+      .control label { display: flex; justify-content: space-between; gap: 8px; color: #e4e0f4; font-size: 12px; }
+      .control output { color: #a99aff; font-variant-numeric: tabular-nums; }
+      input[type="range"] { width: 100%; accent-color: #9b87ff; }
+      select { width: 100%; margin-top: 10px; border: 1px solid #ffffff2e; border-radius: 8px; padding: 7px; color: white; background: #171326; }
+      .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .status { display: flex; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 14px; background: #05060b88; }
       .dot { width: 9px; height: 9px; border-radius: 50%; background: #ffb84d; box-shadow: 0 0 18px #ffb84d; }
       .dot.ok { background: #6af5b0; box-shadow: 0 0 18px #6af5b0; }
-      button { margin-top: 24px; border: 1px solid #b9adff66; border-radius: 999px; padding: 11px 18px; color: white; background: #7966e733; font: inherit; cursor: pointer; }
+      .actions { display: flex; gap: 10px; }
+      button { border: 1px solid #b9adff66; border-radius: 999px; padding: 10px 16px; color: white; background: #7966e733; font: inherit; cursor: pointer; }
       button:focus-visible { outline: 3px solid #cfc7ff; outline-offset: 3px; }
       code { color: #cfc7ff; }
+      @media (max-width: 840px) { .controls { grid-template-columns: repeat(2, 1fr); } .status-grid { grid-template-columns: 1fr; } }
     </style>
   </head>
   <body>
     <main>
       <section class="panel">
-        <div class="eyebrow">Silicon Dreams / engineering shell</div>
+        <div class="eyebrow">Silicon Dreams / playable M1</div>
         <h1>folk park</h1>
-        <p>An original wavetable instrument and deterministic composition assistant. This M0 interface proves a bundled, offline C++ ↔ JavaScript bridge; it is not the production synth UI.</p>
-        <button id="probe" type="button">Check native bridge</button>
-        <div class="status"><span id="function-dot" class="dot"></span><span id="function-message">Waiting for native function…</span></div>
-        <div class="status"><span id="event-dot" class="dot"></span><span id="event-message">Waiting for C++ event…</span></div>
-        <p><small>MIDI drag proof remains an explicit producer action using the native strip below the WebView.</small></p>
+        <p>M1 playable slice: one project-generated wavetable oscillator, sine sub, ADSR, low-pass filter, 16 deterministic voices, and explicit producer actions.</p>
+        <div class="controls">
+          <div class="control"><label for="waveform">Waveform</label><select id="waveform"></select></div>
+          <div class="control"><label for="master-gain">Master <output id="master-gain-value">…</output></label><input id="master-gain" type="range" min="0" max="1" step="0.001" /></div>
+          <div class="control"><label for="filter-cutoff">Cutoff <output id="filter-cutoff-value">…</output></label><input id="filter-cutoff" type="range" min="0" max="1" step="0.001" /></div>
+          <div class="control"><label for="amp-attack">Attack <output id="amp-attack-value">…</output></label><input id="amp-attack" type="range" min="0" max="1" step="0.001" /></div>
+          <div class="control"><label for="amp-release">Release <output id="amp-release-value">…</output></label><input id="amp-release" type="range" min="0" max="1" step="0.001" /></div>
+        </div>
+        <div class="actions"><button id="probe" type="button">Check native bridge</button><button id="panic" type="button">Panic / all notes off</button></div>
+        <div class="status-grid">
+          <div class="status"><span id="function-dot" class="dot"></span><span id="function-message">Waiting for native function…</span></div>
+          <div class="status"><span id="event-dot" class="dot"></span><span id="event-message">Waiting for C++ event…</span></div>
+        </div>
+        <p><small>MIDI drag and DAW insertion remain explicit producer actions.</small></p>
       </section>
     </main>
     <script type="module">
-      import { getNativeFunction } from "./juce.js";
+      import { getComboBoxState, getNativeFunction, getSliderState } from "./juce.js";
 
       const functionMessage = document.querySelector("#function-message");
       const functionDot = document.querySelector("#function-dot");
       const eventMessage = document.querySelector("#event-message");
       const eventDot = document.querySelector("#event-dot");
       const getProductInfo = getNativeFunction("getProductInfo");
+      const panic = getNativeFunction("panic");
+
+      function connectSlider(elementId, relayName, decimals = 2) {
+        const input = document.querySelector(`#${elementId}`);
+        const output = document.querySelector(`#${elementId}-value`);
+        const state = getSliderState(relayName);
+        const update = () => {
+          input.value = state.getNormalisedValue();
+          const suffix = state.properties.label ? ` ${state.properties.label}` : "";
+          output.textContent = `${state.getScaledValue().toFixed(decimals)}${suffix}`;
+        };
+        state.valueChangedEvent.addListener(update);
+        state.propertiesChangedEvent.addListener(update);
+        input.addEventListener("pointerdown", () => state.sliderDragStarted());
+        input.addEventListener("pointerup", () => state.sliderDragEnded());
+        input.addEventListener("pointercancel", () => state.sliderDragEnded());
+        input.addEventListener("input", () => state.setNormalisedValue(Number(input.value)));
+        update();
+      }
+
+      function connectWaveform() {
+        const select = document.querySelector("#waveform");
+        const state = getComboBoxState("oscWaveform");
+        const updateProperties = () => {
+          select.replaceChildren(...state.properties.choices.map((choice, index) => new Option(choice, index)));
+          select.value = state.getChoiceIndex();
+        };
+        const updateValue = () => { select.value = state.getChoiceIndex(); };
+        state.propertiesChangedEvent.addListener(updateProperties);
+        state.valueChangedEvent.addListener(updateValue);
+        select.addEventListener("change", () => state.setChoiceIndex(Number(select.value)));
+        updateProperties();
+      }
+
+      connectSlider("master-gain", "masterGain", 1);
+      connectSlider("filter-cutoff", "filterCutoff", 0);
+      connectSlider("amp-attack", "ampAttack", 3);
+      connectSlider("amp-release", "ampRelease", 3);
+      connectWaveform();
 
       window.__JUCE__.backend.addEventListener("processorSnapshot", (snapshot) => {
-        eventMessage.textContent = `Native event: ${snapshot.product} ${snapshot.version} / ${snapshot.state}`;
+        eventMessage.textContent = `Native event: ${snapshot.activeVoices} active voices / ${snapshot.state}`;
         eventDot.classList.add("ok");
       });
 
@@ -55,6 +112,11 @@
       document.querySelector("#probe").addEventListener("click", async () => {
         const info = await getProductInfo();
         functionMessage.textContent = `Native function: ${info.product} ${info.version} (${info.architecture})`;
+        functionDot.classList.add("ok");
+      });
+
+      document.querySelector("#panic").addEventListener("click", async () => {
+        functionMessage.textContent = await panic();
         functionDot.classList.add("ok");
       });
     </script>

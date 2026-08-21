@@ -1,0 +1,17 @@
+# Product-owner amendments
+
+This file records instructions added by the product owner after the immutable version 1.0 DOCX baseline. These requirements add to the baseline and may not silently weaken its safety, legal, real-time, validation, or explicit-acceptance rules.
+
+## 2026-08-20 — Guided AI sound walkthrough
+
+Folk Park must offer an optional assistant that helps the producer reach a sound accurately without requiring them to understand every synth control.
+
+- Entry modes: describe a sound directly, choose a guided walkthrough, or continue editing manually with the assistant off.
+- The walkthrough asks a small adaptive sequence about musical role, timbre, articulation, movement, space, intensity, genre/context, and any reference description the producer chooses to provide.
+- The interface shows progress and begins forming a response as sufficient intent becomes available. It must not pretend certainty when the request is ambiguous; it asks a targeted follow-up instead.
+- Output is a structured `ParameterProposal`: catalogued parameter IDs, bounded values, current-to-proposed differences, a concise explanation, assumptions, and confidence/uncertainty where useful.
+- The producer can audition A/B, refine conversationally, undo, reject, or explicitly accept. No proposal auto-commits and no AI path writes directly to the audio thread or DAW.
+- Manual controls remain fully functional. Offline deterministic assistance remains available without an account or API key; any remote provider is optional and follows the credential/privacy gate.
+- Later composition assistance may use the same conversational pattern for samples, chords, melodies, bass, arpeggios, MIDI, and sound generation, while preserving deterministic validated delivery and explicit producer action.
+
+Planned milestone placement: define schemas alongside M3 composition models, build the production interaction in M4, add reversible preview/history support in M6, and implement the offline text/provider workflow in M7.
