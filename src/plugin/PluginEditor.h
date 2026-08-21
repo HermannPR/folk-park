@@ -32,7 +32,14 @@ private:
     juce::WebSliderRelay cutoffRelay{parameterIds::filterCutoff};
     juce::WebSliderRelay attackRelay{parameterIds::ampAttack};
     juce::WebSliderRelay releaseRelay{parameterIds::ampRelease};
+    juce::WebSliderRelay oscillatorAPositionRelay{parameterIds::oscillatorAPosition};
+    juce::WebSliderRelay oscillatorBPositionRelay{parameterIds::oscillatorBPosition};
+    juce::WebSliderRelay oscillatorBLevelRelay{parameterIds::oscillatorBLevel};
+    juce::WebSliderRelay filterResonanceRelay{parameterIds::filterResonance};
+    juce::WebSliderRelay filterDriveRelay{parameterIds::filterDrive};
+    juce::WebSliderRelay lfo1RateRelay{parameterIds::lfoRate[0]};
     juce::WebComboBoxRelay waveformRelay{parameterIds::oscillatorWaveform};
+    juce::WebComboBoxRelay filterModeRelay{parameterIds::filterMode};
 
     juce::Label fallback;
     std::unique_ptr<LocalBrowser> browser;
@@ -41,8 +48,16 @@ private:
     juce::WebSliderParameterAttachment cutoffAttachment;
     juce::WebSliderParameterAttachment attackAttachment;
     juce::WebSliderParameterAttachment releaseAttachment;
+    juce::WebSliderParameterAttachment oscillatorAPositionAttachment;
+    juce::WebSliderParameterAttachment oscillatorBPositionAttachment;
+    juce::WebSliderParameterAttachment oscillatorBLevelAttachment;
+    juce::WebSliderParameterAttachment filterResonanceAttachment;
+    juce::WebSliderParameterAttachment filterDriveAttachment;
+    juce::WebSliderParameterAttachment lfo1RateAttachment;
     juce::WebComboBoxParameterAttachment waveformAttachment;
-    int snapshotAttempts = 0;
+    juce::WebComboBoxParameterAttachment filterModeAttachment;
+    std::unique_ptr<juce::FileChooser> wavetableChooser;
+    bool wavetableChooserActive = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginEditor)
 };

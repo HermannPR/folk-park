@@ -16,4 +16,13 @@ Every function reachable from `processBlock` must avoid allocation/deallocation,
 
 ## Review gate
 
-Every DSP change must document allocations and ownership, add a finite-output/reset test, and be reviewed from `processBlock` down. Allocation instrumentation is a planned M1/M2 debug aid; until it exists, the limitation must remain visible in `docs/PROGRESS.md`.
+Every DSP change must document allocations and ownership, add a finite-output/reset test, and be reviewed from `processBlock` down.
+
+## M2 measured implementation
+
+- Voices, oscillator phases, envelope/filter/LFO/noise state, modulation destinations, and unison lane fades are fixed-capacity members.
+- Each oscillator owns a three-slot fixed wavetable exchange. Conversion and FFT mip construction occur on a single non-audio worker; only a validated immutable bank is copied into a free slot.
+- A pending bank activates at a block boundary and uses a fixed 128-sample crossfade. Slot retirement changes atomic state only; it does not destroy heap objects from audio.
+- Modulation uses two fixed 32-route snapshots. Validation/copy occurs outside audio and complete snapshots activate at a block boundary.
+- Audible continuous oscillator and filter values use fixed per-sample smoothing; unison count uses per-lane weights rather than allocation or voice-container changes.
+- `tests/RealtimeTests.cpp` overrides allocation entry points and measures 32 process blocks after setup. The test includes pending wavetable and modulation activation plus table crossfade and currently reports zero allocations in Debug and Release.

@@ -52,7 +52,17 @@ target_sources(FolkPark PRIVATE
     src/midi/MidiProof.cpp
     src/midi/MidiProof.h
     src/synth/SynthEngine.cpp
-    src/synth/SynthEngine.h)
+    src/synth/SynthEngine.h
+    src/synth/Modulation.cpp
+    src/synth/Modulation.h
+    src/synth/WavetableBank.cpp
+    src/synth/WavetableBank.h
+    src/synth/WavetableConverter.cpp
+    src/synth/WavetableConverter.h
+    src/synth/WavetableExchange.cpp
+    src/synth/WavetableExchange.h
+    src/synth/WavetableImportService.cpp
+    src/synth/WavetableImportService.h)
 
 target_include_directories(FolkPark PRIVATE src)
 
@@ -69,6 +79,8 @@ target_link_libraries(FolkPark
     PRIVATE
         FolkParkAssets
         juce::juce_audio_utils
+        juce::juce_cryptography
+        juce::juce_dsp
         juce::juce_gui_extra
     PUBLIC
         juce::juce_recommended_config_flags
@@ -83,17 +95,50 @@ target_sources(FolkParkTests PRIVATE
     src/midi/MidiProof.cpp
     src/midi/MidiProof.h
     src/synth/SynthEngine.cpp
-    src/synth/SynthEngine.h)
+    src/synth/SynthEngine.h
+    src/synth/Modulation.cpp
+    src/synth/Modulation.h
+    src/synth/WavetableBank.cpp
+    src/synth/WavetableBank.h
+    src/synth/WavetableConverter.cpp
+    src/synth/WavetableConverter.h
+    src/synth/WavetableExchange.cpp
+    src/synth/WavetableExchange.h
+    src/synth/WavetableImportService.cpp
+    src/synth/WavetableImportService.h)
 target_include_directories(FolkParkTests PRIVATE src)
 target_compile_definitions(FolkParkTests PRIVATE JUCE_WEB_BROWSER=1 JUCE_USE_CURL=0)
 target_link_libraries(FolkParkTests PRIVATE
     juce::juce_audio_formats
     juce::juce_core
+    juce::juce_cryptography
+    juce::juce_dsp
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags)
 
 enable_testing()
 add_test(NAME FolkParkNativeTests COMMAND FolkParkTests)
+
+juce_add_console_app(FolkParkRealtimeTests PRODUCT_NAME "folk park real-time allocation tests")
+target_sources(FolkParkRealtimeTests PRIVATE
+    tests/RealtimeTests.cpp
+    src/synth/SynthEngine.cpp
+    src/synth/SynthEngine.h
+    src/synth/Modulation.cpp
+    src/synth/Modulation.h
+    src/synth/WavetableBank.cpp
+    src/synth/WavetableBank.h
+    src/synth/WavetableExchange.cpp
+    src/synth/WavetableExchange.h)
+target_include_directories(FolkParkRealtimeTests PRIVATE src)
+target_compile_definitions(FolkParkRealtimeTests PRIVATE JUCE_USE_CURL=0)
+target_link_libraries(FolkParkRealtimeTests PRIVATE
+    juce::juce_audio_basics
+    juce::juce_core
+    juce::juce_dsp
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)
+add_test(NAME FolkParkRealtimeAllocationTests COMMAND FolkParkRealtimeTests)
 
 juce_add_console_app(FolkParkPluginTests PRODUCT_NAME "folk park plug-in tests")
 target_sources(FolkParkPluginTests PRIVATE
@@ -106,7 +151,17 @@ target_sources(FolkParkPluginTests PRIVATE
     src/midi/MidiProof.cpp
     src/midi/MidiProof.h
     src/synth/SynthEngine.cpp
-    src/synth/SynthEngine.h)
+    src/synth/SynthEngine.h
+    src/synth/Modulation.cpp
+    src/synth/Modulation.h
+    src/synth/WavetableBank.cpp
+    src/synth/WavetableBank.h
+    src/synth/WavetableConverter.cpp
+    src/synth/WavetableConverter.h
+    src/synth/WavetableExchange.cpp
+    src/synth/WavetableExchange.h
+    src/synth/WavetableImportService.cpp
+    src/synth/WavetableImportService.h)
 target_include_directories(FolkParkPluginTests PRIVATE src)
 target_compile_definitions(FolkParkPluginTests PRIVATE
     JUCE_WEB_BROWSER=1
@@ -117,6 +172,8 @@ target_compile_definitions(FolkParkPluginTests PRIVATE
 target_link_libraries(FolkParkPluginTests PRIVATE
     FolkParkAssets
     juce::juce_audio_utils
+    juce::juce_cryptography
+    juce::juce_dsp
     juce::juce_gui_extra
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags)
