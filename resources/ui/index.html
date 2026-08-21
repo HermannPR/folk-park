@@ -3,64 +3,117 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>folk park M1</title>
+    <title>folk park M2</title>
     <style>
       :root { color-scheme: dark; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
       * { box-sizing: border-box; }
-      body { margin: 0; min-height: 100vh; color: #f4f2ff; background: radial-gradient(circle at 72% 22%, #312367 0, transparent 32%), linear-gradient(145deg, #080a12, #151227 62%, #080a12); }
-      main { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
-      .panel { width: min(960px, 100%); padding: 30px 34px; border: 1px solid #ffffff2e; border-radius: 28px; background: linear-gradient(135deg, #ffffff14, #ffffff05); box-shadow: inset 0 1px #ffffff38, 0 30px 90px #0009; backdrop-filter: blur(24px); }
-      .eyebrow { color: #a99aff; letter-spacing: .22em; text-transform: uppercase; font-size: 12px; }
-      h1 { margin: 6px 0 2px; font-size: clamp(42px, 7vw, 72px); font-weight: 650; letter-spacing: -.055em; }
-      p { color: #c8c2dc; line-height: 1.55; max-width: 620px; }
-      .controls { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 22px 0; }
-      .control { min-width: 0; padding: 12px; border: 1px solid #ffffff1f; border-radius: 14px; background: #05060b66; }
-      .control label { display: flex; justify-content: space-between; gap: 8px; color: #e4e0f4; font-size: 12px; }
-      .control output { color: #a99aff; font-variant-numeric: tabular-nums; }
+      body { margin: 0; min-height: 100vh; color: #f4f2ff; background: radial-gradient(circle at 72% 15%, #312367 0, transparent 30%), linear-gradient(145deg, #080a12, #151227 62%, #080a12); }
+      main { min-height: 100vh; padding: 22px; }
+      .shell { width: min(1140px, 100%); margin: 0 auto; }
+      header { display: flex; justify-content: space-between; align-items: end; gap: 18px; margin-bottom: 16px; }
+      .eyebrow { color: #a99aff; letter-spacing: .2em; text-transform: uppercase; font-size: 11px; }
+      h1 { margin: 2px 0 0; font-size: clamp(38px, 6vw, 64px); font-weight: 650; letter-spacing: -.055em; }
+      h2 { margin: 0 0 12px; font-size: 15px; letter-spacing: .01em; }
+      p { color: #c8c2dc; line-height: 1.45; }
+      .summary { max-width: 590px; margin: 0 0 5px; text-align: right; font-size: 13px; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      .panel { min-width: 0; padding: 18px; border: 1px solid #ffffff24; border-radius: 20px; background: linear-gradient(135deg, #ffffff12, #ffffff05); box-shadow: inset 0 1px #ffffff25, 0 18px 60px #0007; backdrop-filter: blur(20px); }
+      .wide { grid-column: 1 / -1; }
+      .controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+      .control { min-width: 0; padding: 10px; border: 1px solid #ffffff1a; border-radius: 12px; background: #05060b66; }
+      .control label { display: flex; justify-content: space-between; gap: 8px; color: #e4e0f4; font-size: 11px; }
+      .control output { color: #a99aff; font-variant-numeric: tabular-nums; white-space: nowrap; }
       input[type="range"] { width: 100%; accent-color: #9b87ff; }
-      select { width: 100%; margin-top: 10px; border: 1px solid #ffffff2e; border-radius: 8px; padding: 7px; color: white; background: #171326; }
-      .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-      .status { display: flex; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 14px; background: #05060b88; }
-      .dot { width: 9px; height: 9px; border-radius: 50%; background: #ffb84d; box-shadow: 0 0 18px #ffb84d; }
-      .dot.ok { background: #6af5b0; box-shadow: 0 0 18px #6af5b0; }
-      .actions { display: flex; gap: 10px; }
-      button { border: 1px solid #b9adff66; border-radius: 999px; padding: 10px 16px; color: white; background: #7966e733; font: inherit; cursor: pointer; }
-      button:focus-visible { outline: 3px solid #cfc7ff; outline-offset: 3px; }
-      code { color: #cfc7ff; }
-      @media (max-width: 840px) { .controls { grid-template-columns: repeat(2, 1fr); } .status-grid { grid-template-columns: 1fr; } }
+      select { width: 100%; margin-top: 8px; border: 1px solid #ffffff2e; border-radius: 8px; padding: 7px; color: white; background: #171326; }
+      .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+      button { border: 1px solid #b9adff66; border-radius: 999px; padding: 9px 14px; color: white; background: #7966e733; font: inherit; cursor: pointer; }
+      button.primary { background: #7966e788; }
+      button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid #cfc7ff; outline-offset: 2px; }
+      .import-status { min-height: 44px; margin-top: 10px; padding: 10px 12px; border-radius: 12px; color: #d8d3e9; background: #05060b88; font-size: 12px; }
+      .route { display: grid; grid-template-columns: 1.3fr 1.3fr .9fr .9fr; gap: 9px; }
+      .route .control { padding: 9px; }
+      .route input[type="range"] { margin-top: 10px; }
+      .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 12px; }
+      .status { display: flex; gap: 9px; align-items: center; padding: 10px 12px; border-radius: 12px; background: #05060b88; font-size: 12px; }
+      .dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: #ffb84d; box-shadow: 0 0 16px #ffb84d; }
+      .dot.ok { background: #6af5b0; box-shadow: 0 0 16px #6af5b0; }
+      .note { margin: 10px 0 0; color: #948da9; font-size: 11px; }
+      @media (max-width: 840px) { header { display: block; } .summary { text-align: left; } .grid { grid-template-columns: 1fr; } .wide { grid-column: auto; } .controls, .route { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     </style>
   </head>
   <body>
     <main>
-      <section class="panel">
-        <div class="eyebrow">Silicon Dreams / playable M1</div>
-        <h1>folk park</h1>
-        <p>M1 playable slice: one project-generated wavetable oscillator, sine sub, ADSR, low-pass filter, 16 deterministic voices, and explicit producer actions.</p>
-        <div class="controls">
-          <div class="control"><label for="waveform">Waveform</label><select id="waveform"></select></div>
-          <div class="control"><label for="master-gain">Master <output id="master-gain-value">…</output></label><input id="master-gain" type="range" min="0" max="1" step="0.001" /></div>
-          <div class="control"><label for="filter-cutoff">Cutoff <output id="filter-cutoff-value">…</output></label><input id="filter-cutoff" type="range" min="0" max="1" step="0.001" /></div>
-          <div class="control"><label for="amp-attack">Attack <output id="amp-attack-value">…</output></label><input id="amp-attack" type="range" min="0" max="1" step="0.001" /></div>
-          <div class="control"><label for="amp-release">Release <output id="amp-release-value">…</output></label><input id="amp-release" type="range" min="0" max="1" step="0.001" /></div>
+      <div class="shell">
+        <header>
+          <div><div class="eyebrow">Silicon Dreams / current M2 engineering UI</div><h1>folk park</h1></div>
+          <p class="summary">Dual wavetable synthesis, reviewed WAV import, multimode filtering, and bounded modulation. The guided AI sound walkthrough is specified for M7 and is not active yet.</p>
+        </header>
+        <div class="grid">
+          <section class="panel">
+            <h2>Oscillators and level</h2>
+            <div class="controls">
+              <div class="control"><label for="waveform">Legacy A shape</label><select id="waveform"></select></div>
+              <div class="control"><label for="osc-a-position">A position <output id="osc-a-position-value">…</output></label><input id="osc-a-position" type="range" min="0" max="1" step="0.001" /></div>
+              <div class="control"><label for="osc-b-position">B position <output id="osc-b-position-value">…</output></label><input id="osc-b-position" type="range" min="0" max="1" step="0.001" /></div>
+              <div class="control"><label for="osc-b-level">B level <output id="osc-b-level-value">…</output></label><input id="osc-b-level" type="range" min="0" max="1" step="0.001" /></div>
+              <div class="control"><label for="master-gain">Master <output id="master-gain-value">…</output></label><input id="master-gain" type="range" min="0" max="1" step="0.001" /></div>
+              <div class="control"><label for="lfo1-rate">LFO 1 rate <output id="lfo1-rate-value">…</output></label><input id="lfo1-rate" type="range" min="0" max="1" step="0.001" /></div>
+            </div>
+          </section>
+          <section class="panel">
+            <h2>Filter and amplitude</h2>
+            <div class="controls">
+              <div class="control"><label for="filter-mode">Filter mode</label><select id="filter-mode"></select></div>
+              <div class="control"><label for="filter-cutoff">Cutoff <output id="filter-cutoff-value">…</output></label><input id="filter-cutoff" type="range" min="0" max="1" step="0.001" /></div>
+              <div class="control"><label for="filter-resonance">Resonance <output id="filter-resonance-value">…</output></label><input id="filter-resonance" type="range" min="0" max="1" step="0.001" /></div>
+              <div class="control"><label for="filter-drive">Drive <output id="filter-drive-value">…</output></label><input id="filter-drive" type="range" min="0" max="1" step="0.001" /></div>
+              <div class="control"><label for="amp-attack">Attack <output id="amp-attack-value">…</output></label><input id="amp-attack" type="range" min="0" max="1" step="0.001" /></div>
+              <div class="control"><label for="amp-release">Release <output id="amp-release-value">…</output></label><input id="amp-release" type="range" min="0" max="1" step="0.001" /></div>
+            </div>
+          </section>
+          <section class="panel">
+            <h2>Safe wavetable import</h2>
+            <p class="note">WAV conversion runs away from audio. Nothing replaces A or B until you review the metadata and press Confirm.</p>
+            <div class="actions"><button id="import-a" type="button">Review WAV for A</button><button id="import-b" type="button">Review WAV for B</button><button id="confirm-import" class="primary" type="button">Confirm import</button><button id="cancel-import" type="button">Cancel</button></div>
+            <div id="import-status" class="import-status">No wavetable import requested.</div>
+          </section>
+          <section class="panel">
+            <h2>Modulation route 1 of 32</h2>
+            <div class="route">
+              <div class="control"><label for="mod-source">Source</label><select id="mod-source"></select></div>
+              <div class="control"><label for="mod-destination">Destination</label><select id="mod-destination"></select></div>
+              <div class="control"><label for="mod-amount">Amount <output id="mod-amount-value">0.50</output></label><input id="mod-amount" type="range" min="-1" max="1" step="0.01" value="0.5" /></div>
+              <div class="control"><label for="mod-curve">Curve</label><select id="mod-curve"><option value="0">Linear</option><option value="1">Exponential</option><option value="2">S-curve</option></select></div>
+            </div>
+            <div class="actions"><button id="apply-route" class="primary" type="button">Apply route</button><button id="clear-routes" type="button">Clear all routes</button></div>
+            <p id="route-status" class="note">0 routes active. Applying here replaces the current matrix with this one reviewed route.</p>
+          </section>
+          <section class="panel wide">
+            <div class="actions"><button id="probe" type="button">Check native bridge</button><button id="panic" type="button">Panic / all notes off</button></div>
+            <div class="status-grid">
+              <div class="status"><span id="function-dot" class="dot"></span><span id="function-message">Waiting for native function…</span></div>
+              <div class="status"><span id="event-dot" class="dot"></span><span id="event-message">Waiting for C++ event…</span></div>
+            </div>
+          </section>
         </div>
-        <div class="actions"><button id="probe" type="button">Check native bridge</button><button id="panic" type="button">Panic / all notes off</button></div>
-        <div class="status-grid">
-          <div class="status"><span id="function-dot" class="dot"></span><span id="function-message">Waiting for native function…</span></div>
-          <div class="status"><span id="event-dot" class="dot"></span><span id="event-message">Waiting for C++ event…</span></div>
-        </div>
-        <p><small>MIDI drag and DAW insertion remain explicit producer actions.</small></p>
-      </section>
+      </div>
     </main>
     <script type="module">
       import { getComboBoxState, getNativeFunction, getSliderState } from "./juce.js";
-
       const functionMessage = document.querySelector("#function-message");
       const functionDot = document.querySelector("#function-dot");
       const eventMessage = document.querySelector("#event-message");
       const eventDot = document.querySelector("#event-dot");
+      const importStatus = document.querySelector("#import-status");
+      const routeStatus = document.querySelector("#route-status");
       const getProductInfo = getNativeFunction("getProductInfo");
       const panic = getNativeFunction("panic");
-
+      const chooseWavetable = getNativeFunction("chooseWavetable");
+      const confirmWavetableImport = getNativeFunction("confirmWavetableImport");
+      const cancelWavetableImport = getNativeFunction("cancelWavetableImport");
+      const setModulationRoute = getNativeFunction("setModulationRoute");
+      const clearModulationRoutes = getNativeFunction("clearModulationRoutes");
+      function showNativeMessage(message) { functionMessage.textContent = message; functionDot.classList.add("ok"); }
       function connectSlider(elementId, relayName, decimals = 2) {
         const input = document.querySelector(`#${elementId}`);
         const output = document.querySelector(`#${elementId}-value`);
@@ -78,10 +131,9 @@
         input.addEventListener("input", () => state.setNormalisedValue(Number(input.value)));
         update();
       }
-
-      function connectWaveform() {
-        const select = document.querySelector("#waveform");
-        const state = getComboBoxState("oscWaveform");
+      function connectCombo(elementId, relayName) {
+        const select = document.querySelector(`#${elementId}`);
+        const state = getComboBoxState(relayName);
         const updateProperties = () => {
           select.replaceChildren(...state.properties.choices.map((choice, index) => new Option(choice, index)));
           select.value = state.getChoiceIndex();
@@ -92,33 +144,44 @@
         select.addEventListener("change", () => state.setChoiceIndex(Number(select.value)));
         updateProperties();
       }
-
       connectSlider("master-gain", "masterGain", 1);
       connectSlider("filter-cutoff", "filterCutoff", 0);
       connectSlider("amp-attack", "ampAttack", 3);
       connectSlider("amp-release", "ampRelease", 3);
-      connectWaveform();
-
+      connectSlider("osc-a-position", "oscAPosition", 3);
+      connectSlider("osc-b-position", "oscBPosition", 3);
+      connectSlider("osc-b-level", "oscBLevel", 1);
+      connectSlider("filter-resonance", "filterResonance", 3);
+      connectSlider("filter-drive", "filterDrive", 1);
+      connectSlider("lfo1-rate", "lfo1Rate", 2);
+      connectCombo("waveform", "oscWaveform");
+      connectCombo("filter-mode", "filterMode");
+      const modulationSources = ["Filter envelope", "Aux envelope", "LFO 1", "LFO 2", "LFO 3", "LFO 4", "Velocity", "Note", "Mod wheel", "Channel pressure"];
+      const modulationDestinations = ["Osc A position", "Osc B position", "Osc A pitch", "Osc B pitch", "Osc A level", "Osc B level", "Filter cutoff", "Filter resonance", "Filter drive", "Amplitude", "Pan", "Sub level", "Noise level"];
+      document.querySelector("#mod-source").replaceChildren(...modulationSources.map((name, index) => new Option(name, index)));
+      document.querySelector("#mod-source").value = "2";
+      document.querySelector("#mod-destination").replaceChildren(...modulationDestinations.map((name, index) => new Option(name, index)));
+      const amount = document.querySelector("#mod-amount");
+      amount.addEventListener("input", () => { document.querySelector("#mod-amount-value").textContent = Number(amount.value).toFixed(2); });
       window.__JUCE__.backend.addEventListener("processorSnapshot", (snapshot) => {
         eventMessage.textContent = `Native event: ${snapshot.activeVoices} active voices / ${snapshot.state}`;
         eventDot.classList.add("ok");
+        const metadata = snapshot.importFile ? ` ${snapshot.importFile}; ${snapshot.importFrames} frames × ${snapshot.importCycleLength} samples.` : "";
+        importStatus.textContent = `${snapshot.importStatus}: ${snapshot.importMessage}.${metadata}`;
+        routeStatus.textContent = `${snapshot.modulationRouteCount} route(s) active. Applying here replaces the current matrix with this one reviewed route.`;
       });
-
-      getProductInfo().then((info) => {
-        functionMessage.textContent = `Native function: ${info.product} ${info.version} (${info.architecture})`;
-        functionDot.classList.add("ok");
+      getProductInfo().then((info) => showNativeMessage(`Native function: ${info.product} ${info.version} (${info.architecture})`));
+      document.querySelector("#probe").addEventListener("click", async () => { const info = await getProductInfo(); showNativeMessage(`Native function: ${info.product} ${info.version} (${info.architecture})`); });
+      document.querySelector("#panic").addEventListener("click", async () => showNativeMessage(await panic()));
+      document.querySelector("#import-a").addEventListener("click", async () => showNativeMessage(await chooseWavetable(0)));
+      document.querySelector("#import-b").addEventListener("click", async () => showNativeMessage(await chooseWavetable(1)));
+      document.querySelector("#confirm-import").addEventListener("click", async () => showNativeMessage(await confirmWavetableImport()));
+      document.querySelector("#cancel-import").addEventListener("click", async () => showNativeMessage(await cancelWavetableImport()));
+      document.querySelector("#apply-route").addEventListener("click", async () => {
+        const message = await setModulationRoute(Number(document.querySelector("#mod-source").value), Number(document.querySelector("#mod-destination").value), Number(amount.value), Number(document.querySelector("#mod-curve").value), true);
+        showNativeMessage(message);
       });
-
-      document.querySelector("#probe").addEventListener("click", async () => {
-        const info = await getProductInfo();
-        functionMessage.textContent = `Native function: ${info.product} ${info.version} (${info.architecture})`;
-        functionDot.classList.add("ok");
-      });
-
-      document.querySelector("#panic").addEventListener("click", async () => {
-        functionMessage.textContent = await panic();
-        functionDot.classList.add("ok");
-      });
+      document.querySelector("#clear-routes").addEventListener("click", async () => showNativeMessage(await clearModulationRoutes()));
     </script>
   </body>
 </html>
