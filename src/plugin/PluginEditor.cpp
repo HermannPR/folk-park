@@ -836,7 +836,15 @@ juce::WebBrowserComponent::Options PluginEditor::browserOptions()
                         return;
                     }
                     if (file.getFileExtension().isEmpty())
-                        file = file.withFileExtension(".wav");
+                    {
+                        const auto withExtension = file.withFileExtension(".wav");
+                        if (withExtension.existsAsFile())
+                        {
+                            completionHandler("That .wav file already exists; choose it explicitly so macOS can confirm replacement");
+                            return;
+                        }
+                        file = withExtension;
+                    }
                     const auto result = safeEditor->ownerProcessor.requestAcceptedWavRender(file, true);
                     completionHandler(result.wasOk()
                         ? "Accepted composition queued for isolated 24-bit WAV rendering"

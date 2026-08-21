@@ -66,6 +66,7 @@ test("M5 exposes the complete ordered effect chain and isolated accepted WAV act
     "compBypass", "eqBypass"])
     assert.match(app, new RegExp(`relay="${relay}"`));
   assert.match(app, /Render accepted WAV/);
+  assert.match(app, /publishComposition\(parsed\)/);
   assert.match(app, /separate offline synth and effect chain/);
   assert.match(app, /never resets or seeks/);
   assert.match(controls, /getToggleState/);

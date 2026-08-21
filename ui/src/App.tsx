@@ -107,7 +107,9 @@ function SynthView({ snapshot, visible, preferences, announce, refresh, publishS
 
 const macroIds = ["density", "rhythm", "tension", "human", "repeat", "variation"] as const;
 
-function ComposeView({ initial, announce }: { initial: CompositionSnapshot; announce: (message: string) => void }) {
+function ComposeView({ initial, announce, publishComposition }:
+  { initial: CompositionSnapshot; announce: (message: string) => void;
+    publishComposition: (composition: CompositionSnapshot) => void }) {
   const [composition, setComposition] = useState(initial);
   const [seed, setSeed] = useState(12345);
   const [key, setKey] = useState("C");
@@ -121,7 +123,8 @@ function ComposeView({ initial, announce }: { initial: CompositionSnapshot; anno
   const deliveryIsPrevious = composition.hasAccepted && !composition.candidateMatchesAccepted;
   const apply = (value: unknown) => {
     const parsed = parseComposition(value);
-    if (parsed === null) announce(String(value)); else setComposition(parsed);
+    if (parsed === null) announce(String(value));
+    else { setComposition(parsed); publishComposition(parsed); }
   };
   const generate = async () => apply(await native.generateComposition(seed, key, scale, tempo, bars,
     ...macros, ...parts));
@@ -270,7 +273,8 @@ export default function App() {
     <main>
       {snapshot === null ? <section className="surface recovery"><h2>Native snapshot unavailable</h2><p>{error}</p><button onClick={() => void refresh()}>Retry complete recovery</button></section> : <>
         {tab === "SYNTH" && <SynthView snapshot={snapshot} visible={visible} preferences={preferences} announce={announce} refresh={refresh} publishSnapshot={setSnapshot} />}
-        {tab === "COMPOSE" && <ComposeView initial={snapshot.composition} announce={announce} />}
+        {tab === "COMPOSE" && <ComposeView initial={snapshot.composition} announce={announce}
+          publishComposition={(composition) => setSnapshot((current) => current === null ? null : { ...current, composition })} />}
         {tab === "FX" && <FxView snapshot={snapshot} announce={announce} />}
         {tab === "HISTORY" && <PlannedView milestone="M6" title="History and preset persistence are prepared">Accepted clips remain session memory until the transactional M6 repository and migrations pass restart, failure, and recovery tests.</PlannedView>}
         {tab === "SETTINGS" && <section className="surface settings"><div className="section-heading"><div><span>UI</span><h2>Performance + accessibility</h2></div><small>Local presentation only</small></div><label><input type="checkbox" checked={preferences.lowGraphics} onChange={(event) => setPreferences((value) => ({ ...value, lowGraphics: event.currentTarget.checked }))} />Low Graphics · 2D canvas at 12 FPS</label><label><input type="checkbox" checked={preferences.reducedMotion} onChange={(event) => setPreferences((value) => ({ ...value, reducedMotion: event.currentTarget.checked }))} />Reduced Motion · render only on state changes</label><button onClick={() => void refresh()}>Request complete native snapshot</button><p>No remote fonts, trackers, CDNs, providers, or runtime assets are loaded.</p></section>}
