@@ -11,6 +11,7 @@ struct CompositionSessionSnapshot
 {
     bool hasCandidate = false;
     bool hasAccepted = false;
+    bool candidateMatchesAccepted = false;
     juce::String candidateRequestId;
     juce::String acceptedRequestId;
     juce::String status{"No composition has been generated"};
@@ -26,6 +27,11 @@ public:
     [[nodiscard]] juce::Result generateCandidate(MusicIntent intent);
     [[nodiscard]] juce::Result moreLikeCandidate(std::uint32_t variationIndex);
     [[nodiscard]] juce::Result surpriseCandidate(std::uint32_t surpriseIndex);
+    [[nodiscard]] juce::Result adjustCandidateNote(std::size_t sourceIndex,
+                                                   int pitchDelta,
+                                                   std::int64_t startDeltaTicks,
+                                                   std::int64_t durationDeltaTicks,
+                                                   int velocityDelta);
     [[nodiscard]] juce::Result acceptCandidate();
     void clearCandidate();
 
@@ -41,6 +47,7 @@ private:
     mutable std::mutex mutex;
     std::optional<CompositionBundle> candidate;
     std::optional<CompositionBundle> accepted;
+    bool candidateMatchesAccepted = false;
     juce::String status{"No composition has been generated"};
 };
 }

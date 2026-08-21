@@ -1,5 +1,6 @@
 #include "midi/CompositionSession.h"
 #include "midi/MidiDelivery.h"
+#include "midi/PreviewMidi.h"
 
 #include <cmath>
 #include <iostream>
@@ -168,13 +169,94 @@ void testCandidateAcceptance()
            "Generated MIDI must remain an unaccepted candidate");
     expect(session.acceptCandidate().wasOk(), "Explicit acceptance must publish the reviewed candidate");
     snapshot = session.getSnapshot();
-    expect(snapshot.hasAccepted && snapshot.acceptedNoteCount == snapshot.candidateNoteCount,
+    expect(snapshot.hasAccepted && snapshot.candidateMatchesAccepted
+               && snapshot.acceptedNoteCount == snapshot.candidateNoteCount,
            "Accepted snapshot must reference the reviewed candidate notes");
+    const auto acceptedBeforeEdit = session.getAcceptedBundle();
+    expect(acceptedBeforeEdit.has_value() && !acceptedBeforeEdit->clips.empty()
+               && !acceptedBeforeEdit->clips.front().events.empty(),
+           "Accepted edit fixture must retain a concrete first note");
+    expect(session.adjustCandidateNote(0, 0, 0, 0, -1).wasOk(),
+           "A bounded candidate velocity edit must remain valid");
+    snapshot = session.getSnapshot();
+    expect(snapshot.hasAccepted && !snapshot.candidateMatchesAccepted,
+           "Editing a candidate must never silently replace its accepted version");
+    const auto acceptedAfterEdit = session.getAcceptedBundle();
+    if (acceptedBeforeEdit.has_value() && acceptedAfterEdit.has_value())
+        expect(acceptedAfterEdit->clips.front().events.front().velocity
+                   == acceptedBeforeEdit->clips.front().events.front().velocity,
+               "Candidate editing must leave the previous accepted MIDI immutable");
+    expect(session.adjustCandidateNote(999999, 0, 0, 0, 0).failed(),
+           "Candidate editing must reject an out-of-range preview index transactionally");
+    expect(session.acceptCandidate().wasOk() && session.getSnapshot().candidateMatchesAccepted,
+           "Edited candidate must require a new explicit acceptance");
     expect(session.moreLikeCandidate(1).wasOk(), "More Like This must create a new reviewable child");
     snapshot = session.getSnapshot();
-    expect(snapshot.hasAccepted && snapshot.candidateRequestId != snapshot.acceptedRequestId,
+    expect(snapshot.hasAccepted && !snapshot.candidateMatchesAccepted
+               && snapshot.candidateRequestId != snapshot.acceptedRequestId,
            "A variation cannot silently replace the last accepted composition");
     expect(session.getAcceptedBundle().has_value(), "Previously accepted MIDI must remain deliverable");
+}
+
+void testPreviewKeyboardQueue()
+{
+    using folkpark::midi::PreviewMidiQueue;
+    PreviewMidiQueue queue;
+    expect(!queue.enqueueNoteOn(-1, 100) && !queue.enqueueNoteOn(60, 0)
+               && !queue.enqueueNoteOff(128),
+           "Preview keyboard boundary must reject invalid MIDI notes and velocity");
+    expect(queue.enqueueNoteOn(60, 104), "Preview keyboard must enqueue a bounded note-on");
+    juce::MidiBuffer started;
+    started.ensureSize(4096);
+    expect(queue.renderBlock(started) == 1, "Preview note-on must render on the next block");
+    auto foundOn = false;
+    for (const auto event : started)
+        foundOn = foundOn || (event.getMessage().isNoteOn() && event.getMessage().getNoteNumber() == 60
+                             && event.samplePosition == 0);
+    expect(foundOn, "Preview keyboard note-on must retain note and block-start offset");
+
+    expect(queue.enqueueNoteOn(60, 104), "Repeated macOS keydown fixture must enqueue safely");
+    juce::MidiBuffer repeated;
+    repeated.ensureSize(4096);
+    expect(queue.renderBlock(repeated) == 0 && repeated.isEmpty(),
+           "A held computer key must not retrigger on repeated keydown events");
+
+    expect(queue.enqueueNoteOff(60), "Preview keyboard must enqueue its matching note-off");
+    juce::MidiBuffer stopped;
+    stopped.ensureSize(4096);
+    expect(queue.renderBlock(stopped) == 1, "Preview note-off must render on the next block");
+    auto foundOff = false;
+    for (const auto event : stopped)
+        foundOff = foundOff || (event.getMessage().isNoteOff() && event.getMessage().getNoteNumber() == 60);
+    expect(foundOff, "Preview keyboard must emit the matching note-off");
+
+    expect(queue.enqueueNoteOff(60), "Repeated keyup fixture must enqueue safely");
+    juce::MidiBuffer repeatedOff;
+    repeatedOff.ensureSize(4096);
+    expect(queue.renderBlock(repeatedOff) == 0 && repeatedOff.isEmpty(),
+           "A redundant keyup must remain silent");
+
+    expect(queue.enqueueNoteOn(64, 100), "Release-all fixture note-on must enqueue");
+    juce::MidiBuffer held;
+    held.ensureSize(4096);
+    juce::ignoreUnused(queue.renderBlock(held));
+    queue.requestReleaseAll();
+    juce::MidiBuffer released;
+    released.ensureSize(4096);
+    expect(queue.renderBlock(released) == 1,
+           "Focus-loss release-all must emit one note-off for one active preview note");
+    auto foundRelease = false;
+    for (const auto event : released)
+        foundRelease = foundRelease || (event.getMessage().isNoteOff()
+                                         && event.getMessage().getNoteNumber() == 64);
+    expect(foundRelease, "Release-all must prevent a preview note from remaining stuck");
+
+    queue.reset();
+    auto accepted = 0;
+    while (queue.enqueueNoteOn(60 + (accepted % 12), 100))
+        ++accepted;
+    expect(accepted == static_cast<int>(PreviewMidiQueue::maximumQueuedCommands),
+           "Preview producer queue must enforce its documented fixed capacity");
 }
 }
 
@@ -184,7 +266,8 @@ int main()
     testFileLifecycle();
     testDirectOffsetsAndStop();
     testCandidateAcceptance();
+    testPreviewKeyboardQueue();
     if (failures == 0)
-        std::cout << "PASS: M3 MIDI export parity, lifecycle, direct offsets, stop, and explicit acceptance\n";
+        std::cout << "PASS: M3 delivery plus M4 bounded preview keyboard and release safety\n";
     return failures == 0 ? 0 : 1;
 }

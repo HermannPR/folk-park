@@ -2,6 +2,7 @@
 
 #include "midi/CompositionSession.h"
 #include "midi/MidiDelivery.h"
+#include "midi/PreviewMidi.h"
 #include "synth/SynthEngine.h"
 #include "synth/WavetableImportService.h"
 
@@ -14,6 +15,15 @@
 
 namespace folkpark
 {
+struct WavetableUiSnapshot
+{
+    static constexpr int samplesPerFrame = 96;
+    static constexpr int maximumFrames = synth::WavetableBank::maximumFrames;
+
+    int frameCount = 0;
+    std::array<float, static_cast<std::size_t>(samplesPerFrame * maximumFrames)> samples{};
+};
+
 class PluginProcessor final : public juce::AudioProcessor
 {
 public:
@@ -43,10 +53,22 @@ public:
     void setStateInformation(const void* data, int sizeInBytes) override;
 
     juce::AudioProcessorValueTreeState& state() noexcept { return parameters; }
+    [[nodiscard]] bool undoLastParameterChange()
+    {
+        // APVTS normally flushes parameter changes into its ValueTree on a timer.
+        // Synchronise first so an immediate UI Undo sees the gesture that just ended.
+        (void) parameters.copyState();
+        return undoManager.canUndo() && undoManager.undo();
+    }
+    [[nodiscard]] bool redoLastParameterChange()
+    {
+        return undoManager.canRedo() && undoManager.redo();
+    }
     void requestPanic() noexcept
     {
         panicRequested.store(true, std::memory_order_release);
         directMidiPlayer.requestStop();
+        previewMidiQueue.requestReleaseAll();
     }
     [[nodiscard]] juce::Result generateCompositionCandidate(midi::MusicIntent intent)
     {
@@ -59,6 +81,15 @@ public:
     [[nodiscard]] juce::Result generateSurpriseComposition(std::uint32_t surpriseIndex)
     {
         return compositionSession.surpriseCandidate(surpriseIndex);
+    }
+    [[nodiscard]] juce::Result adjustCompositionCandidateNote(std::size_t sourceIndex,
+                                                              int pitchDelta,
+                                                              std::int64_t startDeltaTicks,
+                                                              std::int64_t durationDeltaTicks,
+                                                              int velocityDelta)
+    {
+        return compositionSession.adjustCandidateNote(sourceIndex, pitchDelta, startDeltaTicks,
+                                                      durationDeltaTicks, velocityDelta);
     }
     [[nodiscard]] juce::Result acceptCompositionCandidate()
     {
@@ -80,10 +111,18 @@ public:
     {
         return directMidiPlayer.isPlaying() || directMidiPlayer.hasPendingSchedule();
     }
-    [[nodiscard]] bool publishWavetable(int oscillatorIndex, const synth::WavetableBank& bank) noexcept
+    [[nodiscard]] bool previewNoteOn(int note, int velocity) noexcept
     {
-        return engine.publishWavetable(oscillatorIndex, bank);
+        return previewMidiQueue.enqueueNoteOn(note, velocity);
     }
+    [[nodiscard]] bool previewNoteOff(int note) noexcept
+    {
+        return previewMidiQueue.enqueueNoteOff(note);
+    }
+    void releasePreviewNotes() noexcept { previewMidiQueue.requestReleaseAll(); }
+    [[nodiscard]] bool publishWavetable(int oscillatorIndex,
+                                        const synth::WavetableBank& bank);
+    [[nodiscard]] WavetableUiSnapshot getWavetableUiSnapshot(int oscillatorIndex) const;
     [[nodiscard]] juce::Result setModulationRoutes(std::span<const synth::ModulationRoute> routes);
     [[nodiscard]] synth::ModulationSnapshot getConfiguredModulationRoutes() const;
     [[nodiscard]] juce::Result requestWavetableImport(const juce::File& file,
@@ -104,11 +143,13 @@ public:
 private:
     [[nodiscard]] synth::ParameterSnapshot readSynthParameters() const noexcept;
 
+    juce::UndoManager undoManager;
     juce::AudioProcessorValueTreeState parameters;
     synth::SynthEngine engine;
     synth::WavetableImportService wavetableImportService;
     midi::CompositionSession compositionSession;
     midi::DirectMidiPlayer directMidiPlayer;
+    midi::PreviewMidiQueue previewMidiQueue;
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> masterGain;
     std::atomic<bool> panicRequested{false};
 
@@ -167,6 +208,8 @@ private:
     std::array<LfoParameterPointers, 4> lfoParameters{};
     mutable std::mutex modulationStateMutex;
     synth::ModulationSnapshot configuredModulationRoutes;
+    mutable std::mutex wavetableUiMutex;
+    std::array<WavetableUiSnapshot, 2> wavetableUiSnapshots{};
 
     double activeSampleRate = 0.0;
     int activeBlockSize = 0;

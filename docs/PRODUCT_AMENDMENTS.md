@@ -27,3 +27,17 @@ Folk Park must make oscillator behavior visually understandable with an original
 - The Silicon Dreams presentation, geometry, colors, interaction, assets, and code must remain original and must not copy Serum/Serum 2 trade dress or proprietary behavior.
 
 Planned milestone placement: implement the production visualization and performance/accessibility gates in M4, then reuse the same isolated analysis surfaces for M5 effects and WAV preview where appropriate.
+
+## 2026-08-20 — On-screen piano audition
+
+Folk Park must include an on-screen piano so the producer can hear the current sound without first creating a DAW piano roll or attaching a MIDI controller.
+
+- Support touch, mouse/pointer, and a documented computer-key mapping with visible active-note feedback.
+- Present four playable octaves from C2 through B5. Keep every touch/mouse key available at normal width, allow compact-width horizontal scrolling, and provide explicit octave controls for the mapped computer-key zone.
+- Held computer keys sustain one note-on. macOS key-repeat events and redundant releases stay silent and cannot retrigger the preview voice.
+- Provide accessible note labels and keyboard focus behavior without stealing typing while a text/number/select control is active.
+- UI note actions cross a bounded native queue and become MIDI only at the processor boundary. The WebView never calls synth/DSP code directly.
+- Pointer cancel, window blur, visibility loss, editor close, Stop, and Panic must release preview notes. Queue overflow must fail safely and must not create a stuck note.
+- Preview MIDI may also leave the plug-in MIDI output consistently with the current instrument contract; FL Studio shortcut/focus and routing behavior remain human tests.
+
+Planned milestone placement: implement and prove the keyboard/no-stuck-note boundary in M4.

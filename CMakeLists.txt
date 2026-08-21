@@ -23,8 +23,8 @@ juce_add_binary_data(FolkParkAssets
     NAMESPACE FolkParkAssets
     SOURCES
         resources/ui/index.html
-        third_party/JUCE/modules/juce_gui_extra/native/javascript/index.js
-        third_party/JUCE/modules/juce_gui_extra/native/javascript/check_native_interop.js)
+        resources/ui/app.js
+        resources/ui/app.css)
 
 juce_add_plugin(FolkPark
     VERSION ${PROJECT_VERSION}
@@ -57,6 +57,8 @@ target_sources(FolkPark PRIVATE
     src/midi/CompositionSession.h
     src/midi/MidiDelivery.cpp
     src/midi/MidiDelivery.h
+    src/midi/PreviewMidi.cpp
+    src/midi/PreviewMidi.h
     src/synth/SynthEngine.cpp
     src/synth/SynthEngine.h
     src/synth/Modulation.cpp
@@ -148,7 +150,9 @@ target_sources(FolkParkMidiDeliveryTests PRIVATE
     src/midi/CompositionSession.cpp
     src/midi/CompositionSession.h
     src/midi/MidiDelivery.cpp
-    src/midi/MidiDelivery.h)
+    src/midi/MidiDelivery.h
+    src/midi/PreviewMidi.cpp
+    src/midi/PreviewMidi.h)
 target_include_directories(FolkParkMidiDeliveryTests PRIVATE src)
 target_compile_definitions(FolkParkMidiDeliveryTests PRIVATE JUCE_USE_CURL=0)
 target_link_libraries(FolkParkMidiDeliveryTests PRIVATE
@@ -180,6 +184,8 @@ target_sources(FolkParkRealtimeTests PRIVATE
     src/midi/Composition.h
     src/midi/MidiDelivery.cpp
     src/midi/MidiDelivery.h
+    src/midi/PreviewMidi.cpp
+    src/midi/PreviewMidi.h
     src/synth/SynthEngine.cpp
     src/synth/SynthEngine.h
     src/synth/Modulation.cpp
@@ -215,6 +221,8 @@ target_sources(FolkParkPluginTests PRIVATE
     src/midi/CompositionSession.h
     src/midi/MidiDelivery.cpp
     src/midi/MidiDelivery.h
+    src/midi/PreviewMidi.cpp
+    src/midi/PreviewMidi.h
     src/synth/SynthEngine.cpp
     src/synth/SynthEngine.h
     src/synth/Modulation.cpp

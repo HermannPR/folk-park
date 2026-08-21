@@ -1,5 +1,6 @@
 #include "midi/Composition.h"
 #include "midi/MidiDelivery.h"
+#include "midi/PreviewMidi.h"
 #include "synth/Modulation.h"
 #include "synth/SynthEngine.h"
 #include "synth/WavetableBank.h"
@@ -141,6 +142,12 @@ int main()
     }
     juce::MidiBuffer directOutput;
     directOutput.ensureSize(2048);
+    PreviewMidiQueue previewQueue;
+    if (!previewQueue.enqueueNoteOn(67, 100))
+    {
+        std::cerr << "FAIL: preview MIDI allocation fixture must enqueue before measurement\n";
+        return 1;
+    }
 
     allocationProbe::count.store(0, std::memory_order_relaxed);
     allocationProbe::tracking.store(true, std::memory_order_release);
@@ -148,6 +155,8 @@ int main()
     {
         engine.process(audio, midi, parameters);
         directOutput.clear();
+        const auto previewEvents = previewQueue.renderBlock(directOutput);
+        juce::ignoreUnused(previewEvents);
         const auto rendered = directPlayer.renderBlock(directOutput, blockSize, 48000.0);
         if (rendered.overflow)
         {
@@ -164,6 +173,6 @@ int main()
         std::cerr << "FAIL: measured audio rendering allocated " << allocations << " time(s)\n";
         return 1;
     }
-    std::cout << "PASS: 32 audio blocks, including synth swaps, table crossfade, and direct MIDI scheduling, allocated 0 times\n";
+    std::cout << "PASS: 32 audio blocks, including synth swaps, crossfade, direct MIDI, and preview keyboard, allocated 0 times\n";
     return 0;
 }

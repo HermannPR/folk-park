@@ -178,6 +178,25 @@ bool parseBoolean(const juce::var& value, bool& output) noexcept
     return true;
 }
 
+WavetableUiSnapshot makeWavetableUiSnapshot(const synth::WavetableBank& bank) noexcept
+{
+    WavetableUiSnapshot snapshot;
+    snapshot.frameCount = juce::jlimit(1, WavetableUiSnapshot::maximumFrames,
+                                       bank.getFrameCount());
+    for (auto frame = 0; frame < snapshot.frameCount; ++frame)
+    {
+        for (auto sample = 0; sample < WavetableUiSnapshot::samplesPerFrame; ++sample)
+        {
+            const auto sourceSample = sample * synth::WavetableBank::tableSize
+                / WavetableUiSnapshot::samplesPerFrame;
+            snapshot.samples[static_cast<std::size_t>(
+                frame * WavetableUiSnapshot::samplesPerFrame + sample)]
+                = juce::jlimit(-1.0f, 1.0f, bank.getSample(frame, 0, sourceSample));
+        }
+    }
+    return snapshot;
+}
+
 juce::Result parseModulationRoutes(const juce::ValueTree& root, synth::ModulationSnapshot& output)
 {
     const auto routes = root.getChildWithName(modulationRoutesType);
@@ -232,12 +251,18 @@ juce::Result parseModulationRoutes(const juce::ValueTree& root, synth::Modulatio
 
 PluginProcessor::PluginProcessor()
     : AudioProcessor(BusesProperties().withOutput("Output", juce::AudioChannelSet::stereo(), true)),
-      parameters(*this, nullptr, "FolkParkState", createParameterLayout()),
+      parameters(*this, &undoManager, "FolkParkState", createParameterLayout()),
       wavetableImportService([this](int oscillatorIndex, const synth::WavetableBank& bank)
       {
-          return engine.publishWavetable(oscillatorIndex, bank);
+          return publishWavetable(oscillatorIndex, bank);
       })
 {
+    if (const auto builtIn = synth::WavetableBank::createBuiltIn())
+    {
+        const auto preview = makeWavetableUiSnapshot(*builtIn);
+        wavetableUiSnapshots[0] = preview;
+        wavetableUiSnapshots[1] = preview;
+    }
     const auto raw = [this](const char* id)
     {
         auto* value = parameters.getRawParameterValue(id);
@@ -300,6 +325,28 @@ PluginProcessor::PluginProcessor()
                                 raw(parameterIds::lfoSyncDivision[index]), raw(parameterIds::lfoPhase[index]),
                                 raw(parameterIds::lfoTempoSync[index]), raw(parameterIds::lfoRetrigger[index])};
     }
+}
+
+bool PluginProcessor::publishWavetable(int oscillatorIndex,
+                                       const synth::WavetableBank& bank)
+{
+    if (oscillatorIndex < 0 || oscillatorIndex >= static_cast<int>(wavetableUiSnapshots.size())
+        || !bank.isFiniteAndNormalised())
+        return false;
+    if (!engine.publishWavetable(oscillatorIndex, bank))
+        return false;
+    const auto preview = makeWavetableUiSnapshot(bank);
+    const std::lock_guard lock(wavetableUiMutex);
+    wavetableUiSnapshots[static_cast<std::size_t>(oscillatorIndex)] = preview;
+    return true;
+}
+
+WavetableUiSnapshot PluginProcessor::getWavetableUiSnapshot(int oscillatorIndex) const
+{
+    const auto safeIndex = juce::jlimit(0,
+        static_cast<int>(wavetableUiSnapshots.size()) - 1, oscillatorIndex);
+    const std::lock_guard lock(wavetableUiMutex);
+    return wavetableUiSnapshots[static_cast<std::size_t>(safeIndex)];
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout PluginProcessor::createParameterLayout()
@@ -418,6 +465,7 @@ void PluginProcessor::prepareToPlay(double newSampleRate, int maximumExpectedSam
         masterGainParameter->load(std::memory_order_relaxed), -60.0f);
     masterGain.setCurrentAndTargetValue(initialGain);
     directMidiPlayer.reset();
+    previewMidiQueue.reset();
 }
 
 void PluginProcessor::releaseResources()
@@ -426,6 +474,7 @@ void PluginProcessor::releaseResources()
     activeBlockSize = 0;
     engine.reset();
     directMidiPlayer.reset();
+    previewMidiQueue.reset();
 }
 
 bool PluginProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
@@ -441,6 +490,8 @@ void PluginProcessor::processBlock(juce::AudioBuffer<float>& audio, juce::MidiBu
     if (panicRequested.exchange(false, std::memory_order_acq_rel))
         engine.panic();
 
+    const auto previewEvents = previewMidiQueue.renderBlock(midi, 0);
+    juce::ignoreUnused(previewEvents);
     const auto directResult = directMidiPlayer.renderBlock(midi, audio.getNumSamples(), activeSampleRate);
     if (directResult.overflow)
         engine.panic();
