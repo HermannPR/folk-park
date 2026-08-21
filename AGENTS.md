@@ -1,5 +1,9 @@
 # Folk Park repository instructions
 
+## Required continuation context
+
+Before changing code, read `docs/CURRENT_WORK.md` completely. It is the authoritative handoff for the active branch, completed gates, outstanding human checks, requested product behavior, and the next milestone. Reconcile it with `git status`, `git log`, `docs/PROGRESS.md`, and `plans/RELEASE_0_1.md`; never restart completed work or infer completion from a plan alone. Update `docs/CURRENT_WORK.md` at every milestone checkpoint and before handing work to another agent.
+
 ## Product boundary
 
 Build `folk park` 0.1 as an original Intel macOS x86_64 VST3 instrument and Standalone application. The release combines a playable wavetable synth with deterministic, offline-first MIDI composition. It does not clone Serum, import proprietary Serum state, ship third-party factory assets, or modify a DAW project without explicit producer acceptance.
