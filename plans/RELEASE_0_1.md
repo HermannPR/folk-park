@@ -22,7 +22,7 @@ Deliver MusicIntent/GeneratedClip, deterministic chords/melody/bass/arp, macros 
 
 ## M4 — Silicon Dreams UI
 
-Deliver original bundled React/TypeScript views and chrome/glass/grid system; live oscillator A/B 2D waveform, optional 3D wavetable-frame/morph surface, current-position/modulation animation, and spectrum feedback; optional Three.js with low-graphics/reduced-motion fallback; accessible focus; and snapshot recovery. Visualizers must consume bounded UI snapshots, pause when hidden, and never read mutable audio state directly. Gate: offline bundle, resize, hidden animation pause, WebView/audio independence, malformed bridge rejection, and visualizer CPU/frame-rate evidence.
+Deliver original bundled React/TypeScript views and chrome/glass/grid system; live oscillator A/B 2D waveform, optional 3D wavetable-frame/morph surface, current-position/modulation animation, and spectrum feedback; a four-octave C2–B5 touch/mouse piano with an octave-shiftable computer-key zone that auditions the current synth through a bounded native note queue with guaranteed release on pointer cancel, blur, hide, panic, and editor close; optional Three.js with low-graphics/reduced-motion fallback; accessible focus; and snapshot recovery. Visualizers must consume bounded UI snapshots, pause when hidden, and never read mutable audio state directly. Gate: offline bundle, resize, hidden animation pause, WebView/audio independence, malformed bridge rejection, visualizer CPU/frame-rate evidence, and no-stuck-note audition tests.
 
 ## M5 — Effects and preview
 

@@ -10,34 +10,41 @@ The visual direction is the original **Silicon Dreams** interface: a fast, bundl
 
 The intended final workflow is one connected instrument:
 
-1. Build and play a sound manually with the complete synth, modulation, effects, and preset controls, with live original 2D/3D wavetable and spectrum feedback for both oscillators.
+1. Build and play a sound manually with the complete synth, modulation, effects, preset controls, and a four-octave C2–B5 touch/mouse piano with an octave-shiftable computer-key zone, with live original 2D/3D wavetable and spectrum feedback for both oscillators.
 2. Generate seeded chords, melody, bass, or arpeggios; inspect them in a piano roll; request a related or surprising variation; then explicitly accept the result.
 3. Drag or export standards-compliant MIDI to FL Studio, or route accepted MIDI to another instrument.
 4. Optionally ask the guided assistant for help. It asks focused sound-design questions, returns bounded parameter changes with reasons and uncertainty, supports reversible A/B audition, and waits for explicit acceptance.
 5. Save projects with searchable presets, history, migrations, and missing-asset recovery before the signed Release 0.1 package is called complete.
 
-## What works now — M3 checkpoint
+## What works now — M4 checkpoint
+
+- A bundled React/TypeScript Silicon Dreams interface with responsive Synth, Compose, FX, History, and Settings navigation. Planned M5–M7 surfaces are labelled honestly rather than presented as working features.
+- Two live OSC A/B views render the actual bounded wavetable frames, current morph position, and derived spectrum. Three.js is capped at 30 FPS; Low Graphics uses a 12 FPS 2D waveform/spectrum fallback, Reduced Motion renders on state changes, and hidden views stop animation.
+- A four-octave C2–B5 touch/mouse piano plus an octave-shiftable A–P computer-key zone. Preview notes cross a fixed native queue, release on pointer cancel/blur/hide/editor close/panic, and held macOS keys sustain once without repeat retriggering.
+- Complete host-aware control surfaces for both oscillators, mixer, filter, three envelopes, four LFOs, and a reviewed 32-route modulation matrix. Header Undo/Redo synchronize pending APVTS state before acting.
+- Interactive candidate-note selection and bounded pitch, timing, duration, and velocity editing. Editing never mutates the previously accepted bundle and requires a fresh explicit Accept before delivery.
+- A strict complete native UI snapshot restores parameters, actual wavetable tables, route state, composition state, version/status, and active voices after UI reload. Malformed, future, non-finite, duplicate, or oversize payloads cannot replace the last valid view.
 
 - Intel `x86_64` Debug and Release builds for Standalone and VST3.
 - A deterministic 16-voice engine with released/quietest-then-oldest voice stealing.
 - Two independent legal project-generated wavetable oscillators with position, coarse/fine tuning, phase/random/reset behavior, level/pan, and up to eight unison lanes with detune/spread/blend.
 - Eleven band-limited mip levels per wavetable frame, a sine/triangle sub, deterministic white/pink noise, three envelopes, four free/synced/retriggerable LFOs, and a stable low/high/band-pass filter with resonance, drive, key tracking, and envelope depth.
-- A central modulation registry with ten sources, thirteen destinations, three curves, and at most 32 validated routes. The engineering UI edits one reviewed route; complete matrices already serialize safely in plug-in state.
+- A central modulation registry with ten sources, thirteen destinations, three curves, and at most 32 validated routes. The M4 matrix edits, reviews, and transactionally publishes all 32 bounded slots.
 - Deterministic user-WAV conversion away from audio with strict bounds, SHA-256 metadata, a preview state, explicit confirmation, atomic publication, and a 128-sample table crossfade. Confirmed imported tables are currently session-memory assets and are not yet embedded in project state.
 - Ten-millisecond smoothing and fixed per-lane fades for live wavetable position, pitch, level, pan, detune/spread/blend, and unison-count changes.
 - Stable automatable host parameters and versioned state round trips.
-- Bundled WebView controls using host-aware parameter attachments, safe WAV review/confirm actions, modulation actions, panic, and live native status; audio behavior is tested with the editor open and closed.
+- Bundled WebView controls using host-aware parameter attachments, safe WAV review/confirm actions, modulation actions, preview MIDI, panic, and live native status; audio behavior is tested with the editor open and closed.
 - Native synth/processor/import/state tests, zero-allocation audio instrumentation, spectral and CPU evidence, plus a Release smoke test that loads the built VST3 as an external host and renders finite stereo audio from MIDI.
 - pluginval strictness 5 validation across editor, state, automation, buses, and the required sample-rate/block-size matrix.
 - Strict version 1 `MusicIntent` and `GeneratedClip` schemas and typed models with key, scale, tempo, meter, bars, requested parts, genre/emotion, six composition macros, arpeggiator settings, note range, polyphony, event caps, seed, generator version, and parent lineage.
 - Deterministic offline chord progressions with triads/sevenths, functional movement, V-I cadence, inversions, and bounded voice leading; chord-aware melodies with contour, motifs, rests, passing tones, and leap limits; bounded bass; and five seeded arpeggio orders.
 - `More Like This` preserves musical context and parent IDs while producing a controlled difference. `Surprise Me` produces a separate bounded candidate. Neither replaces accepted material.
-- A condensed Compose UI with seed/key/scale/BPM/bars, density/rhythm/tension/humanization/repetition/variation, part selection, colored piano-roll preview, candidate status, and an explicit Accept action.
+- A Compose UI with seed/key/scale/BPM/bars, density/rhythm/tension/humanization/repetition/variation, part selection, an editable colored piano roll, candidate status, and an explicit Accept action.
 - One accepted `GeneratedClip` bundle feeds all MIDI delivery paths: multitrack SMF with tempo/time-signature metadata and explicit note-offs, reopen verification at multiple PPQ resolutions, temporary-file drag, save chooser export, and fixed-schedule direct MIDI with correct block offsets and tracked Stop note-offs.
 - Direct accepted MIDI also drives the internal synth. Publication is atomic at an audio-block boundary, and measured composition scheduling adds zero allocations to the callback with a pre-sized host MIDI buffer.
 - Strict `SoundIntent` and `ParameterProposal` schemas plus typed validators are present as the foundation for the requested guided sound walkthrough. The conversational assistant, provider integration, A/B audition, and parameter application are not implemented yet.
 
-The current build is a verified M3 engineering checkpoint, not the complete 0.1 instrument. Debug passed 6/6 automated suites; Release passed 7/7 including loading and rendering through the actual built VST3; pluginval 1.0.4 strictness 5 passed. FL Studio insertion, playability, automation, state reopen, MIDI drag, and direct routing remain explicitly marked as human tests until they are performed in FL Studio.
+The current build is a verified M4 engineering checkpoint, not the complete 0.1 instrument. UI checks passed 7/7, Debug passed 6/6 automated native suites, Release passed 7/7 including loading and rendering through the actual built VST3, and pluginval 1.0.4 strictness 5 passed. The validated Intel VST3 is installed in the current user's plug-in folder. FL Studio insertion, piano focus/repeat behavior, automation, state reopen, MIDI drag, and direct routing remain explicitly marked as human tests until they are performed in FL Studio.
 
 Accepted compositions currently live in session memory and are deliberately not written into plug-in state until M6 history/persistence exists. Direct MIDI starts on the next audio block at the accepted clip tempo; transport-synchronized start/reposition behavior remains a host-level limitation to verify and refine. The M3 preview is MIDI-only; isolated WAV audition is M5.
 
@@ -46,8 +53,8 @@ Accepted compositions currently live in session memory and are deliberately not 
 | Milestone | Producer-facing result | Status |
 | --- | --- | --- |
 | M2 | Dual wavetable oscillators, safe user-WAV import, envelopes/LFOs, modulation matrix, multimode filter | Implemented foundation; FL Studio human run pending |
-| M3 | Deterministic chord, melody, bass, and arpeggio generation with candidate preview, acceptance, MIDI export/drag/direct route | Current; automated gates passed, FL Studio human drag/route run pending |
-| M4 | Full responsive Silicon Dreams React interface, original live 2D/3D wavetable and spectrum views, interactive composition editing, accessible low-graphics mode | Coming next |
+| M3 | Deterministic chord, melody, bass, and arpeggio generation with candidate preview, acceptance, MIDI export/drag/direct route | Implemented foundation; FL Studio human drag/route run pending |
+| M4 | Full responsive Silicon Dreams React interface, actual live 2D/3D wavetable and spectrum views, safe four-octave touch/computer piano audition, interactive composition editing, accessible low-graphics mode | Current; automated gates passed, FL Studio human UI run pending |
 | M5 | Distortion, chorus, synced delay, reverb, compressor, EQ, and isolated WAV preview | Planned |
 | M6 | Searchable presets, reversible history, migrations, and crash-safe persistence | Planned |
 | M7 | Offline Jarvis text workflow and guided AI sound walkthrough; optional secure provider | Planned |

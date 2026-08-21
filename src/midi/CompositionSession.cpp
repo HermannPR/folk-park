@@ -1,5 +1,6 @@
 #include "CompositionSession.h"
 
+#include <algorithm>
 #include <limits>
 
 namespace folkpark::midi
@@ -28,6 +29,7 @@ juce::Result CompositionSession::generateCandidate(MusicIntent intent)
         return result.status;
     }
     candidate = result.bundle;
+    candidateMatchesAccepted = false;
     status = "Candidate generated; review and explicitly accept before delivery";
     return juce::Result::ok();
 }
@@ -52,6 +54,7 @@ juce::Result CompositionSession::moreLikeCandidate(std::uint32_t variationIndex)
         return result.status;
     }
     candidate = result.bundle;
+    candidateMatchesAccepted = false;
     status = "Related candidate generated with parent lineage; acceptance is still required";
     return juce::Result::ok();
 }
@@ -76,7 +79,64 @@ juce::Result CompositionSession::surpriseCandidate(std::uint32_t surpriseIndex)
         return result.status;
     }
     candidate = result.bundle;
+    candidateMatchesAccepted = false;
     status = "Surprise candidate generated; review and explicitly accept before delivery";
+    return juce::Result::ok();
+}
+
+juce::Result CompositionSession::adjustCandidateNote(std::size_t sourceIndex,
+                                                     int pitchDelta,
+                                                     std::int64_t startDeltaTicks,
+                                                     std::int64_t durationDeltaTicks,
+                                                     int velocityDelta)
+{
+    if (pitchDelta < -24 || pitchDelta > 24 || startDeltaTicks < -compositionPpq * 4
+        || startDeltaTicks > compositionPpq * 4 || durationDeltaTicks < -compositionPpq * 4
+        || durationDeltaTicks > compositionPpq * 4 || velocityDelta < -127
+        || velocityDelta > 127)
+        return juce::Result::fail("Candidate note adjustment exceeds the bounded edit range");
+
+    const std::lock_guard lock(mutex);
+    if (!candidate.has_value())
+        return juce::Result::fail("Generate a candidate before editing a note");
+    auto edited = *candidate;
+    auto remaining = sourceIndex;
+    GeneratedClip* targetClip = nullptr;
+    NoteEvent* targetEvent = nullptr;
+    for (auto& clip : edited.clips)
+    {
+        if (remaining < clip.events.size())
+        {
+            targetClip = &clip;
+            targetEvent = &clip.events[remaining];
+            break;
+        }
+        remaining -= clip.events.size();
+    }
+    if (targetClip == nullptr || targetEvent == nullptr)
+        return juce::Result::fail("Candidate note index is outside the bounded preview");
+
+    const auto low = edited.intent.constraints.lowestMidiNote;
+    const auto high = edited.intent.constraints.highestMidiNote;
+    targetEvent->pitch = juce::jlimit(low, high, targetEvent->pitch + pitchDelta);
+    targetEvent->velocity = juce::jlimit(1, 127, targetEvent->velocity + velocityDelta);
+    const auto newStart = juce::jlimit<std::int64_t>(0, targetClip->lengthTicks - 1,
+                                                     targetEvent->startTick + startDeltaTicks);
+    const auto newDuration = juce::jlimit<std::int64_t>(1, targetClip->lengthTicks - newStart,
+        targetEvent->durationTicks + durationDeltaTicks);
+    targetEvent->startTick = newStart;
+    targetEvent->durationTicks = newDuration;
+    std::stable_sort(targetClip->events.begin(), targetClip->events.end(),
+        [](const NoteEvent& left, const NoteEvent& right)
+        {
+            return left.startTick < right.startTick
+                || (left.startTick == right.startTick && left.pitch < right.pitch);
+        });
+    if (const auto validation = validateBundle(edited); validation.failed())
+        return juce::Result::fail("Candidate edit rejected: " + validation.getErrorMessage());
+    candidate = std::move(edited);
+    candidateMatchesAccepted = false;
+    status = "Candidate note edited; review again and explicitly accept before delivery";
     return juce::Result::ok();
 }
 
@@ -88,6 +148,7 @@ juce::Result CompositionSession::acceptCandidate()
     if (const auto validation = validateBundle(*candidate); validation.failed())
         return validation;
     accepted = *candidate;
+    candidateMatchesAccepted = true;
     status = "Candidate accepted; MIDI drag, export, and direct routing are enabled";
     return juce::Result::ok();
 }
@@ -96,6 +157,7 @@ void CompositionSession::clearCandidate()
 {
     const std::lock_guard lock(mutex);
     candidate.reset();
+    candidateMatchesAccepted = false;
     status = accepted.has_value() ? "Candidate cleared; accepted composition remains available"
                                   : "Candidate cleared";
 }
@@ -107,6 +169,8 @@ CompositionSessionSnapshot CompositionSession::getSnapshot() const
     snapshot.status = status;
     snapshot.hasCandidate = candidate.has_value();
     snapshot.hasAccepted = accepted.has_value();
+    snapshot.candidateMatchesAccepted = candidate.has_value() && accepted.has_value()
+        && candidateMatchesAccepted;
     if (candidate.has_value())
     {
         snapshot.candidateRequestId = candidate->intent.requestId;

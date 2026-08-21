@@ -56,6 +56,7 @@ juce::var compositionPayload(const PluginProcessor& processor)
     payload->setProperty("status", session.status);
     payload->setProperty("hasCandidate", session.hasCandidate);
     payload->setProperty("hasAccepted", session.hasAccepted);
+    payload->setProperty("candidateMatchesAccepted", session.candidateMatchesAccepted);
     payload->setProperty("candidateClips", session.candidateClipCount);
     payload->setProperty("candidateNotes", session.candidateNoteCount);
     payload->setProperty("acceptedNotes", session.acceptedNoteCount);
@@ -76,6 +77,74 @@ juce::var compositionPayload(const PluginProcessor& processor)
     }
     payload->setProperty("notes", juce::var(notes));
     return juce::var(payload.get());
+}
+
+juce::var wavetablePayload(const WavetableUiSnapshot& snapshot)
+{
+    auto payload = juce::DynamicObject::Ptr(new juce::DynamicObject());
+    payload->setProperty("frameCount", snapshot.frameCount);
+    payload->setProperty("samplesPerFrame", WavetableUiSnapshot::samplesPerFrame);
+    juce::Array<juce::var> samples;
+    const auto count = juce::jlimit(0,
+        WavetableUiSnapshot::maximumFrames * WavetableUiSnapshot::samplesPerFrame,
+        snapshot.frameCount * WavetableUiSnapshot::samplesPerFrame);
+    samples.ensureStorageAllocated(count);
+    for (auto index = 0; index < count; ++index)
+        samples.add(snapshot.samples[static_cast<std::size_t>(index)]);
+    payload->setProperty("samples", juce::var(samples));
+    return juce::var(payload.get());
+}
+
+juce::var modulationPayload(const synth::ModulationSnapshot& snapshot)
+{
+    juce::Array<juce::var> routes;
+    routes.ensureStorageAllocated(static_cast<int>(snapshot.routeCount));
+    for (std::size_t index = 0; index < snapshot.routeCount; ++index)
+    {
+        const auto& route = snapshot.routes[index];
+        auto object = juce::DynamicObject::Ptr(new juce::DynamicObject());
+        object->setProperty("source", static_cast<int>(route.source));
+        object->setProperty("destination", static_cast<int>(route.destination));
+        object->setProperty("amount", route.amount);
+        object->setProperty("curve", static_cast<int>(route.curve));
+        object->setProperty("enabled", route.enabled);
+        routes.add(juce::var(object.get()));
+    }
+    return juce::var(routes);
+}
+
+juce::var completeUiSnapshot(PluginProcessor& processor)
+{
+    const auto import = processor.getWavetableImportSnapshot();
+    const auto routes = processor.getConfiguredModulationRoutes();
+    auto snapshot = juce::DynamicObject::Ptr(new juce::DynamicObject());
+    snapshot->setProperty("schemaVersion", 1);
+    snapshot->setProperty("product", "folk park");
+    snapshot->setProperty("version", FOLK_PARK_VERSION);
+    snapshot->setProperty("architecture", "x86_64");
+    snapshot->setProperty("activeVoices", processor.getActiveVoiceCount());
+    snapshot->setProperty("importStatus", importStatusName(import.status));
+    snapshot->setProperty("importMessage", import.message);
+    snapshot->setProperty("modulationRouteCount", static_cast<int>(routes.routeCount));
+    snapshot->setProperty("modulationRoutes", modulationPayload(routes));
+    snapshot->setProperty("composition", compositionPayload(processor));
+    snapshot->setProperty("wavetableA", wavetablePayload(processor.getWavetableUiSnapshot(0)));
+    snapshot->setProperty("wavetableB", wavetablePayload(processor.getWavetableUiSnapshot(1)));
+
+    juce::Array<juce::var> parameters;
+    parameters.ensureStorageAllocated(processor.getParameters().size());
+    for (const auto* parameter : processor.getParameters())
+    {
+        const auto* identified = dynamic_cast<const juce::AudioProcessorParameterWithID*>(parameter);
+        if (identified == nullptr)
+            continue;
+        auto entry = juce::DynamicObject::Ptr(new juce::DynamicObject());
+        entry->setProperty("id", identified->paramID);
+        entry->setProperty("normalized", parameter->getValue());
+        parameters.add(juce::var(entry.get()));
+    }
+    snapshot->setProperty("parameters", juce::var(parameters));
+    return juce::var(snapshot.get());
 }
 }
 
@@ -170,7 +239,31 @@ PluginEditor::PluginEditor(PluginProcessor& owner)
                          owner.state().undoManager),
       filterModeAttachment(*owner.state().getParameter(parameterIds::filterMode),
                            filterModeRelay,
-                           owner.state().undoManager)
+                           owner.state().undoManager),
+      oscillatorALevelAttachment(*owner.state().getParameter(parameterIds::oscillatorLevel), oscillatorALevelRelay, owner.state().undoManager),
+      subLevelAttachment(*owner.state().getParameter(parameterIds::subLevel), subLevelRelay, owner.state().undoManager),
+      noiseLevelAttachment(*owner.state().getParameter(parameterIds::noiseLevel), noiseLevelRelay, owner.state().undoManager),
+      ampDecayAttachment(*owner.state().getParameter(parameterIds::ampDecay), ampDecayRelay, owner.state().undoManager),
+      ampSustainAttachment(*owner.state().getParameter(parameterIds::ampSustain), ampSustainRelay, owner.state().undoManager),
+      filterKeyTrackingAttachment(*owner.state().getParameter(parameterIds::filterKeyTracking), filterKeyTrackingRelay, owner.state().undoManager),
+      filterEnvelopeAmountAttachment(*owner.state().getParameter(parameterIds::filterEnvelopeAmount), filterEnvelopeAmountRelay, owner.state().undoManager),
+      filterEnvelopeAttackAttachment(*owner.state().getParameter(parameterIds::filterEnvelopeAttack), filterEnvelopeAttackRelay, owner.state().undoManager),
+      filterEnvelopeDecayAttachment(*owner.state().getParameter(parameterIds::filterEnvelopeDecay), filterEnvelopeDecayRelay, owner.state().undoManager),
+      filterEnvelopeSustainAttachment(*owner.state().getParameter(parameterIds::filterEnvelopeSustain), filterEnvelopeSustainRelay, owner.state().undoManager),
+      filterEnvelopeReleaseAttachment(*owner.state().getParameter(parameterIds::filterEnvelopeRelease), filterEnvelopeReleaseRelay, owner.state().undoManager),
+      auxiliaryEnvelopeAttackAttachment(*owner.state().getParameter(parameterIds::auxiliaryEnvelopeAttack), auxiliaryEnvelopeAttackRelay, owner.state().undoManager),
+      auxiliaryEnvelopeDecayAttachment(*owner.state().getParameter(parameterIds::auxiliaryEnvelopeDecay), auxiliaryEnvelopeDecayRelay, owner.state().undoManager),
+      auxiliaryEnvelopeSustainAttachment(*owner.state().getParameter(parameterIds::auxiliaryEnvelopeSustain), auxiliaryEnvelopeSustainRelay, owner.state().undoManager),
+      auxiliaryEnvelopeReleaseAttachment(*owner.state().getParameter(parameterIds::auxiliaryEnvelopeRelease), auxiliaryEnvelopeReleaseRelay, owner.state().undoManager),
+      lfo2RateAttachment(*owner.state().getParameter(parameterIds::lfoRate[1]), lfo2RateRelay, owner.state().undoManager),
+      lfo3RateAttachment(*owner.state().getParameter(parameterIds::lfoRate[2]), lfo3RateRelay, owner.state().undoManager),
+      lfo4RateAttachment(*owner.state().getParameter(parameterIds::lfoRate[3]), lfo4RateRelay, owner.state().undoManager),
+      subWaveformAttachment(*owner.state().getParameter(parameterIds::subWaveform), subWaveformRelay, owner.state().undoManager),
+      noiseTypeAttachment(*owner.state().getParameter(parameterIds::noiseType), noiseTypeRelay, owner.state().undoManager),
+      lfo1ShapeAttachment(*owner.state().getParameter(parameterIds::lfoShape[0]), lfo1ShapeRelay, owner.state().undoManager),
+      lfo2ShapeAttachment(*owner.state().getParameter(parameterIds::lfoShape[1]), lfo2ShapeRelay, owner.state().undoManager),
+      lfo3ShapeAttachment(*owner.state().getParameter(parameterIds::lfoShape[2]), lfo3ShapeRelay, owner.state().undoManager),
+      lfo4ShapeAttachment(*owner.state().getParameter(parameterIds::lfoShape[3]), lfo4ShapeRelay, owner.state().undoManager)
 {
     fallback.setText("folk park M2 - native fallback editor", juce::dontSendNotification);
     fallback.setJustificationType(juce::Justification::centred);
@@ -196,6 +289,7 @@ PluginEditor::PluginEditor(PluginProcessor& owner)
 
 PluginEditor::~PluginEditor()
 {
+    ownerProcessor.releasePreviewNotes();
     stopTimer();
 }
 
@@ -215,6 +309,34 @@ juce::WebBrowserComponent::Options PluginEditor::browserOptions()
         .withOptionsFrom(lfo1RateRelay)
         .withOptionsFrom(waveformRelay)
         .withOptionsFrom(filterModeRelay)
+        .withOptionsFrom(oscillatorALevelRelay)
+        .withOptionsFrom(subLevelRelay)
+        .withOptionsFrom(noiseLevelRelay)
+        .withOptionsFrom(ampDecayRelay)
+        .withOptionsFrom(ampSustainRelay)
+        .withOptionsFrom(filterKeyTrackingRelay)
+        .withOptionsFrom(filterEnvelopeAmountRelay)
+        .withOptionsFrom(filterEnvelopeAttackRelay)
+        .withOptionsFrom(filterEnvelopeDecayRelay)
+        .withOptionsFrom(filterEnvelopeSustainRelay)
+        .withOptionsFrom(filterEnvelopeReleaseRelay)
+        .withOptionsFrom(auxiliaryEnvelopeAttackRelay)
+        .withOptionsFrom(auxiliaryEnvelopeDecayRelay)
+        .withOptionsFrom(auxiliaryEnvelopeSustainRelay)
+        .withOptionsFrom(auxiliaryEnvelopeReleaseRelay)
+        .withOptionsFrom(lfo2RateRelay)
+        .withOptionsFrom(lfo3RateRelay)
+        .withOptionsFrom(lfo4RateRelay)
+        .withOptionsFrom(subWaveformRelay)
+        .withOptionsFrom(noiseTypeRelay)
+        .withOptionsFrom(lfo1ShapeRelay)
+        .withOptionsFrom(lfo2ShapeRelay)
+        .withOptionsFrom(lfo3ShapeRelay)
+        .withOptionsFrom(lfo4ShapeRelay)
+        .withNativeFunction("getUiSnapshot", [this](const auto&, auto complete)
+        {
+            complete(completeUiSnapshot(ownerProcessor));
+        })
         .withNativeFunction("getProductInfo", [](const auto&, auto complete)
         {
             auto info = juce::DynamicObject::Ptr(new juce::DynamicObject());
@@ -227,6 +349,56 @@ juce::WebBrowserComponent::Options PluginEditor::browserOptions()
         {
             ownerProcessor.requestPanic();
             complete("Panic queued safely for the next audio block");
+        })
+        .withNativeFunction("undo", [this](const auto& arguments, auto complete)
+        {
+            if (!arguments.isEmpty()) { complete("Undo takes no arguments"); return; }
+            complete(ownerProcessor.undoLastParameterChange()
+                         ? juce::var("Last parameter gesture undone")
+                         : juce::var("Nothing to undo"));
+        })
+        .withNativeFunction("redo", [this](const auto& arguments, auto complete)
+        {
+            if (!arguments.isEmpty()) { complete("Redo takes no arguments"); return; }
+            complete(ownerProcessor.redoLastParameterChange()
+                         ? juce::var("Last undone parameter gesture restored")
+                         : juce::var("Nothing to redo"));
+        })
+        .withNativeFunction("previewNoteOn", [this](const auto& arguments, auto complete)
+        {
+            double note = 0.0;
+            double velocity = 0.0;
+            if (arguments.size() != 2 || !boundedNumber(arguments[0], 0.0, 127.0, note)
+                || !boundedNumber(arguments[1], 1.0, 127.0, velocity)
+                || std::floor(note) != note || std::floor(velocity) != velocity)
+            {
+                complete("Preview note-on requires integer note 0–127 and velocity 1–127");
+                return;
+            }
+            complete(ownerProcessor.previewNoteOn(static_cast<int>(note), static_cast<int>(velocity))
+                         ? juce::var(true) : juce::var("Preview MIDI queue is full"));
+        })
+        .withNativeFunction("previewNoteOff", [this](const auto& arguments, auto complete)
+        {
+            double note = 0.0;
+            if (arguments.size() != 1 || !boundedNumber(arguments[0], 0.0, 127.0, note)
+                || std::floor(note) != note)
+            {
+                complete("Preview note-off requires an integer note from 0–127");
+                return;
+            }
+            complete(ownerProcessor.previewNoteOff(static_cast<int>(note))
+                         ? juce::var(true) : juce::var("Preview release-all safety was requested"));
+        })
+        .withNativeFunction("releasePreviewNotes", [this](const auto& arguments, auto complete)
+        {
+            if (!arguments.isEmpty())
+            {
+                complete("Release preview notes takes no arguments");
+                return;
+            }
+            ownerProcessor.releasePreviewNotes();
+            complete(true);
         })
         .withNativeFunction("chooseWavetable", [this](const auto& arguments, auto finish)
         {
@@ -299,6 +471,57 @@ juce::WebBrowserComponent::Options PluginEditor::browserOptions()
             const auto result = ownerProcessor.setModulationRoutes(std::span{&route, 1});
             complete(result.wasOk() ? juce::String("One bounded modulation route applied")
                                     : result.getErrorMessage());
+        })
+        .withNativeFunction("setModulationRoutes", [this](const auto& arguments, auto complete)
+        {
+            if (arguments.size() != 1 || !arguments[0].isArray())
+            {
+                complete("Modulation routes require one bounded array");
+                return;
+            }
+            const auto* input = arguments[0].getArray();
+            if (input == nullptr || input->size() > static_cast<int>(synth::ModulationSnapshot::maximumRoutes))
+            {
+                complete("Modulation route array exceeds 32 entries");
+                return;
+            }
+            std::array<synth::ModulationRoute, synth::ModulationSnapshot::maximumRoutes> parsed{};
+            for (int index = 0; index < input->size(); ++index)
+            {
+                const auto* object = (*input)[index].getDynamicObject();
+                if (object == nullptr || !object->hasProperty("source")
+                    || !object->hasProperty("destination") || !object->hasProperty("amount")
+                    || !object->hasProperty("curve") || !object->hasProperty("enabled"))
+                {
+                    complete("Every modulation route requires source, destination, amount, curve, and enabled");
+                    return;
+                }
+                double source = 0.0;
+                double destination = 0.0;
+                double amount = 0.0;
+                double curve = 0.0;
+                bool enabled = false;
+                if (!boundedNumber(object->getProperty("source"), 0.0, 9.0, source)
+                    || !boundedNumber(object->getProperty("destination"), 0.0, 12.0, destination)
+                    || !boundedNumber(object->getProperty("amount"), -1.0, 1.0, amount)
+                    || !boundedNumber(object->getProperty("curve"), 0.0, 2.0, curve)
+                    || !strictBoolean(object->getProperty("enabled"), enabled)
+                    || std::floor(source) != source || std::floor(destination) != destination
+                    || std::floor(curve) != curve)
+                {
+                    complete("Modulation route fields are malformed or outside their bounds");
+                    return;
+                }
+                parsed[static_cast<std::size_t>(index)] = {
+                    static_cast<synth::ModulationSource>(static_cast<int>(source)),
+                    static_cast<synth::ModulationDestination>(static_cast<int>(destination)),
+                    static_cast<float>(amount),
+                    static_cast<synth::ModulationCurve>(static_cast<int>(curve)), enabled};
+            }
+            const auto span = std::span{parsed}.first(static_cast<std::size_t>(input->size()));
+            const auto result = ownerProcessor.setModulationRoutes(span);
+            complete(result.wasOk() ? completeUiSnapshot(ownerProcessor)
+                                    : juce::var(result.getErrorMessage()));
         })
         .withNativeFunction("clearModulationRoutes", [this](const auto&, auto complete)
         {
@@ -407,6 +630,33 @@ juce::WebBrowserComponent::Options PluginEditor::browserOptions()
             complete(result.wasOk() ? compositionPayload(ownerProcessor)
                                     : juce::var(result.getErrorMessage()));
         })
+        .withNativeFunction("editCompositionNote", [this](const auto& arguments, auto complete)
+        {
+            std::array<double, 5> values{};
+            constexpr std::array minimums{0.0, -24.0, -3840.0, -3840.0, -127.0};
+            constexpr std::array maximums{4095.0, 24.0, 3840.0, 3840.0, 127.0};
+            if (arguments.size() != static_cast<int>(values.size()))
+            {
+                complete("A note edit requires index, pitch, start, duration, and velocity deltas");
+                return;
+            }
+            for (std::size_t index = 0; index < values.size(); ++index)
+            {
+                if (!boundedNumber(arguments[static_cast<int>(index)], minimums[index],
+                                   maximums[index], values[index])
+                    || std::floor(values[index]) != values[index])
+                {
+                    complete("Every note edit field must be a bounded integer");
+                    return;
+                }
+            }
+            const auto result = ownerProcessor.adjustCompositionCandidateNote(
+                static_cast<std::size_t>(values[0]), static_cast<int>(values[1]),
+                static_cast<std::int64_t>(values[2]), static_cast<std::int64_t>(values[3]),
+                static_cast<int>(values[4]));
+            complete(result.wasOk() ? compositionPayload(ownerProcessor)
+                                    : juce::var(result.getErrorMessage()));
+        })
         .withNativeFunction("acceptComposition", [this](const auto&, auto complete)
         {
             const auto result = ownerProcessor.acceptCompositionCandidate();
@@ -481,12 +731,10 @@ std::optional<juce::WebBrowserComponent::Resource> PluginEditor::resourceFor(con
                                   : url.fromFirstOccurrenceOf("/", false, false);
     if (path == "index.html")
         return makeResource(FolkParkAssets::index_html, FolkParkAssets::index_htmlSize, "text/html");
-    if (path == "juce.js")
-        return makeResource(FolkParkAssets::index_js, FolkParkAssets::index_jsSize, "text/javascript");
-    if (path == "check_native_interop.js")
-        return makeResource(FolkParkAssets::check_native_interop_js,
-                            FolkParkAssets::check_native_interop_jsSize,
-                            "text/javascript");
+    if (path == "app.js")
+        return makeResource(FolkParkAssets::app_js, FolkParkAssets::app_jsSize, "text/javascript");
+    if (path == "app.css")
+        return makeResource(FolkParkAssets::app_css, FolkParkAssets::app_cssSize, "text/css");
     return std::nullopt;
 }
 
@@ -500,6 +748,7 @@ void PluginEditor::timerCallback()
     const auto composition = ownerProcessor.getCompositionSnapshot();
     midiDrag->updateAvailability(composition.hasAccepted);
     auto snapshot = juce::DynamicObject::Ptr(new juce::DynamicObject());
+    snapshot->setProperty("schemaVersion", 1);
     snapshot->setProperty("product", "folk park");
     snapshot->setProperty("version", FOLK_PARK_VERSION);
     snapshot->setProperty("state", "bundled bridge online");

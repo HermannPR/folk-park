@@ -147,6 +147,28 @@ void testUiIndependenceAndPanic()
 
     auto editor = std::unique_ptr<juce::AudioProcessorEditor>(openEditorProcessor.createEditor());
     expect(editor != nullptr, "M1 editor must be constructible");
+    if (editor != nullptr)
+    {
+        editor->setSize(720, 560);
+        expect(editor->getWidth() == 720 && editor->getHeight() == 560,
+               "M4 editor must preserve its documented compact size without native clipping");
+        editor->setSize(1600, 1100);
+        expect(editor->getWidth() == 1600 && editor->getHeight() == 1100,
+               "M4 editor must preserve its documented large size");
+    }
+
+    const auto wavetableA = openEditorProcessor.getWavetableUiSnapshot(0);
+    const auto wavetableB = openEditorProcessor.getWavetableUiSnapshot(1);
+    expect(wavetableA.frameCount == 4 && wavetableB.frameCount == 4,
+           "M4 complete snapshot must expose both actual built-in four-frame tables");
+    for (const auto* preview : {&wavetableA, &wavetableB})
+    {
+        const auto sampleCount = preview->frameCount * folkpark::WavetableUiSnapshot::samplesPerFrame;
+        for (auto index = 0; index < sampleCount; ++index)
+            expect(std::isfinite(preview->samples[static_cast<std::size_t>(index)])
+                       && std::abs(preview->samples[static_cast<std::size_t>(index)]) <= 1.0001f,
+                   "M4 wavetable UI snapshot samples must remain finite and normalized");
+    }
 
     juce::AudioBuffer<float> closedAudio(2, 512);
     juce::AudioBuffer<float> openAudio(2, 512);
@@ -160,6 +182,13 @@ void testUiIndependenceAndPanic()
     expect(buffersMatch(closedAudio, openAudio, 1.0e-7f),
            "Opening the editor must not change deterministic audio rendering");
 
+    editor.reset();
+    juce::MidiBuffer editorClosedMidi;
+    openEditorProcessor.processBlock(openAudio, editorClosedMidi);
+    expect(openEditorProcessor.getActiveVoiceCount() > 0
+               && openAudio.getMagnitude(0, 0, openAudio.getNumSamples()) > 1.0e-7f,
+           "Closing or losing the WebView must not stop an active synth voice or audio callback");
+
     openEditorProcessor.requestPanic();
     juce::MidiBuffer noMidi;
     openEditorProcessor.processBlock(openAudio, noMidi);
@@ -167,6 +196,31 @@ void testUiIndependenceAndPanic()
            "Message-thread panic request must clear voices on the audio callback");
     expect(openAudio.getMagnitude(0, 0, openAudio.getNumSamples()) <= 1.0e-9f,
            "Panic must return plug-in output to silence");
+}
+
+void testHostAwareUndoRedo()
+{
+    folkpark::PluginProcessor processor;
+    auto* cutoff = processor.state().getParameter(folkpark::parameterIds::filterCutoff);
+    expect(cutoff != nullptr, "Undo fixture cutoff parameter must exist");
+    if (cutoff == nullptr)
+        return;
+    const auto original = cutoff->getValue();
+    const auto changed = original < 0.5f ? 0.8f : 0.2f;
+    expect(processor.state().undoManager != nullptr,
+           "M4 parameter attachments must have an undo manager");
+    processor.state().undoManager->beginNewTransaction("M4 host-aware parameter gesture");
+    cutoff->beginChangeGesture();
+    cutoff->setValueNotifyingHost(changed);
+    cutoff->endChangeGesture();
+    expect(std::abs(cutoff->getValue() - changed) <= 1.0e-3f,
+           "Host-aware parameter gesture must reach the APVTS value");
+    const auto undone = processor.undoLastParameterChange();
+    expect(undone && std::abs(cutoff->getValue() - original) <= 1.0e-3f,
+           "M4 Undo must restore the preceding host-aware parameter gesture");
+    const auto redone = processor.redoLastParameterChange();
+    expect(redone && std::abs(cutoff->getValue() - changed) <= 1.0e-3f,
+           "M4 Redo must restore the undone host-aware parameter gesture");
 }
 
 void testCompositionAcceptanceAndProcessorRouting()
@@ -225,16 +279,50 @@ void testCompositionAcceptanceAndProcessorRouting()
     expect(!restored.getCompositionSnapshot().hasAccepted,
            "M3 session MIDI must not pretend to persist before M6 history support");
 }
+
+void testPreviewKeyboardProcessorPath()
+{
+    folkpark::PluginProcessor processor;
+    processor.prepareToPlay(48000.0, 512);
+    auto editor = std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());
+    expect(!processor.previewNoteOn(-1, 100) && !processor.previewNoteOn(60, 0)
+               && !processor.previewNoteOff(128),
+           "Processor preview boundary must reject invalid MIDI input");
+    expect(processor.previewNoteOn(60, 104),
+           "Playable UI piano note must enter the bounded native queue");
+    juce::AudioBuffer<float> audio(2, 512);
+    juce::MidiBuffer started;
+    started.ensureSize(4096);
+    processor.processBlock(audio, started);
+    auto foundOn = false;
+    for (const auto event : started)
+        foundOn = foundOn || (event.getMessage().isNoteOn()
+                              && event.getMessage().getNoteNumber() == 60);
+    expect(foundOn && audio.getMagnitude(0, 0, audio.getNumSamples()) > 1.0e-7f,
+           "UI piano must drive both host MIDI output and the real synth audio path");
+
+    editor.reset();
+    juce::MidiBuffer released;
+    released.ensureSize(4096);
+    processor.processBlock(audio, released);
+    auto foundOff = false;
+    for (const auto event : released)
+        foundOff = foundOff || (event.getMessage().isNoteOff()
+                                && event.getMessage().getNoteNumber() == 60);
+    expect(foundOff, "Editor close must release every tracked native preview note");
+}
 }
 
 int main()
 {
     juce::ScopedJuceInitialiser_GUI initialiseGui;
     testStateRoundTrip();
+    testHostAwareUndoRedo();
     testUiIndependenceAndPanic();
     testCompositionAcceptanceAndProcessorRouting();
+    testPreviewKeyboardProcessorPath();
 
     if (failures == 0)
-        std::cout << "PASS: M1/M2 state plus M3 candidate acceptance, delivery, routing, and session boundary\n";
+        std::cout << "PASS: M1–M3 state/delivery plus M4 UI preview keyboard processor path\n";
     return failures == 0 ? 0 : 1;
 }
