@@ -325,6 +325,21 @@ PluginProcessor::PluginProcessor()
                                 raw(parameterIds::lfoSyncDivision[index]), raw(parameterIds::lfoPhase[index]),
                                 raw(parameterIds::lfoTempoSync[index]), raw(parameterIds::lfoRetrigger[index])};
     }
+    effectParameters = {
+        raw(parameterIds::distortionBypass), raw(parameterIds::distortionDrive),
+        raw(parameterIds::distortionMix), raw(parameterIds::distortionOutput),
+        raw(parameterIds::chorusBypass), raw(parameterIds::chorusRate),
+        raw(parameterIds::chorusDepth), raw(parameterIds::chorusMix),
+        raw(parameterIds::delayBypass), raw(parameterIds::delayDivision),
+        raw(parameterIds::delayFeedback), raw(parameterIds::delayMix),
+        raw(parameterIds::reverbBypass), raw(parameterIds::reverbRoomSize),
+        raw(parameterIds::reverbDamping), raw(parameterIds::reverbMix),
+        raw(parameterIds::compressorBypass), raw(parameterIds::compressorThreshold),
+        raw(parameterIds::compressorRatio), raw(parameterIds::compressorAttack),
+        raw(parameterIds::compressorRelease), raw(parameterIds::compressorMakeup),
+        raw(parameterIds::compressorMix), raw(parameterIds::eqBypass),
+        raw(parameterIds::eqLowGain), raw(parameterIds::eqMidFrequency),
+        raw(parameterIds::eqMidGain), raw(parameterIds::eqMidQ), raw(parameterIds::eqHighGain)};
 }
 
 bool PluginProcessor::publishWavetable(int oscillatorIndex,
@@ -452,6 +467,37 @@ juce::AudioProcessorValueTreeState::ParameterLayout PluginProcessor::createParam
         addBool(layout, parameterIds::lfoTempoSync[index], prefix + " Tempo Sync", false);
         addBool(layout, parameterIds::lfoRetrigger[index], prefix + " Retrigger", true);
     }
+
+    // M5 effects are append-only and bypassed by default so older states stay gain-safe.
+    addBool(layout, parameterIds::distortionBypass, "Distortion Bypass", true);
+    addFloat(layout, parameterIds::distortionDrive, "Distortion Drive", 0.0f, 36.0f, 0.01f, 1.0f, 6.0f, "dB");
+    addFloat(layout, parameterIds::distortionMix, "Distortion Mix", 0.0f, 1.0f, 0.001f, 1.0f, 0.5f);
+    addFloat(layout, parameterIds::distortionOutput, "Distortion Output", -24.0f, 0.0f, 0.01f, 1.0f, -6.0f, "dB");
+    addBool(layout, parameterIds::chorusBypass, "Chorus Bypass", true);
+    addFloat(layout, parameterIds::chorusRate, "Chorus Rate", 0.05f, 5.0f, 0.01f, 0.4f, 0.35f, "Hz");
+    addFloat(layout, parameterIds::chorusDepth, "Chorus Depth", 0.0f, 20.0f, 0.01f, 1.0f, 6.0f, "ms");
+    addFloat(layout, parameterIds::chorusMix, "Chorus Mix", 0.0f, 1.0f, 0.001f, 1.0f, 0.25f);
+    addBool(layout, parameterIds::delayBypass, "Delay Bypass", true);
+    addChoice(layout, parameterIds::delayDivision, "Delay Division", {"1 bar", "1/2", "1/4", "1/8", "1/16"}, 2);
+    addFloat(layout, parameterIds::delayFeedback, "Delay Feedback", 0.0f, 0.85f, 0.001f, 1.0f, 0.3f);
+    addFloat(layout, parameterIds::delayMix, "Delay Mix", 0.0f, 1.0f, 0.001f, 1.0f, 0.25f);
+    addBool(layout, parameterIds::reverbBypass, "Reverb Bypass", true);
+    addFloat(layout, parameterIds::reverbRoomSize, "Reverb Room Size", 0.0f, 1.0f, 0.001f, 1.0f, 0.45f);
+    addFloat(layout, parameterIds::reverbDamping, "Reverb Damping", 0.0f, 1.0f, 0.001f, 1.0f, 0.4f);
+    addFloat(layout, parameterIds::reverbMix, "Reverb Mix", 0.0f, 1.0f, 0.001f, 1.0f, 0.2f);
+    addBool(layout, parameterIds::compressorBypass, "Compressor Bypass", true);
+    addFloat(layout, parameterIds::compressorThreshold, "Compressor Threshold", -60.0f, 0.0f, 0.01f, 1.0f, -18.0f, "dB");
+    addFloat(layout, parameterIds::compressorRatio, "Compressor Ratio", 1.0f, 20.0f, 0.01f, 0.5f, 4.0f);
+    addFloat(layout, parameterIds::compressorAttack, "Compressor Attack", 0.1f, 100.0f, 0.1f, 0.4f, 10.0f, "ms");
+    addFloat(layout, parameterIds::compressorRelease, "Compressor Release", 10.0f, 1000.0f, 1.0f, 0.4f, 100.0f, "ms");
+    addFloat(layout, parameterIds::compressorMakeup, "Compressor Makeup", 0.0f, 18.0f, 0.01f, 1.0f, 0.0f, "dB");
+    addFloat(layout, parameterIds::compressorMix, "Compressor Mix", 0.0f, 1.0f, 0.001f, 1.0f, 1.0f);
+    addBool(layout, parameterIds::eqBypass, "EQ Bypass", true);
+    addFloat(layout, parameterIds::eqLowGain, "EQ Low Shelf", -18.0f, 18.0f, 0.01f, 1.0f, 0.0f, "dB");
+    addFloat(layout, parameterIds::eqMidFrequency, "EQ Mid Frequency", 20.0f, 20000.0f, 1.0f, 0.25f, 1000.0f, "Hz");
+    addFloat(layout, parameterIds::eqMidGain, "EQ Mid Gain", -18.0f, 18.0f, 0.01f, 1.0f, 0.0f, "dB");
+    addFloat(layout, parameterIds::eqMidQ, "EQ Mid Q", 0.1f, 10.0f, 0.01f, 0.4f, 1.0f);
+    addFloat(layout, parameterIds::eqHighGain, "EQ High Shelf", -18.0f, 18.0f, 0.01f, 1.0f, 0.0f, "dB");
     return layout;
 }
 
@@ -460,6 +506,7 @@ void PluginProcessor::prepareToPlay(double newSampleRate, int maximumExpectedSam
     activeSampleRate = newSampleRate;
     activeBlockSize = maximumExpectedSamplesPerBlock;
     engine.prepare(newSampleRate, maximumExpectedSamplesPerBlock);
+    effectChain.prepare(newSampleRate, maximumExpectedSamplesPerBlock);
     masterGain.reset(newSampleRate, 0.02);
     const auto initialGain = juce::Decibels::decibelsToGain(
         masterGainParameter->load(std::memory_order_relaxed), -60.0f);
@@ -473,6 +520,7 @@ void PluginProcessor::releaseResources()
     activeSampleRate = 0.0;
     activeBlockSize = 0;
     engine.reset();
+    effectChain.reset();
     directMidiPlayer.reset();
     previewMidiQueue.reset();
 }
@@ -506,6 +554,7 @@ void PluginProcessor::processBlock(juce::AudioBuffer<float>& audio, juce::MidiBu
         }
     }
     engine.process(audio, midi, synthParameters);
+    effectChain.process(audio, readEffectsParameters(synthParameters.tempoBpm));
     masterGain.setTargetValue(juce::Decibels::decibelsToGain(
         masterGainParameter->load(std::memory_order_relaxed), -60.0f));
 
@@ -599,6 +648,43 @@ synth::ParameterSnapshot PluginProcessor::readSynthParameters() const noexcept
         snapshot.lfos[index].retrigger = load(lfoParameters[index].retrigger) >= 0.5f;
     }
     return snapshot;
+}
+
+effects::Parameters PluginProcessor::readEffectsParameters(double tempoBpm) const noexcept
+{
+    const auto load = [](const std::atomic<float>* value) { return value->load(std::memory_order_relaxed); };
+    effects::Parameters result;
+    result.distortionBypass = load(effectParameters.distortionBypass) >= 0.5f;
+    result.distortionDriveDb = load(effectParameters.distortionDrive);
+    result.distortionMix = load(effectParameters.distortionMix);
+    result.distortionOutputDb = load(effectParameters.distortionOutput);
+    result.chorusBypass = load(effectParameters.chorusBypass) >= 0.5f;
+    result.chorusRateHz = load(effectParameters.chorusRate);
+    result.chorusDepthMs = load(effectParameters.chorusDepth);
+    result.chorusMix = load(effectParameters.chorusMix);
+    result.delayBypass = load(effectParameters.delayBypass) >= 0.5f;
+    result.delayDivision = juce::roundToInt(load(effectParameters.delayDivision));
+    result.delayFeedback = load(effectParameters.delayFeedback);
+    result.delayMix = load(effectParameters.delayMix);
+    result.reverbBypass = load(effectParameters.reverbBypass) >= 0.5f;
+    result.reverbRoomSize = load(effectParameters.reverbRoomSize);
+    result.reverbDamping = load(effectParameters.reverbDamping);
+    result.reverbMix = load(effectParameters.reverbMix);
+    result.compressorBypass = load(effectParameters.compressorBypass) >= 0.5f;
+    result.compressorThresholdDb = load(effectParameters.compressorThreshold);
+    result.compressorRatio = load(effectParameters.compressorRatio);
+    result.compressorAttackMs = load(effectParameters.compressorAttack);
+    result.compressorReleaseMs = load(effectParameters.compressorRelease);
+    result.compressorMakeupDb = load(effectParameters.compressorMakeup);
+    result.compressorMix = load(effectParameters.compressorMix);
+    result.eqBypass = load(effectParameters.eqBypass) >= 0.5f;
+    result.eqLowGainDb = load(effectParameters.eqLowGain);
+    result.eqMidFrequencyHz = load(effectParameters.eqMidFrequency);
+    result.eqMidGainDb = load(effectParameters.eqMidGain);
+    result.eqMidQ = load(effectParameters.eqMidQ);
+    result.eqHighGainDb = load(effectParameters.eqHighGain);
+    result.tempoBpm = tempoBpm;
+    return result;
 }
 
 juce::Result PluginProcessor::setModulationRoutes(std::span<const synth::ModulationRoute> routes)

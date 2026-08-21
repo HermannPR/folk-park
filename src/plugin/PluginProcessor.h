@@ -1,5 +1,6 @@
 #pragma once
 
+#include "effects/EffectChain.h"
 #include "midi/CompositionSession.h"
 #include "midi/MidiDelivery.h"
 #include "midi/PreviewMidi.h"
@@ -142,10 +143,12 @@ public:
 
 private:
     [[nodiscard]] synth::ParameterSnapshot readSynthParameters() const noexcept;
+    [[nodiscard]] effects::Parameters readEffectsParameters(double tempoBpm) const noexcept;
 
     juce::UndoManager undoManager;
     juce::AudioProcessorValueTreeState parameters;
     synth::SynthEngine engine;
+    effects::EffectChain effectChain;
     synth::WavetableImportService wavetableImportService;
     midi::CompositionSession compositionSession;
     midi::DirectMidiPlayer directMidiPlayer;
@@ -206,6 +209,38 @@ private:
     EnvelopeParameterPointers filterEnvelopeParameters;
     EnvelopeParameterPointers auxiliaryEnvelopeParameters;
     std::array<LfoParameterPointers, 4> lfoParameters{};
+    struct EffectParameterPointers
+    {
+        std::atomic<float>* distortionBypass = nullptr;
+        std::atomic<float>* distortionDrive = nullptr;
+        std::atomic<float>* distortionMix = nullptr;
+        std::atomic<float>* distortionOutput = nullptr;
+        std::atomic<float>* chorusBypass = nullptr;
+        std::atomic<float>* chorusRate = nullptr;
+        std::atomic<float>* chorusDepth = nullptr;
+        std::atomic<float>* chorusMix = nullptr;
+        std::atomic<float>* delayBypass = nullptr;
+        std::atomic<float>* delayDivision = nullptr;
+        std::atomic<float>* delayFeedback = nullptr;
+        std::atomic<float>* delayMix = nullptr;
+        std::atomic<float>* reverbBypass = nullptr;
+        std::atomic<float>* reverbRoomSize = nullptr;
+        std::atomic<float>* reverbDamping = nullptr;
+        std::atomic<float>* reverbMix = nullptr;
+        std::atomic<float>* compressorBypass = nullptr;
+        std::atomic<float>* compressorThreshold = nullptr;
+        std::atomic<float>* compressorRatio = nullptr;
+        std::atomic<float>* compressorAttack = nullptr;
+        std::atomic<float>* compressorRelease = nullptr;
+        std::atomic<float>* compressorMakeup = nullptr;
+        std::atomic<float>* compressorMix = nullptr;
+        std::atomic<float>* eqBypass = nullptr;
+        std::atomic<float>* eqLowGain = nullptr;
+        std::atomic<float>* eqMidFrequency = nullptr;
+        std::atomic<float>* eqMidGain = nullptr;
+        std::atomic<float>* eqMidQ = nullptr;
+        std::atomic<float>* eqHighGain = nullptr;
+    } effectParameters;
     mutable std::mutex modulationStateMutex;
     synth::ModulationSnapshot configuredModulationRoutes;
     mutable std::mutex wavetableUiMutex;
