@@ -15,7 +15,7 @@ Real-time synth       Presets and history
 Composition and assistant services (non-real-time)
 ```
 
-The plug-in processor adapts host buses, MIDI, transport, automation, and serialized state. The synth owns preallocated real-time voice/DSP state. Composition produces host-independent, validated `GeneratedClip` values. Assistant providers can only propose a bounded `MusicIntent`; they cannot execute code or write into a DAW. Persistence consumes snapshots outside the audio thread. The WebView is presentation only and must be recoverable from a complete C++ snapshot.
+The plug-in processor adapts host buses, MIDI, transport, automation, and serialized state. The synth owns preallocated real-time voice/DSP state. Composition produces host-independent, validated `GeneratedClip` values. Assistant providers can only propose bounded `MusicIntent`, `SoundIntent`, and `ParameterProposal` values; they cannot execute code or write into a DAW. A proposal is validated against the parameter catalog, previewed in a reversible comparison state, and applied only after explicit producer acceptance. Persistence consumes snapshots outside the audio thread. The WebView is presentation only and must be recoverable from a complete C++ snapshot.
 
 ## M0 vertical shell
 
