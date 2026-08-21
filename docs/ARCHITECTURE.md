@@ -43,10 +43,21 @@ The pure composition engine normalizes a typed `MusicIntent`, derives one shared
 
 Piano-roll presentation, SMF export/drag, and direct output all read the same validated events. SMF work and direct schedule construction happen off audio. Direct MIDI uses a fixed double schedule and atomic block-boundary publication; the callback performs bounded message insertion and note tracking without locks or owned-vector work. Accepted clips remain session-only until M6 persistence.
 
+## M4 presentation, visualization, and audition boundary
+
+The M4 React tree is presentation only. JUCE Web parameter relays own host gestures, and one strict version 1 complete snapshot restores parameters, actual fixed A/B wavetable copies, modulation routes, composition state, version/status, and active voices. React validates the entire payload before publishing it, so malformed or future data cannot partially replace the last coherent view.
+
+The visualizer receives at most 16 frames × 96 samples copied under the message-thread snapshot lock. It derives geometry and spectrum in JavaScript outside audio. Three.js renders at no more than 30 FPS; the 2D fallback renders at no more than 12 FPS; reduced-motion and hidden policies stop continuous work. ResizeObserver updates presentation dimensions without changing DSP ownership.
+
+Touch/computer audition commands cross a fixed 64-command SPSC queue. The producer never calls the synth directly. The audio callback drains bounded note events, tracks native active notes, and makes duplicate note-on/off commands idempotent. Release-all is an atomic request used by focus loss, visibility loss, editor close, Panic, and overflow recovery. Host MIDI and preview MIDI meet only at the processor block boundary.
+
+Composition-note editing remains non-real-time. Each edit copies the candidate, clamps and validates every affected value, stable-sorts events, validates the complete bundle, and then publishes transactionally. The accepted bundle is a separate immutable value until the producer explicitly accepts the edited candidate again.
+
 ## ADRs
 
 - ADR-0001: JUCE pin and dependency acquisition.
 - ADR-0003: Fixed-capacity immutable wavetable and modulation exchange for M2 (accepted).
 - ADR-0004: Pure deterministic composition and shared MIDI delivery for M3 (accepted).
+- ADR-0005: Bundled React UI and bounded Three.js visualizer for M4 (accepted).
 
 History persistence and provider-secret decisions remain required before M6 and M7 respectively; no ADR claims completion yet.
