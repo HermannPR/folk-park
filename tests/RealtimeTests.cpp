@@ -103,16 +103,12 @@ int main()
     midi.clear();
 
     const auto replacement = WavetableBank::createBuiltIn();
-    if (replacement == nullptr || !engine.publishWavetable(0, *replacement))
-    {
-        std::cerr << "FAIL: replacement wavetable must queue before the measured audio block\n";
-        return 1;
-    }
     const ModulationRoute route{ModulationSource::lfo1, ModulationDestination::oscillatorAPosition,
                                 0.75f, ModulationCurve::sCurve, true};
-    if (!engine.publishModulationRoutes(std::span{&route, 1}))
+    if (replacement == nullptr
+        || !engine.publishPresetSnapshot(*replacement, *replacement, std::span{&route, 1}))
     {
-        std::cerr << "FAIL: modulation snapshot must queue before the measured audio block\n";
+        std::cerr << "FAIL: atomic preset snapshot must queue before the measured audio block\n";
         return 1;
     }
 
@@ -184,6 +180,22 @@ int main()
         std::cerr << "FAIL: measured audio rendering allocated " << allocations << " time(s)\n";
         return 1;
     }
-    std::cout << "PASS: 32 audio blocks, including synth, six effects, swaps, direct MIDI, and preview keyboard, allocated 0 times\n";
+    auto invalidRoute = route;
+    invalidRoute.destination = static_cast<ModulationDestination>(255);
+    if (engine.publishPresetSnapshot(*replacement, *replacement,
+                                     std::span{&invalidRoute, 1}))
+    {
+        std::cerr << "FAIL: malformed preset publication must be rejected before live mutation\n";
+        return 1;
+    }
+    engine.process(audio, midi, parameters);
+    const auto& retainedRoutes = engine.getActiveModulationSnapshot();
+    if (retainedRoutes.routeCount != 1
+        || retainedRoutes.routes[0].destination != route.destination)
+    {
+        std::cerr << "FAIL: rejected preset publication changed the active modulation snapshot\n";
+        return 1;
+    }
+    std::cout << "PASS: 32 audio blocks, including atomic preset activation, six effects, direct MIDI, and preview keyboard, allocated 0 times\n";
     return 0;
 }

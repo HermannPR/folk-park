@@ -4,6 +4,7 @@
 #include "midi/CompositionSession.h"
 #include "midi/MidiDelivery.h"
 #include "midi/PreviewMidi.h"
+#include "persistence/PersistenceCoordinator.h"
 #include "render/OfflinePreviewRenderer.h"
 #include "synth/SynthEngine.h"
 #include "synth/WavetableImportService.h"
@@ -13,7 +14,9 @@
 #include <array>
 #include <atomic>
 #include <mutex>
+#include <optional>
 #include <span>
+#include <vector>
 
 namespace folkpark
 {
@@ -26,10 +29,33 @@ struct WavetableUiSnapshot
     std::array<float, static_cast<std::size_t>(samplesPerFrame * maximumFrames)> samples{};
 };
 
+struct PresetSaveRequest
+{
+    juce::String name;
+    juce::String author;
+    std::vector<juce::String> tags;
+    juce::String genre;
+    juce::String emotion;
+    juce::String description;
+    bool favorite = false;
+    bool allowOverwrite = false;
+};
+
+struct HistoryEntryDetail
+{
+    persistence::HistorySummary summary;
+    midi::MusicIntent intent;
+    int clipCount = 0;
+    int noteCount = 0;
+};
+
 class PluginProcessor final : public juce::AudioProcessor
 {
 public:
+    using PersistenceConfiguration = persistence::PersistenceConfiguration;
+
     PluginProcessor();
+    explicit PluginProcessor(PersistenceConfiguration configuration);
 
     void prepareToPlay(double sampleRate, int maximumExpectedSamplesPerBlock) override;
     void releaseResources() override;
@@ -93,10 +119,7 @@ public:
         return compositionSession.adjustCandidateNote(sourceIndex, pitchDelta, startDeltaTicks,
                                                       durationDeltaTicks, velocityDelta);
     }
-    [[nodiscard]] juce::Result acceptCompositionCandidate()
-    {
-        return compositionSession.acceptCandidate();
-    }
+    [[nodiscard]] juce::Result acceptCompositionCandidate();
     [[nodiscard]] midi::CompositionSessionSnapshot getCompositionSnapshot() const
     {
         return compositionSession.getSnapshot();
@@ -147,12 +170,42 @@ public:
         return wavetableImportService.getSnapshot();
     }
     [[nodiscard]] int getActiveVoiceCount() const noexcept { return engine.getActiveVoiceCount(); }
+    [[nodiscard]] juce::Result initialisePersistence();
+    [[nodiscard]] persistence::PersistenceStatusSnapshot getPersistenceStatus() const;
+    [[nodiscard]] persistence::PresetLibraryResult listPresets();
+    [[nodiscard]] juce::Result saveCurrentPreset(const PresetSaveRequest& request);
+    [[nodiscard]] juce::Result loadLibraryPreset(const juce::String& presetId);
+    [[nodiscard]] juce::Result importExternalPreset(const juce::File& file);
+    [[nodiscard]] juce::Result relinkPendingPresetAsset(persistence::AssetSlot slot,
+                                                       const juce::File& selectedFile);
+    [[nodiscard]] juce::Result setPresetFavorite(const juce::String& presetId, bool favorite);
+    [[nodiscard]] persistence::HistorySearchResult searchHistory(
+        const persistence::HistorySearchQuery& query);
+    [[nodiscard]] juce::Result recallHistory(const juce::String& historyId);
+    [[nodiscard]] std::optional<HistoryEntryDetail> inspectHistory(
+        const juce::String& historyId);
+    [[nodiscard]] juce::Result setHistoryFavorite(const juce::String& historyId,
+                                                  bool favorite);
+    [[nodiscard]] juce::Result setHistorySoftDeleted(const juce::String& historyId,
+                                                     bool deleted);
+    [[nodiscard]] juce::Result setHistoryRetentionDays(int days);
+    [[nodiscard]] persistence::HistoryCleanupResult cleanupHistory(bool keepFavorites);
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
 private:
     [[nodiscard]] synth::ParameterSnapshot readSynthParameters() const noexcept;
     [[nodiscard]] effects::Parameters readEffectsParameters(double tempoBpm) const noexcept;
     [[nodiscard]] render::OfflinePreviewSnapshot makeOfflinePreviewSnapshot(double tempoBpm) const;
+    [[nodiscard]] persistence::PresetDocument captureCurrentPreset(
+        const persistence::PresetMetadata& metadata) const;
+    [[nodiscard]] juce::Result applyPresetCandidate(
+        const persistence::PresetCandidateResult& candidate);
+    [[nodiscard]] juce::Result publishImportedWavetable(
+        int oscillatorIndex,
+        const synth::WavetableBank& bank,
+        const synth::WavetableConverter::Metadata& metadata,
+        const juce::File& source);
+    void recordAcceptedComposition(const midi::CompositionBundle& bundle);
 
     juce::UndoManager undoManager;
     juce::AudioProcessorValueTreeState parameters;
@@ -163,6 +216,7 @@ private:
     midi::DirectMidiPlayer directMidiPlayer;
     midi::PreviewMidiQueue previewMidiQueue;
     render::OfflinePreviewService offlinePreviewService;
+    std::unique_ptr<persistence::PersistenceCoordinator> persistenceCoordinator;
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> masterGain;
     std::atomic<bool> panicRequested{false};
 
@@ -256,6 +310,10 @@ private:
     mutable std::mutex wavetableUiMutex;
     std::array<WavetableUiSnapshot, 2> wavetableUiSnapshots{};
     std::array<std::shared_ptr<const synth::WavetableBank>, 2> currentWavetables{};
+    std::array<std::optional<persistence::AssetReference>, 2> currentWavetableAssets{};
+    mutable std::mutex historyLineageMutex;
+    juce::String lastHistoryEntryId;
+    std::vector<juce::String> lastHistoryClipIds;
 
     double activeSampleRate = 0.0;
     int activeBlockSize = 0;

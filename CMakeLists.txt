@@ -55,6 +55,12 @@ target_sources(FolkPark PRIVATE
     src/common/ParameterIds.h
     src/persistence/Preset.cpp
     src/persistence/Preset.h
+    src/persistence/CompositionJson.cpp
+    src/persistence/CompositionJson.h
+    src/persistence/HistoryRepository.cpp
+    src/persistence/HistoryRepository.h
+    src/persistence/PersistenceCoordinator.cpp
+    src/persistence/PersistenceCoordinator.h
     src/render/OfflinePreviewRenderer.cpp
     src/render/OfflinePreviewRenderer.h
     src/midi/MidiProof.cpp
@@ -94,6 +100,7 @@ target_compile_definitions(FolkPark
 target_link_libraries(FolkPark
     PRIVATE
         FolkParkAssets
+        SQLite3::SQLite3
         juce::juce_audio_utils
         juce::juce_cryptography
         juce::juce_dsp
@@ -308,6 +315,15 @@ target_sources(FolkParkPluginTests PRIVATE
     src/plugin/PluginProcessor.cpp
     src/plugin/PluginProcessor.h
     src/plugin/ParameterIds.h
+    src/common/ParameterIds.h
+    src/persistence/Preset.cpp
+    src/persistence/Preset.h
+    src/persistence/CompositionJson.cpp
+    src/persistence/CompositionJson.h
+    src/persistence/HistoryRepository.cpp
+    src/persistence/HistoryRepository.h
+    src/persistence/PersistenceCoordinator.cpp
+    src/persistence/PersistenceCoordinator.h
     src/effects/EffectChain.cpp
     src/effects/EffectChain.h
     src/render/OfflinePreviewRenderer.cpp
@@ -343,6 +359,7 @@ target_compile_definitions(FolkParkPluginTests PRIVATE
     FOLK_PARK_JUCE_COMMIT="${FOLK_PARK_JUCE_COMMIT}")
 target_link_libraries(FolkParkPluginTests PRIVATE
     FolkParkAssets
+    SQLite3::SQLite3
     juce::juce_audio_utils
     juce::juce_cryptography
     juce::juce_dsp

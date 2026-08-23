@@ -114,16 +114,59 @@ void SynthEngine::panic() noexcept
 
 bool SynthEngine::publishWavetable(int oscillatorIndex, const WavetableBank& bank) noexcept
 {
-    if (oscillatorIndex == 0)
-        return oscillatorABank.publish(bank);
-    if (oscillatorIndex == 1)
-        return oscillatorBBank.publish(bank);
-    return false;
+    if ((oscillatorIndex != 0 && oscillatorIndex != 1)
+        || !bank.isFiniteAndNormalised()
+        || publicationWriter.test_and_set(std::memory_order_seq_cst))
+        return false;
+    publicationProducerActive.store(true, std::memory_order_seq_cst);
+    const auto consumerBusy = publicationConsumerActive.load(std::memory_order_seq_cst);
+    auto published = false;
+    if (!consumerBusy)
+        published = oscillatorIndex == 0 ? oscillatorABank.publish(bank)
+                                         : oscillatorBBank.publish(bank);
+    publicationProducerActive.store(false, std::memory_order_seq_cst);
+    publicationWriter.clear(std::memory_order_seq_cst);
+    return published;
 }
 
 bool SynthEngine::publishModulationRoutes(std::span<const ModulationRoute> routes) noexcept
 {
-    return modulationExchange.publish(routes);
+    if (ModulationRegistry::validate(routes).failed()
+        || publicationWriter.test_and_set(std::memory_order_seq_cst))
+        return false;
+    publicationProducerActive.store(true, std::memory_order_seq_cst);
+    const auto consumerBusy = publicationConsumerActive.load(std::memory_order_seq_cst);
+    const auto published = !consumerBusy && modulationExchange.publish(routes);
+    publicationProducerActive.store(false, std::memory_order_seq_cst);
+    publicationWriter.clear(std::memory_order_seq_cst);
+    return published;
+}
+
+bool SynthEngine::publishPresetSnapshot(const WavetableBank& oscillatorA,
+                                        const WavetableBank& oscillatorB,
+                                        std::span<const ModulationRoute> routes) noexcept
+{
+    if (!oscillatorA.isFiniteAndNormalised() || !oscillatorB.isFiniteAndNormalised()
+        || ModulationRegistry::validate(routes).failed()
+        || publicationWriter.test_and_set(std::memory_order_seq_cst))
+        return false;
+
+    publicationProducerActive.store(true, std::memory_order_seq_cst);
+    const auto unavailable = publicationConsumerActive.load(std::memory_order_seq_cst)
+        || oscillatorABank.hasPendingBank() || oscillatorBBank.hasPendingBank()
+        || modulationExchange.hasPendingSnapshot();
+    auto published = false;
+    if (!unavailable)
+    {
+        const auto publishedA = oscillatorABank.publish(oscillatorA);
+        const auto publishedB = oscillatorBBank.publish(oscillatorB);
+        const auto publishedRoutes = modulationExchange.publish(routes);
+        jassert(publishedA && publishedB && publishedRoutes);
+        published = publishedA && publishedB && publishedRoutes;
+    }
+    publicationProducerActive.store(false, std::memory_order_seq_cst);
+    publicationWriter.clear(std::memory_order_seq_cst);
+    return published;
 }
 
 const ModulationSnapshot& SynthEngine::getActiveModulationSnapshot() const noexcept
@@ -135,9 +178,14 @@ void SynthEngine::process(juce::AudioBuffer<float>& output,
                           const juce::MidiBuffer& midi,
                           const ParameterSnapshot& parameters) noexcept
 {
-    oscillatorABank.beginAudioBlock();
-    oscillatorBBank.beginAudioBlock();
-    modulationExchange.beginAudioBlock();
+    publicationConsumerActive.store(true, std::memory_order_seq_cst);
+    if (!publicationProducerActive.load(std::memory_order_seq_cst))
+    {
+        oscillatorABank.beginAudioBlock();
+        oscillatorBBank.beginAudioBlock();
+        modulationExchange.beginAudioBlock();
+    }
+    publicationConsumerActive.store(false, std::memory_order_seq_cst);
     output.clear();
     const auto numberOfSamples = output.getNumSamples();
     auto renderedUntil = 0;

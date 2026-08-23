@@ -153,6 +153,19 @@ juce::Result CompositionSession::acceptCandidate()
     return juce::Result::ok();
 }
 
+juce::Result CompositionSession::restoreAccepted(CompositionBundle bundle)
+{
+    if (const auto validation = validateBundle(bundle); validation.failed())
+        return juce::Result::fail("Recalled composition is invalid: "
+                                  + validation.getErrorMessage());
+    const std::lock_guard lock(mutex);
+    candidate = bundle;
+    accepted = std::move(bundle);
+    candidateMatchesAccepted = true;
+    status = "History entry recalled as the accepted composition; delivery is enabled";
+    return juce::Result::ok();
+}
+
 void CompositionSession::clearCandidate()
 {
     const std::lock_guard lock(mutex);

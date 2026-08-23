@@ -6,6 +6,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include <limits>
+#include <set>
 
 namespace folkpark
 {
@@ -247,14 +248,46 @@ juce::Result parseModulationRoutes(const juce::ValueTree& root, synth::Modulatio
     output = synth::ModulationRegistry::makeSnapshot(parsedSpan);
     return juce::Result::ok();
 }
+
+persistence::PersistenceConfiguration defaultPersistenceConfiguration()
+{
+    return {true,
+            juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                .getChildFile("Application Support")
+                .getChildFile("folk park")};
+}
+
+int compositionNoteCount(const midi::CompositionBundle& bundle) noexcept
+{
+    std::size_t count = 0;
+    for (const auto& clip : bundle.clips)
+        count += clip.events.size();
+    return static_cast<int>(juce::jmin<std::size_t>(
+        count, static_cast<std::size_t>(std::numeric_limits<int>::max())));
+}
+
+persistence::HistorySummary historySummary(const persistence::HistoryEntry& entry)
+{
+    return {entry.schemaVersion, entry.id, entry.parentId, entry.createdUnixMs,
+            entry.updatedUnixMs, entry.generatorVersion, entry.storePromptSummary,
+            entry.promptSummary, entry.presetId, entry.favorite, entry.tags, entry.deleted};
+}
 }
 
 PluginProcessor::PluginProcessor()
+    : PluginProcessor(defaultPersistenceConfiguration())
+{
+}
+
+PluginProcessor::PluginProcessor(PersistenceConfiguration persistenceConfiguration)
     : AudioProcessor(BusesProperties().withOutput("Output", juce::AudioChannelSet::stereo(), true)),
       parameters(*this, &undoManager, "FolkParkState", createParameterLayout()),
-      wavetableImportService([this](int oscillatorIndex, const synth::WavetableBank& bank)
+      wavetableImportService([this](int oscillatorIndex,
+                                    const synth::WavetableBank& bank,
+                                    const synth::WavetableConverter::Metadata& metadata,
+                                    const juce::File& source)
       {
-          return publishWavetable(oscillatorIndex, bank);
+          return publishImportedWavetable(oscillatorIndex, bank, metadata, source);
       })
 {
     if (auto builtIn = synth::WavetableBank::createBuiltIn())
@@ -343,6 +376,13 @@ PluginProcessor::PluginProcessor()
         raw(parameterIds::compressorMix), raw(parameterIds::eqBypass),
         raw(parameterIds::eqLowGain), raw(parameterIds::eqMidFrequency),
         raw(parameterIds::eqMidGain), raw(parameterIds::eqMidQ), raw(parameterIds::eqHighGain)};
+
+    persistence::PresetMetadata defaultsMetadata;
+    defaultsMetadata.id = "00000000-0000-4000-8000-000000000000";
+    defaultsMetadata.name = "Migration defaults";
+    auto migrationDefaults = captureCurrentPreset(defaultsMetadata);
+    persistenceCoordinator = std::make_unique<persistence::PersistenceCoordinator>(
+        std::move(persistenceConfiguration), std::move(migrationDefaults));
 }
 
 bool PluginProcessor::publishWavetable(int oscillatorIndex,
@@ -355,10 +395,53 @@ bool PluginProcessor::publishWavetable(int oscillatorIndex,
     if (!engine.publishWavetable(oscillatorIndex, bank))
         return false;
     const auto preview = makeWavetableUiSnapshot(bank);
-    const std::lock_guard lock(wavetableUiMutex);
-    wavetableUiSnapshots[static_cast<std::size_t>(oscillatorIndex)] = preview;
-    currentWavetables[static_cast<std::size_t>(oscillatorIndex)] = immutable;
+    {
+        const std::lock_guard lock(wavetableUiMutex);
+        const auto index = static_cast<std::size_t>(oscillatorIndex);
+        wavetableUiSnapshots[index] = preview;
+        currentWavetables[index] = immutable;
+        currentWavetableAssets[index].reset();
+    }
+    if (persistenceCoordinator != nullptr)
+        persistenceCoordinator->markCurrentSoundDirty(
+            "Wavetable changed; save the sound to retain it as a preset");
     return true;
+}
+
+juce::Result PluginProcessor::publishImportedWavetable(
+    int oscillatorIndex,
+    const synth::WavetableBank& bank,
+    const synth::WavetableConverter::Metadata& metadata,
+    const juce::File& source)
+{
+    if (oscillatorIndex < 0 || oscillatorIndex > 1 || !source.existsAsFile()
+        || metadata.sourceSha256.isEmpty())
+        return juce::Result::fail("Confirmed wavetable source metadata is incomplete");
+
+    std::optional<persistence::AssetReference> retained;
+    if (persistenceCoordinator != nullptr && persistenceCoordinator->status().enabled)
+    {
+        persistence::AssetReference reference;
+        const auto slot = oscillatorIndex == 0 ? persistence::AssetSlot::oscillatorA
+                                               : persistence::AssetSlot::oscillatorB;
+        const auto imported = persistenceCoordinator->importWavetableSource(source, slot, reference);
+        if (imported.failed())
+            return imported;
+        if (reference.sha256 != metadata.sourceSha256.toLowerCase())
+            return juce::Result::fail("Confirmed WAV changed between preview and retention");
+        retained = reference;
+    }
+    if (!publishWavetable(oscillatorIndex, bank))
+        return juce::Result::fail("Audio exchange is busy; confirm again after the pending crossfade");
+    if (retained.has_value())
+    {
+        const std::lock_guard lock(wavetableUiMutex);
+        currentWavetableAssets[static_cast<std::size_t>(oscillatorIndex)] = std::move(retained);
+    }
+    if (persistenceCoordinator != nullptr)
+        persistenceCoordinator->markCurrentSoundDirty(
+            "Confirmed WAV retained; save the current sound to create a restorable preset");
+    return juce::Result::ok();
 }
 
 WavetableUiSnapshot PluginProcessor::getWavetableUiSnapshot(int oscillatorIndex) const
@@ -733,6 +816,284 @@ synth::ModulationSnapshot PluginProcessor::getConfiguredModulationRoutes() const
 {
     const std::lock_guard lock(modulationStateMutex);
     return configuredModulationRoutes;
+}
+
+persistence::PresetDocument PluginProcessor::captureCurrentPreset(
+    const persistence::PresetMetadata& metadata) const
+{
+    auto document = persistence::makePresetTemplate(
+        FOLK_PARK_VERSION, metadata.id, metadata.name);
+    document.metadata = metadata;
+    for (auto& value : document.parameters)
+        if (const auto* parameter = parameters.getParameter(value.id))
+            value.normalized = parameter->getValue();
+    for (auto& effect : document.effects)
+        for (auto& value : effect.parameters)
+            if (const auto* parameter = parameters.getParameter(value.id))
+                value.normalized = parameter->getValue();
+    const auto routes = getConfiguredModulationRoutes();
+    document.modulationRoutes.assign(
+        routes.routes.begin(), routes.routes.begin() + static_cast<std::ptrdiff_t>(routes.routeCount));
+    {
+        const std::lock_guard lock(wavetableUiMutex);
+        for (const auto& reference : currentWavetableAssets)
+            if (reference.has_value())
+                document.assets.push_back(*reference);
+    }
+    return document;
+}
+
+juce::Result PluginProcessor::initialisePersistence()
+{
+    if (persistenceCoordinator == nullptr)
+        return juce::Result::fail("Persistence coordinator is unavailable");
+    return persistenceCoordinator->initialise();
+}
+
+persistence::PersistenceStatusSnapshot PluginProcessor::getPersistenceStatus() const
+{
+    return persistenceCoordinator != nullptr
+        ? persistenceCoordinator->status()
+        : persistence::PersistenceStatusSnapshot{};
+}
+
+persistence::PresetLibraryResult PluginProcessor::listPresets()
+{
+    if (persistenceCoordinator == nullptr)
+        return {juce::Result::fail("Persistence coordinator is unavailable"), {}};
+    return persistenceCoordinator->listPresets();
+}
+
+juce::Result PluginProcessor::saveCurrentPreset(const PresetSaveRequest& request)
+{
+    if (persistenceCoordinator == nullptr)
+        return juce::Result::fail("Persistence coordinator is unavailable");
+    persistence::PresetMetadata metadata;
+    const auto currentId = persistenceCoordinator->currentPresetId();
+    metadata.id = midi::isUuid(currentId) ? currentId : juce::Uuid().toDashedString();
+    metadata.name = request.name;
+    metadata.author = request.author;
+    metadata.tags = request.tags;
+    metadata.genre = request.genre;
+    metadata.emotion = request.emotion;
+    metadata.description = request.description;
+    metadata.favorite = request.favorite;
+    const auto document = captureCurrentPreset(metadata);
+    if (const auto validation = persistence::validatePreset(document); validation.failed())
+        return validation;
+    return persistenceCoordinator->savePreset(document, request.allowOverwrite);
+}
+
+juce::Result PluginProcessor::applyPresetCandidate(
+    const persistence::PresetCandidateResult& candidate)
+{
+    if (!candidate.readyToApply())
+        return candidate.status.failed()
+            ? candidate.status
+            : juce::Result::fail("Preset has missing assets and cannot be applied yet");
+    if (persistenceCoordinator == nullptr)
+        return juce::Result::fail("Persistence coordinator is unavailable");
+
+    auto prepared = persistenceCoordinator->prepareWavetables(candidate.document);
+    if (!prepared.succeeded())
+        return prepared.status;
+    const auto routes = std::span{candidate.document.modulationRoutes};
+    if (!engine.publishPresetSnapshot(*prepared.banks[0], *prepared.banks[1], routes))
+        return juce::Result::fail(
+            "Live sound update is busy; retry after the next audio block");
+
+    undoManager.beginNewTransaction("Load folk park preset");
+    for (const auto& value : candidate.document.parameters)
+        if (auto* parameter = parameters.getParameter(value.id))
+            parameter->setValueNotifyingHost(value.normalized);
+    for (const auto& effect : candidate.document.effects)
+        for (const auto& value : effect.parameters)
+            if (auto* parameter = parameters.getParameter(value.id))
+                parameter->setValueNotifyingHost(value.normalized);
+
+    {
+        const std::lock_guard lock(modulationStateMutex);
+        configuredModulationRoutes = synth::ModulationRegistry::makeSnapshot(routes);
+    }
+    const auto previewA = makeWavetableUiSnapshot(*prepared.banks[0]);
+    const auto previewB = makeWavetableUiSnapshot(*prepared.banks[1]);
+    auto immutableA = std::shared_ptr<const synth::WavetableBank>(std::move(prepared.banks[0]));
+    auto immutableB = std::shared_ptr<const synth::WavetableBank>(std::move(prepared.banks[1]));
+    {
+        const std::lock_guard lock(wavetableUiMutex);
+        wavetableUiSnapshots[0] = previewA;
+        wavetableUiSnapshots[1] = previewB;
+        currentWavetables[0] = std::move(immutableA);
+        currentWavetables[1] = std::move(immutableB);
+        currentWavetableAssets[0].reset();
+        currentWavetableAssets[1].reset();
+        for (const auto& reference : candidate.document.assets)
+        {
+            const auto index = reference.slot == persistence::AssetSlot::oscillatorA ? 0U : 1U;
+            currentWavetableAssets[index] = reference;
+        }
+    }
+    requestPanic();
+    persistenceCoordinator->markPresetApplied(candidate.document);
+    return juce::Result::ok();
+}
+
+juce::Result PluginProcessor::loadLibraryPreset(const juce::String& presetId)
+{
+    if (persistenceCoordinator == nullptr)
+        return juce::Result::fail("Persistence coordinator is unavailable");
+    const auto candidate = persistenceCoordinator->loadLibraryPreset(presetId);
+    return applyPresetCandidate(candidate);
+}
+
+juce::Result PluginProcessor::importExternalPreset(const juce::File& file)
+{
+    if (persistenceCoordinator == nullptr)
+        return juce::Result::fail("Persistence coordinator is unavailable");
+    const auto candidate = persistenceCoordinator->importExternalPreset(file);
+    return applyPresetCandidate(candidate);
+}
+
+juce::Result PluginProcessor::relinkPendingPresetAsset(persistence::AssetSlot slot,
+                                                       const juce::File& selectedFile)
+{
+    if (persistenceCoordinator == nullptr)
+        return juce::Result::fail("Persistence coordinator is unavailable");
+    const auto candidate = persistenceCoordinator->relinkPendingAsset(slot, selectedFile);
+    return applyPresetCandidate(candidate);
+}
+
+juce::Result PluginProcessor::setPresetFavorite(const juce::String& presetId, bool favorite)
+{
+    return persistenceCoordinator != nullptr
+        ? persistenceCoordinator->setPresetFavorite(presetId, favorite)
+        : juce::Result::fail("Persistence coordinator is unavailable");
+}
+
+juce::Result PluginProcessor::acceptCompositionCandidate()
+{
+    const auto accepted = compositionSession.acceptCandidate();
+    if (accepted.failed())
+        return accepted;
+    if (const auto bundle = compositionSession.getAcceptedBundle(); bundle.has_value())
+        recordAcceptedComposition(*bundle);
+    return juce::Result::ok();
+}
+
+void PluginProcessor::recordAcceptedComposition(const midi::CompositionBundle& bundle)
+{
+    if (persistenceCoordinator == nullptr || !persistenceCoordinator->status().enabled)
+        return;
+    persistence::HistoryEntry entry;
+    entry.id = juce::Uuid().toDashedString();
+    entry.createdUnixMs = juce::Time::currentTimeMillis();
+    entry.updatedUnixMs = entry.createdUnixMs;
+    entry.generatorVersion = midi::compositionGeneratorVersion;
+    entry.storePromptSummary = false;
+    entry.macroSnapshot = bundle.intent;
+    entry.composition = bundle;
+    entry.presetId = persistenceCoordinator->currentPresetId();
+    entry.tags = {midi::stableId(bundle.intent.genreProfile),
+                  midi::stableId(bundle.intent.emotion)};
+    {
+        const std::lock_guard lock(historyLineageMutex);
+        const std::set<juce::String> parents(lastHistoryClipIds.begin(), lastHistoryClipIds.end());
+        const auto isVariation = std::any_of(bundle.clips.begin(), bundle.clips.end(),
+            [&parents](const auto& clip)
+            {
+                return !clip.parentClipId.isEmpty() && parents.contains(clip.parentClipId);
+            });
+        if (isVariation)
+            entry.parentId = lastHistoryEntryId;
+    }
+    if (persistenceCoordinator->storeHistory(entry).failed())
+        return;
+    const std::lock_guard lock(historyLineageMutex);
+    lastHistoryEntryId = entry.id;
+    lastHistoryClipIds.clear();
+    lastHistoryClipIds.reserve(bundle.clips.size());
+    for (const auto& clip : bundle.clips)
+        lastHistoryClipIds.push_back(clip.id);
+}
+
+persistence::HistorySearchResult PluginProcessor::searchHistory(
+    const persistence::HistorySearchQuery& query)
+{
+    return persistenceCoordinator != nullptr
+        ? persistenceCoordinator->searchHistory(query)
+        : persistence::HistorySearchResult{juce::Result::fail(
+              "Persistence coordinator is unavailable"), {}};
+}
+
+std::optional<HistoryEntryDetail> PluginProcessor::inspectHistory(
+    const juce::String& historyId)
+{
+    if (persistenceCoordinator == nullptr)
+        return std::nullopt;
+    const auto recalled = persistenceCoordinator->recallHistory(historyId);
+    if (!recalled.succeeded())
+        return std::nullopt;
+    return HistoryEntryDetail{historySummary(recalled.entry), recalled.entry.macroSnapshot,
+                              static_cast<int>(recalled.entry.composition.clips.size()),
+                              compositionNoteCount(recalled.entry.composition)};
+}
+
+juce::Result PluginProcessor::recallHistory(const juce::String& historyId)
+{
+    if (persistenceCoordinator == nullptr)
+        return juce::Result::fail("Persistence coordinator is unavailable");
+    const auto recalled = persistenceCoordinator->recallHistory(historyId);
+    if (!recalled.succeeded())
+        return recalled.status;
+    if (!recalled.entry.presetId.isEmpty())
+    {
+        if (const auto preset = loadLibraryPreset(recalled.entry.presetId); preset.failed())
+            return juce::Result::fail("History preset could not be restored: "
+                                      + preset.getErrorMessage());
+    }
+    if (const auto restored = compositionSession.restoreAccepted(recalled.entry.composition);
+        restored.failed())
+        return restored;
+    {
+        const std::lock_guard lock(historyLineageMutex);
+        lastHistoryEntryId = recalled.entry.id;
+        lastHistoryClipIds.clear();
+        for (const auto& clip : recalled.entry.composition.clips)
+            lastHistoryClipIds.push_back(clip.id);
+    }
+    persistenceCoordinator->report("History entry recalled exactly and explicitly accepted");
+    return juce::Result::ok();
+}
+
+juce::Result PluginProcessor::setHistoryFavorite(const juce::String& historyId,
+                                                 bool favorite)
+{
+    return persistenceCoordinator != nullptr
+        ? persistenceCoordinator->setHistoryFavorite(historyId, favorite)
+        : juce::Result::fail("Persistence coordinator is unavailable");
+}
+
+juce::Result PluginProcessor::setHistorySoftDeleted(const juce::String& historyId,
+                                                    bool deleted)
+{
+    return persistenceCoordinator != nullptr
+        ? persistenceCoordinator->setHistorySoftDeleted(historyId, deleted)
+        : juce::Result::fail("Persistence coordinator is unavailable");
+}
+
+juce::Result PluginProcessor::setHistoryRetentionDays(int days)
+{
+    return persistenceCoordinator != nullptr
+        ? persistenceCoordinator->setRetentionDays(days)
+        : juce::Result::fail("Persistence coordinator is unavailable");
+}
+
+persistence::HistoryCleanupResult PluginProcessor::cleanupHistory(bool keepFavorites)
+{
+    return persistenceCoordinator != nullptr
+        ? persistenceCoordinator->cleanupHistory(juce::Time::currentTimeMillis(), keepFavorites)
+        : persistence::HistoryCleanupResult{juce::Result::fail(
+              "Persistence coordinator is unavailable"), 0};
 }
 
 juce::AudioProcessorEditor* PluginProcessor::createEditor()

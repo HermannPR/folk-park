@@ -3,6 +3,7 @@
 
 #include <juce_events/juce_events.h>
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <memory>
@@ -47,9 +48,33 @@ bool buffersMatch(const juce::AudioBuffer<float>& first,
     return true;
 }
 
+folkpark::PluginProcessor::PersistenceConfiguration disabledPersistence()
+{
+    return {false, {}};
+}
+
+struct TemporaryDirectory
+{
+    TemporaryDirectory()
+    {
+        directory = juce::File::getSpecialLocation(juce::File::tempDirectory)
+                        .getNonexistentChildFile("folk-park-plugin-persistence-tests", {}, false);
+        expect(directory.createDirectory(),
+               "Temporary processor persistence directory must be created");
+    }
+
+    ~TemporaryDirectory()
+    {
+        if (directory.isAChildOf(juce::File::getSpecialLocation(juce::File::tempDirectory)))
+            directory.deleteRecursively(false);
+    }
+
+    juce::File directory;
+};
+
 void testStateRoundTrip()
 {
-    folkpark::PluginProcessor source;
+    folkpark::PluginProcessor source(disabledPersistence());
     auto* cutoff = source.state().getParameter(folkpark::parameterIds::filterCutoff);
     auto* waveform = source.state().getParameter(folkpark::parameterIds::oscillatorWaveform);
     auto* oscillatorBLevel = source.state().getParameter(folkpark::parameterIds::oscillatorBLevel);
@@ -104,7 +129,7 @@ void testStateRoundTrip()
     source.getStateInformation(state);
     expect(!state.isEmpty(), "Serialized plug-in state must not be empty");
 
-    folkpark::PluginProcessor restored;
+    folkpark::PluginProcessor restored(disabledPersistence());
     restored.setStateInformation(state.getData(), static_cast<int>(state.getSize()));
     const auto* restoredCutoff = restored.state().getParameter(folkpark::parameterIds::filterCutoff);
     const auto* restoredWaveform = restored.state().getParameter(folkpark::parameterIds::oscillatorWaveform);
@@ -159,8 +184,8 @@ void testStateRoundTrip()
 
 void testUiIndependenceAndPanic()
 {
-    folkpark::PluginProcessor closedEditorProcessor;
-    folkpark::PluginProcessor openEditorProcessor;
+    folkpark::PluginProcessor closedEditorProcessor(disabledPersistence());
+    folkpark::PluginProcessor openEditorProcessor(disabledPersistence());
     closedEditorProcessor.prepareToPlay(48000.0, 512);
     openEditorProcessor.prepareToPlay(48000.0, 512);
 
@@ -219,7 +244,7 @@ void testUiIndependenceAndPanic()
 
 void testHostAwareUndoRedo()
 {
-    folkpark::PluginProcessor processor;
+    folkpark::PluginProcessor processor(disabledPersistence());
     auto* cutoff = processor.state().getParameter(folkpark::parameterIds::filterCutoff);
     expect(cutoff != nullptr, "Undo fixture cutoff parameter must exist");
     if (cutoff == nullptr)
@@ -245,7 +270,7 @@ void testHostAwareUndoRedo()
 void testCompositionAcceptanceAndProcessorRouting()
 {
     using namespace folkpark;
-    PluginProcessor processor;
+    PluginProcessor processor(disabledPersistence());
     midi::MusicIntent intent;
     intent.seed = 7007;
     intent.requestId = midi::deterministicUuid(intent.seed, "processor-composition-test");
@@ -293,7 +318,7 @@ void testCompositionAcceptanceAndProcessorRouting()
 
     juce::MemoryBlock state;
     processor.getStateInformation(state);
-    PluginProcessor restored;
+    PluginProcessor restored(disabledPersistence());
     restored.setStateInformation(state.getData(), static_cast<int>(state.getSize()));
     expect(!restored.getCompositionSnapshot().hasAccepted,
            "M3 session MIDI must not pretend to persist before M6 history support");
@@ -301,7 +326,7 @@ void testCompositionAcceptanceAndProcessorRouting()
 
 void testPreviewKeyboardProcessorPath()
 {
-    folkpark::PluginProcessor processor;
+    folkpark::PluginProcessor processor(disabledPersistence());
     processor.prepareToPlay(48000.0, 512);
     auto editor = std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());
     expect(!processor.previewNoteOn(-1, 100) && !processor.previewNoteOn(60, 0)
@@ -330,6 +355,113 @@ void testPreviewKeyboardProcessorPath()
                                 && event.getMessage().getNoteNumber() == 60);
     expect(foundOff, "Editor close must release every tracked native preview note");
 }
+
+void testPresetAndHistoryRestartIntegration()
+{
+    using namespace folkpark;
+    TemporaryDirectory temporary;
+    PluginProcessor processor({true, temporary.directory});
+    processor.prepareToPlay(48000.0, 512);
+    expect(processor.initialisePersistence().wasOk(),
+           "M6 processor persistence root must initialize outside the audio callback");
+    const auto initialStatus = processor.getPersistenceStatus();
+    expect(initialStatus.presetAvailable && initialStatus.historyAvailable,
+           "M6 temporary preset library and SQLite history must both be available");
+
+    auto* cutoff = processor.state().getParameter(parameterIds::filterCutoff);
+    expect(cutoff != nullptr, "M6 preset integration cutoff parameter must exist");
+    if (cutoff == nullptr)
+        return;
+    cutoff->setValueNotifyingHost(0.273f);
+    const auto savedCutoff = cutoff->getValue();
+    PresetSaveRequest save;
+    save.name = "Integration lead";
+    save.author = "folk park tests";
+    save.tags = {"lead", "m6"};
+    save.genre = "house";
+    save.emotion = "bright";
+    save.description = "Processor-level transactional preset fixture";
+    expect(processor.saveCurrentPreset(save).wasOk(),
+           "Current processor sound must save through the atomic native preset store");
+    const auto library = processor.listPresets();
+    expect(library.status.wasOk() && library.presets.size() == 1,
+           "Saved native preset must appear in the bounded local browser");
+    if (library.presets.empty())
+        return;
+    const auto presetId = library.presets.front().id;
+    cutoff->setValueNotifyingHost(0.91f);
+    expect(processor.loadLibraryPreset(presetId).wasOk(),
+           "Complete local preset must prepare and publish transactionally");
+    expect(std::abs(cutoff->getValue() - savedCutoff) <= 1.0e-6f,
+           "Preset recall must restore the exact normalized host parameter value");
+
+    juce::AudioBuffer<float> audio(2, 128);
+    juce::MidiBuffer emptyMidi;
+    processor.processBlock(audio, emptyMidi);
+
+    midi::MusicIntent intent;
+    intent.seed = 61001;
+    intent.requestId = midi::deterministicUuid(intent.seed, "m6-processor-history");
+    expect(processor.generateCompositionCandidate(intent).wasOk()
+               && processor.acceptCompositionCandidate().wasOk(),
+           "Explicit composition acceptance must remain successful while storing history");
+    expect(processor.generateMoreLikeComposition(1).wasOk()
+               && processor.acceptCompositionCandidate().wasOk(),
+           "Accepted variation must store a second history record with lineage");
+    const auto history = processor.searchHistory({"", false, false, 20});
+    expect(history.status.wasOk() && history.entries.size() == 2,
+           "Processor history search must return both accepted compositions");
+    const auto hasLineage = std::any_of(history.entries.begin(), history.entries.end(),
+        [](const auto& entry) { return !entry.parentId.isEmpty(); });
+    expect(hasLineage, "More Like This acceptance must retain parent history lineage");
+
+    PluginProcessor restarted({true, temporary.directory});
+    expect(restarted.initialisePersistence().wasOk(),
+           "A new processor must reopen the existing M6 persistence root");
+    const auto reopenedHistory = restarted.searchHistory({"", false, false, 20});
+    expect(reopenedHistory.status.wasOk() && reopenedHistory.entries.size() == 2,
+           "Accepted history must survive processor destruction and restart");
+    if (!reopenedHistory.entries.empty())
+    {
+        expect(restarted.recallHistory(reopenedHistory.entries.back().id).wasOk(),
+               "Versioned history recall must restore its linked preset before composition state");
+        const auto recalled = restarted.getCompositionSnapshot();
+        expect(recalled.hasCandidate && recalled.hasAccepted && recalled.candidateMatchesAccepted,
+               "History recall must explicitly restore an accepted, deliverable composition");
+        expect(restarted.inspectHistory(reopenedHistory.entries.back().id).has_value(),
+               "History comparison inspection must not mutate or lose the stored entry");
+    }
+}
+
+void testHistoryDatabaseFailureIsolation()
+{
+    using namespace folkpark;
+    TemporaryDirectory temporary;
+    const auto databaseBlocker = temporary.directory.getChildFile("history.sqlite3");
+    expect(databaseBlocker.createDirectory(),
+           "Database-unavailable fixture must reserve the SQLite path as a directory");
+    PluginProcessor processor({true, temporary.directory});
+    expect(processor.initialisePersistence().wasOk(),
+           "Preset storage initialization must survive an unavailable history database");
+    const auto status = processor.getPersistenceStatus();
+    expect(status.presetAvailable && !status.historyAvailable,
+           "Database failure must be visible without disabling native presets");
+    midi::MusicIntent intent;
+    intent.seed = 62001;
+    intent.requestId = midi::deterministicUuid(intent.seed, "m6-history-failure");
+    expect(processor.generateCompositionCandidate(intent).wasOk()
+               && processor.acceptCompositionCandidate().wasOk(),
+           "Database failure must never turn valid explicit composition acceptance into failure");
+    expect(processor.searchHistory({"", false, false, 20}).status.failed(),
+           "Unavailable database must return a typed history error");
+
+    processor.prepareToPlay(48000.0, 512);
+    juce::AudioBuffer<float> audio(2, 512);
+    auto midi = noteOnBuffer();
+    processor.processBlock(audio, midi);
+    expect(audio.getMagnitude(0, 0, audio.getNumSamples()) > 1.0e-7f,
+           "Unavailable history database must not stop finite active audio");
+}
 }
 
 int main()
@@ -340,8 +472,10 @@ int main()
     testUiIndependenceAndPanic();
     testCompositionAcceptanceAndProcessorRouting();
     testPreviewKeyboardProcessorPath();
+    testPresetAndHistoryRestartIntegration();
+    testHistoryDatabaseFailureIsolation();
 
     if (failures == 0)
-        std::cout << "PASS: M1–M3 state/delivery plus M4 UI preview keyboard processor path\n";
+        std::cout << "PASS: M1–M5 processor paths plus M6 preset/history restart and failure isolation\n";
     return failures == 0 ? 0 : 1;
 }
