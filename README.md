@@ -26,7 +26,7 @@ The strongest engineering themes are real-time safety, transactional state, dete
 
 ### Design and audition
 
-Both oscillators display the real bounded wavetable data, current frame position, and derived spectrum. A four-octave C2–B5 keyboard supports touch/mouse play plus an octave-shiftable computer-key zone. Held macOS keys sustain once instead of retriggering from keyboard repeat.
+Both oscillators display the real bounded wavetable data, current frame position, and derived spectrum. A persistent four-octave C2–B5 keyboard remains available in every workspace, supports touch/mouse play plus an octave-shiftable A–P computer-key zone, and leaves text-entry fields available for normal typing. Held macOS keys sustain once instead of retriggering from keyboard repeat, and mapped musical keystrokes are consumed before they can leak into focused interface controls.
 
 ![folk park Orbital Habitat Synth workspace with dual wavetable visualizers and four-octave keyboard](evidence/m8/visual/orbital-synth.png)
 

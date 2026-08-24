@@ -385,6 +385,15 @@
 - Focused contract, engine, generator/MIDI, and real-time suites: PASS, 4/4 without project compiler warnings. Product UI/playback and FL Studio remain pending.
 - Complete Debug Standalone/VST3 build and CTest: PASS, 18/18 in 21.57 seconds after the contract, engine, and generation checkpoints.
 
+## Persistent audition keyboard checkpoint
+
+- Moved the single preview-note owner outside the workspace switch so the C2–B5 piano and A–P computer-key zone remain mounted across Synth, Compose, Jarvis, FX, History, and Settings.
+- Preserved normal typing in input, select, textarea, and contenteditable targets while allowing audition after navigation or another non-text button receives focus.
+- Consumed mapped keydown and keyup events, ignored macOS key repeat, and blurred pointer-played piano buttons after release to prevent focused-control key leakage and duplicate UI sounds.
+- UI tests/lint/build: PASS, 19/19. Final Debug CTest: PASS, 18/18. Release CTest: PASS, 19/19, including packaged-VST3 finite-stereo MIDI rendering. pluginval 1.0.4 strictness 5: `SUCCESS`.
+- Real Debug Standalone automation on the FX workspace held `A` as C3 with `1 voices`, then released to `0 voices` without a stuck note. Audible absence of the reported interface sound and FL Studio behavior remain human listening checks.
+- The verified thin `x86_64` Release VST3 was installed with executable SHA-256 `e5aaf6757ee54dd5d92a7639ec424d33374d4f88f25b9e11a269ed409bece5dd`; installed/build parity and independent installed-bundle finite-stereo MIDI rendering pass. The previous bundle remains recoverable at `~/Library/Audio/Plug-Ins/VST3/folk park.vst3.backup-20260824T152511Z`.
+
 ## Human-required status
 
 - Standalone physical keyboard/audio-device playability: PARTIAL. Automated real-window C3 hold/repeat/release passed; listening through the user's selected audio device remains human.
