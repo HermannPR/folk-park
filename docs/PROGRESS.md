@@ -3,7 +3,7 @@
 ## Current checkpoint
 
 - Milestone: M7 — offline Jarvis text, guided sound proposals, and secure provider boundary
-- Status: M7 contracts, deterministic offline workflows, processor-owned reversible A/B/project recovery, bounded native bridge, producer-facing Jarvis workspace, and native Keychain/provider settings pass the complete Debug gate; full Release gates and all FL Studio human runs remain required
+- Status: M7 automated checkpoint verified for Debug/Release, pluginval, installed-artifact parity, security, and real Release Standalone interaction; all FL Studio human runs remain required
 - Date: 2026-08-23 (America/Monterrey)
 - Branch: `feat/m7-guided-assistant`, stacked exactly on `feat/m6-presets-history`
 
@@ -56,10 +56,6 @@
 - Actual Debug Standalone visual inspection: PASS for the connected Jarvis tab, shared typed prompt, offline disclosure, describe/guided choice, and empty safe proposal state. Complete interaction evidence and Release screenshots remain part of the final M7 gate.
 - `git diff --check`: PASS.
 
-## M7 work still required
-
-- Run complete UI, Debug, Release, validator, artifact, visual, security, and evidence gates. Every FL Studio case remains HUMAN RUN REQUIRED.
-
 ## M7 secure provider-settings checkpoint
 
 - Added a move-only bounded native credential owner plus `MacKeychainCredentialStore` using exact generic-password service/account pairs, a 16 KiB maximum, strict ASCII identifiers, device-only accessibility, and idempotent exact removal.
@@ -72,6 +68,21 @@
 - Debug Standalone/VST3 build: PASS. Complete Debug CTest: PASS, 12/12, including the native Keychain round trip and unchanged real-time allocation coverage.
 - The known Vite direct-eval warning remains confined to JUCE's pinned Android compatibility helper.
 - `git diff --check`: PASS.
+
+## M7 final verification checkpoint
+
+- Clean `npm ci --ignore-scripts` and production-dependency audit: PASS, 0 vulnerabilities. UI tests/lint/build: PASS, 15/15.
+- Complete Debug Standalone/VST3 build and CTest: PASS, 12/12.
+- Complete Release Standalone/VST3 build and CTest: PASS, 13/13, including packaged VST3 scan/instantiate/finite-stereo rendering and native Keychain coverage.
+- Release Standalone/VST3: thin Mach-O `x86_64`; VST3 local ad-hoc signature verifies deeply/strictly.
+- pluginval 1.0.4 strictness 5: `SUCCESS` across editor lifecycle, state, automation, buses, and 44.1/48/96 kHz × 64/128/256/512/1024 samples.
+- Installed user VST3: PASS; installed/build hashes match, architecture/signature verify, and the installed bundle independently renders finite stereo MIDI audio.
+- Release/installed VST3 SHA-256: `b17c88bab2c1356c7b01980b96f918a28acbdd337f7ee2e437f9c63a7d7119ca`.
+- Release Standalone SHA-256: `4523ffa815cfcdd7fb4d666644f75dde82869f6ebf673f9707f31314c8d3b1da`.
+- Development-origin, project-source `eval`, sensitive-token pattern, JSON-schema, and `git diff --check` gates: PASS. All 14 project HTTP strings are JSON Schema identifiers.
+- Actual Release Standalone interaction: PASS for native offline/provider/Keychain truth, explained proposal creation, A→B selection, rejection restoring A, guided answers persisting and advancing to the next focused pair, and application quit. This is not an audible, physical-device, provider-network, or FL Studio pass.
+- Evidence: `evidence/m7/verification.md`, strictness-5 pluginval log, and five actual Release screenshots.
+- Every M7 FL Studio case remains `HUMAN RUN REQUIRED` in `docs/FL_STUDIO_TEST_MATRIX.md`.
 
 ## Previous M6 checkpoint
 
@@ -283,7 +294,7 @@
 - Imported wavetable sources are retained in bounded content-addressed local storage and referenced by versioned project state. Automated missing-asset recovery is covered, but FL Studio save-close-reopen, chooser recovery, and audible parity remain human checks.
 - The M4 interface edits all 32 route slots, but host automation of route structure is not supported; route changes are reviewed native transactions stored in plug-in state.
 - Three.js is a presentation dependency only. The measured local analysis cost and frame caps do not replace FL Studio CPU/GPU profiling on the target machine.
-- User-drawn LFOs and oversampling are optional M2 items and were deliberately deferred. The M7 offline assistant and producer-facing workspace are implemented; secure optional-provider settings and final Release evidence remain incomplete.
+- User-drawn LFOs and oversampling are optional M2 items and were deliberately deferred. The M7 offline assistant, producer-facing workspace, secure optional-provider boundary, and final Release evidence are verified; FL Studio checks remain human-required.
 - The CPU number is a reproducible local baseline, not a guarantee for every host/audio-device configuration. FL Studio profiling is still required.
 - pluginval's optional separate Steinberg-validator subtest was skipped because no validator executable path is installed.
 - Accepted compositions and their delivery state now round-trip in the bounded M6 project payload and remain searchable in local history. Actual FL Studio project reopen is not yet human-verified.
