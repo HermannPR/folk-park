@@ -394,6 +394,13 @@
 - Real Debug Standalone automation on the FX workspace held `A` as C3 with `1 voices`, then released to `0 voices` without a stuck note. Audible absence of the reported interface sound and FL Studio behavior remain human listening checks.
 - The verified thin `x86_64` Release VST3 was installed with executable SHA-256 `e5aaf6757ee54dd5d92a7639ec424d33374d4f88f25b9e11a269ed409bece5dd`; installed/build parity and independent installed-bundle finite-stereo MIDI rendering pass. The previous bundle remains recoverable at `~/Library/Audio/Plug-Ins/VST3/folk park.vst3.backup-20260824T152511Z`.
 
+## M9 Audio Stability contract checkpoint
+
+- Recorded the producer-reported intermittent saturation/crack/complete distortion during generated-composition audition as a release-blocking defect.
+- Established `plans/M9_AUDIO_STABILITY.md` with separate classifications for level overload, DSP instability, voice pressure, audio deadline misses, and MIDI delivery faults.
+- Confirmed the existing architecture counts non-finite output and MIDI queue overflows but has no explicit output-ceiling, over-unity, peak, voice-pressure, or deadline-headroom proof. The effect chain's `[-32, 32]` finite bound is not a 0 dBFS guarantee.
+- Ordered the work as deterministic reproduction/telemetry, source gain and feedback correction, profiled CPU optimization, bounded product diagnostics, then Release and producer listening gates. No limiter, global feature disable, or blind quality reduction is authorized as a substitute for diagnosis.
+
 ## Human-required status
 
 - Standalone physical keyboard/audio-device playability: PARTIAL. Automated real-window C3 hold/repeat/release passed; listening through the user's selected audio device remains human.
