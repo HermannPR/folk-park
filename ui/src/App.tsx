@@ -155,8 +155,14 @@ function ComposeView({ initial, announce, publishComposition }:
         <label>BPM<input type="number" min="20" max="400" value={tempo} onChange={(event) => setTempo(Number(event.currentTarget.value))} /></label>
         <label>Bars<input type="number" min="1" max="64" value={bars} onChange={(event) => setBars(Number(event.currentTarget.value))} /></label>
       </div>
-      <div className="macro-grid">{macroIds.map((id, index) => <label key={id}>{id}<output>{(macros[index] ?? 0).toFixed(2)}</output><input type="range" min="0" max="1" step="0.01" value={macros[index]} onChange={(event) => setMacros((values) => values.map((value, valueIndex) => valueIndex === index ? Number(event.currentTarget.value) : value))} /></label>)}</div>
-      <div className="parts">{["Chords", "Melody", "Bass", "Arpeggio"].map((name, index) => <label key={name}><input type="checkbox" checked={parts[index]} onChange={(event) => setParts((values) => values.map((value, valueIndex) => valueIndex === index ? event.currentTarget.checked : value))} />{name}</label>)}</div>
+      <div className="macro-grid">{macroIds.map((id, index) => <label key={id}>{id}<output>{(macros[index] ?? 0).toFixed(2)}</output><input type="range" min="0" max="1" step="0.01" value={macros[index]} onChange={(event) => {
+        const nextValue = Number(event.currentTarget.value);
+        setMacros((values) => values.map((value, valueIndex) => valueIndex === index ? nextValue : value));
+      }} /></label>)}</div>
+      <div className="parts">{["Chords", "Melody", "Bass", "Arpeggio"].map((name, index) => <label key={name}><input type="checkbox" checked={parts[index]} onChange={(event) => {
+        const nextChecked = event.currentTarget.checked;
+        setParts((values) => values.map((value, valueIndex) => valueIndex === index ? nextChecked : value));
+      }} />{name}</label>)}</div>
       <div className="actions"><button className="primary" onClick={() => void generate()}>Generate candidate</button><button onClick={() => void vary()}>More Like This</button><button onClick={() => void surprise()}>Surprise Me</button><button className="accept" onClick={() => void accept()}>Accept</button></div>
     </section>
     <section className="surface preview-panel">
@@ -285,7 +291,13 @@ export default function App() {
           reviewComposition={() => setTab("COMPOSE")} />}
         {tab === "FX" && <FxView snapshot={snapshot} announce={announce} />}
         {tab === "HISTORY" && <PersistenceView announce={announce} refreshSoundSnapshot={refresh} />}
-        {tab === "SETTINGS" && <div className="settings-layout"><section className="surface settings"><div className="section-heading"><div><span>UI</span><h2>Performance + accessibility</h2></div><small>Local presentation only</small></div><label><input type="checkbox" checked={preferences.lowGraphics} onChange={(event) => setPreferences((value) => ({ ...value, lowGraphics: event.currentTarget.checked }))} />Low Graphics · 2D canvas at 12 FPS</label><label><input type="checkbox" checked={preferences.reducedMotion} onChange={(event) => setPreferences((value) => ({ ...value, reducedMotion: event.currentTarget.checked }))} />Reduced Motion · render only on state changes</label><button onClick={() => void refresh()}>Request complete native snapshot</button><p>No remote fonts, trackers, CDNs, providers, or runtime assets are loaded.</p></section><AssistantProviderSettings announce={announce} /><DiagnosticsPanel announce={announce} /></div>}
+        {tab === "SETTINGS" && <div className="settings-layout"><section className="surface settings"><div className="section-heading"><div><span>UI</span><h2>Performance + accessibility</h2></div><small>Local presentation only</small></div><label><input type="checkbox" checked={preferences.lowGraphics} onChange={(event) => {
+          const nextChecked = event.currentTarget.checked;
+          setPreferences((value) => ({ ...value, lowGraphics: nextChecked }));
+        }} />Low Graphics · 2D canvas at 12 FPS</label><label><input type="checkbox" checked={preferences.reducedMotion} onChange={(event) => {
+          const nextChecked = event.currentTarget.checked;
+          setPreferences((value) => ({ ...value, reducedMotion: nextChecked }));
+        }} />Reduced Motion · render only on state changes</label><button onClick={() => void refresh()}>Request complete native snapshot</button><p>No remote fonts, trackers, CDNs, providers, or runtime assets are loaded.</p></section><AssistantProviderSettings announce={announce} /><DiagnosticsPanel announce={announce} /></div>}
       </>}
     </main>
     <footer><span aria-live="polite">{announcement}</span><span>{snapshot?.version ?? "offline"} · {visible ? "visible" : "graphics paused"}</span></footer>

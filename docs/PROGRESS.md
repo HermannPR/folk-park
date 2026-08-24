@@ -7,6 +7,14 @@
 - Date: 2026-08-24 (America/Monterrey)
 - Branch: `feat/m8-release-hardening`, stacked exactly on `feat/m7-guided-assistant`
 
+## Post-M8 Compose control repair
+
+- Reproduced the reported black WebView after changing Compose macro controls as a React event-lifetime failure: the six macro handlers read `event.currentTarget` from inside deferred functional state updaters, after React was permitted to clear the event target.
+- Captured each primitive range/checkbox value synchronously before scheduling state updates. Applied the same correction to all six Compose macros, all four part selectors, and both Settings presentation toggles that shared the unsafe pattern.
+- Added an interface regression contract that rejects `event.currentTarget` access inside the affected deferred updaters.
+- UI tests/lint/build: PASS, 18/18. Reconfigured and rebuilt the embedded Release UI, Standalone, and VST3; complete Release CTest: PASS, 16/16, including packaged VST3 scan/instantiate/finite-audio rendering.
+- This source/binary repair is automated evidence only. Producer interaction in the real Standalone and FL Studio remains human-required, and the previously installed M8 VST3 has not yet been replaced by this repaired build.
+
 ## M8 checklist checkpoint
 
 - Froze the M8 release-candidate deliverables, evidence requirements, Critical/High defect gate, and the exact distinction between automated, owner-decision, and FL Studio human evidence.

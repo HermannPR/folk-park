@@ -54,6 +54,7 @@ The DOCX is the master product and engineering contract. Read it without modifyi
 - M8 support/provenance checkpoint: `b92115b Established release support and provenance controls`.
 - M8 automated verification checkpoint: `e2df379 Verified and documented the M8 automated checkpoint`.
 - M8 private draft PR: <https://github.com/HermannPR/folk-park/pull/8>, base exactly `feat/m7-guided-assistant`, head `feat/m8-release-hardening`.
+- Post-M8 Compose repair: the reported black WebView was traced to deferred React state updater callbacks reading a cleared `event.currentTarget`. The repair captures range/checkbox primitives before scheduling updates for all six macros, four part selectors, and both Settings presentation toggles. UI tests/lint/build pass 18/18 and the rebuilt complete Release CTest passes 16/16. Real producer interaction and installed-VST3 replacement remain pending.
 - Earlier M6 commits are:
   - `735fb84 Established the M6 persistence and migration contracts`
   - `a69a8bc Implemented versioned native presets and validated assets`
@@ -290,6 +291,13 @@ M8 starts from the verified M7 artifacts; it must not redesign or reimplement M0
 - `evidence/m8/verification.md` and the fresh strictness-5 validator log retain the exact automated result/hashes. The only visual evidence still pending is the real Release diagnostics panel after the producer performs the intentional Preview action; macOS denied accessibility automation, and no mockup or clipboard bypass is permitted.
 - Every FL Studio row remains `HUMAN RUN REQUIRED`. Signing/notarization, JUCE distribution licensing, final identity, asset approval, public privacy notice, remote provider, and an owner-approved CPU budget remain explicit owner decisions.
 - `docs/OWNER_RELEASE_DECISIONS.md` maps those gates to the exact 0.1 artifact identity, pinned JUCE 8 EULA, current Apple Developer ID/notarization requirements, ZIP/DMG/PKG and updater choices, privacy/asset/performance/provider boundaries, a recommended low-risk sequence, and one reply template. No choice or distribution action is authorized by that worksheet.
+
+### Post-M8 Compose control repair
+
+- The Compose macros were not native rotary controls; they were controlled React range inputs. Their handlers accessed `event.currentTarget.value` inside a functional `setMacros` updater. React may execute that updater after clearing `currentTarget`, which raised during state calculation and left only the WebView's black background.
+- Every affected handler now captures its primitive value synchronously. This covers Density, Rhythm, Tension, Human, Repeat, Variation, the four part checkboxes, and the two Settings presentation checkboxes.
+- `ui/src/interface-contract.test.ts` contains the regression boundary. UI tests/lint/build pass 18/18, and the serial embedded-UI Release rebuild plus complete CTest passes 16/16.
+- Do not claim a real interaction pass until Hermann moves the controls in the rebuilt Standalone and, separately, in FL Studio. Do not claim the installed VST3 contains the fix until the exact repaired bundle is installed and parity-verified.
 
 ## Commands and local environment
 

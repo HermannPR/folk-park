@@ -59,6 +59,15 @@ test("composition editing and the 32-route modulation workspace stay explicit an
   assert.doesNotMatch(modulation, /https?:\/\//);
 });
 
+test("controlled UI events are captured before deferred state updater callbacks", async () => {
+  const app = await readFile(resolve(sourceRoot, "App.tsx"), "utf8");
+  assert.match(app, /const nextValue = Number\(event\.currentTarget\.value\);/);
+  assert.match(app, /const nextChecked = event\.currentTarget\.checked;/);
+  assert.doesNotMatch(app,
+    /set(?:Macros|Parts|Preferences)\(\([^)]*\)\s*=>[^;\n]*event\.currentTarget/,
+    "React clears currentTarget after the event handler; deferred updaters must use captured primitives");
+});
+
 test("M5 exposes the complete ordered effect chain and isolated accepted WAV action", async () => {
   const app = await readFile(resolve(sourceRoot, "App.tsx"), "utf8");
   const controls = await readFile(resolve(sourceRoot, "host-controls.tsx"), "utf8");
