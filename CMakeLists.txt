@@ -61,6 +61,12 @@ target_sources(FolkPark PRIVATE
     src/drums/Rhythm.h
     src/drums/DrumEngine.cpp
     src/drums/DrumEngine.h
+    src/drums/RhythmGenerator.cpp
+    src/drums/RhythmGenerator.h
+    src/drums/RhythmSession.cpp
+    src/drums/RhythmSession.h
+    src/drums/DrumMidi.cpp
+    src/drums/DrumMidi.h
     src/plugin/PluginEditor.cpp
     src/plugin/PluginEditor.h
     src/plugin/PluginProcessor.cpp
@@ -292,6 +298,28 @@ target_link_libraries(FolkParkDrumEngineTests PRIVATE
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags)
 add_test(NAME FolkParkSynthesizedDrumEngineTests COMMAND FolkParkDrumEngineTests)
+
+juce_add_console_app(FolkParkRhythmGeneratorTests PRODUCT_NAME "folk park rhythm generator tests")
+target_sources(FolkParkRhythmGeneratorTests PRIVATE
+    tests/RhythmGeneratorTests.cpp
+    src/drums/DrumMidi.cpp
+    src/drums/DrumMidi.h
+    src/drums/Rhythm.cpp
+    src/drums/Rhythm.h
+    src/drums/RhythmGenerator.cpp
+    src/drums/RhythmGenerator.h
+    src/drums/RhythmSession.cpp
+    src/drums/RhythmSession.h
+    src/midi/Composition.cpp
+    src/midi/Composition.h)
+target_include_directories(FolkParkRhythmGeneratorTests PRIVATE src)
+target_compile_definitions(FolkParkRhythmGeneratorTests PRIVATE JUCE_USE_CURL=0)
+target_link_libraries(FolkParkRhythmGeneratorTests PRIVATE
+    juce::juce_audio_formats
+    juce::juce_core
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)
+add_test(NAME FolkParkRhythmGenerationAndMidiTests COMMAND FolkParkRhythmGeneratorTests)
 
 juce_add_console_app(FolkParkMidiDeliveryTests PRODUCT_NAME "folk park MIDI delivery tests")
 target_sources(FolkParkMidiDeliveryTests PRIVATE

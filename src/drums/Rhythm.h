@@ -5,6 +5,7 @@
 #include <juce_core/juce_core.h>
 
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <vector>
@@ -77,7 +78,15 @@ struct DrumEvent
     float probability = 1.0f;
     DrumArticulation articulation = DrumArticulation::normal;
 
-    friend bool operator==(const DrumEvent&, const DrumEvent&) = default;
+    friend bool operator==(const DrumEvent& left, const DrumEvent& right) noexcept
+    {
+        return left.startTick == right.startTick
+            && left.durationTicks == right.durationTicks
+            && left.lane == right.lane
+            && left.velocity == right.velocity
+            && std::abs(left.probability - right.probability) < 0.0000001f
+            && left.articulation == right.articulation;
+    }
 };
 
 struct DrumPattern

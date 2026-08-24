@@ -57,6 +57,7 @@ The DOCX is the master product and engineering contract. Read it without modifyi
 - Post-M8 Compose repair checkpoint: `250c632 Hardened deferred Compose control updates`. The reported black WebView was traced to deferred React state updater callbacks reading a cleared `event.currentTarget`. The repair captures range/checkbox primitives before scheduling updates for all six macros, four part selectors, and both Settings presentation toggles. UI tests/lint/build pass 18/18, complete Release CTest passes 16/16, pluginval strictness 5 succeeds, and the repaired installed VST3 passes exact parity plus independent finite-audio MIDI rendering. Real Standalone/FL producer interaction remains pending.
 - Post-M8 Orbital Habitat implementation checkpoint: `b121e0e Implemented the Orbital Habitat visual system`. `ui/src/design-system.tsx` owns the reusable Button, IconButton, Panel, Sidebar, Navbar, Tabs, Slider, Knob, Toggle, Dropdown, Modal, Tooltip, TextInput, NumericInput, TextArea, ProgressBar, Meter, ContextMenu, Notification, and StatusIndicator primitives. `ui/src/styles.css` owns the complete token/material/background/responsive system; host controls preserve native JUCE gesture semantics. UI tests/lint/build pass 19/19, Release CTest passes 16/16, pluginval strictness 5 ends `SUCCESS`, and installed/build VST3 hash parity plus independent finite-audio MIDI render pass. Five real Release screenshots are retained under `evidence/m8/visual/`. FL Studio visual/input/listening checks remain human-required.
 - Rhythm Lab R1 branch: `feat/rhythm-lab-r1`, created from verified Orbital Habitat checkpoint `50b36a4`. Contract checkpoint: `c43454c Established synthesized Rhythm Lab contracts`. Producer direction is synthesized-first with indie/rock, Eurodance, techno, funk, and jazz profiles and no current sample library. ADR-0010 and version-1 `RhythmIntent`, `DrumPattern`, and `SynthDrumKit` contracts pass focused native validation.
+- Rhythm Lab synthesized engine checkpoint: `499d09b Implemented the synthesized drum engine`. The preallocated engine and measured zero-allocation callback coverage are committed; application pattern playback and UI integration remain pending.
 - Earlier M6 commits are:
   - `735fb84 Established the M6 persistence and migration contracts`
   - `a69a8bc Implemented versioned native presets and validated assets`
@@ -334,6 +335,14 @@ M8 starts from the verified M7 artifacts; it must not redesign or reimplement M0
 - The supported 44.1/48/96 kHz × 32/64/128/256/512/1024 matrix produces finite nonzero output; deterministic twin-engine rendering, bounded tails, reset silence, invalid-kit rejection, and closed-hat choking are covered.
 - The existing measured real-time probe now renders synthesized drums inside its 32-block callback loop and still records zero allocations.
 - Focused Debug synthesized-engine and real-time tests: PASS, 2/2. This engine is not yet connected to application pattern playback or the UI, so app/FL audition remains unclaimed.
+
+### Rhythm Lab generation and acceptance checkpoint
+
+- `RhythmGenerator` creates deterministic bounded patterns from one shared engine with distinct weighted indie/rock, Eurodance, techno, funk, and jazz timing/accent/ghost/fill profiles.
+- Swing and humanization produce bounded tick movement; dense/long requests obey the caller event cap. No profile stores or copies a recorded performance.
+- `RhythmSession` preserves separate candidate and accepted patterns. Generating or varying a candidate cannot replace the accepted pattern; `More Like This` retains explicit parent lineage.
+- `DrumMidi` maps accepted lanes to standard channel-10 drum pitches and writes/reopens tempo/signature-aware MIDI at 96, 480, 960, and 1920 PPQ.
+- Focused contract, synthesized engine, generation/MIDI, and measured real-time tests: PASS, 4/4 with no project compiler warning. Application playback/UI integration and FL Studio behavior remain pending.
 
 ## Commands and local environment
 
