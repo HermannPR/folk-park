@@ -42,6 +42,8 @@ The DOCX is the master product and engineering contract. Read it without modifyi
 - M6 handoff checkpoint: `282c344 Established the M7 continuation handoff`.
 - First M7 checkpoint: `74d6e43 Established M7 assistant and provider contracts`.
 - Offline workflow checkpoint: `639a749 Implemented deterministic offline Jarvis workflows`.
+- A/B audition checkpoint: `63191e8 Integrated reversible Jarvis proposal audition`.
+- Connected Jarvis UI checkpoint: `de6db59 Implemented the offline Jarvis workspace`.
 - No M7 PR exists yet.
 - Earlier M6 commits are:
   - `735fb84 Established the M6 persistence and migration contracts`
@@ -69,7 +71,7 @@ Git rules:
 - M4: Silicon Dreams UI, real A/B visuals, four-octave C2–B5 piano, octave shift, and held-key repeat suppression; automated gate passed; FL UI/input checks pending.
 - M5: ordered Distortion → Chorus → tempo-synced Delay → Reverb → Compressor → Parametric EQ and isolated accepted-composition WAV rendering; automated gate passed; FL effects/render checks pending.
 - M6: native presets/assets/migration, transactional composition history, and editor-independent project recovery; automated gate verified; every FL persistence case remains human-required.
-- M7: composition text, guided Jarvis sound workflow, reversible A/B, and optional secure provider boundary; contracts, offline workflows, processor A/B/recovery, bounded bridge, and producer-facing UI implemented, Keychain/provider settings and final gates in progress.
+- M7: composition text, guided Jarvis sound workflow, reversible A/B, and optional secure provider boundary; contracts, offline workflows, processor A/B/recovery, bounded bridge, producer-facing UI, and native Keychain/provider settings implemented, with final Release gates in progress.
 - M8: host/release hardening, packaging, legal/asset audit, and release documentation; planned.
 
 Do not reimplement M0–M6. Preserve the oscillator displays, C2–B5 keyboard, held-key repeat behavior, effects, candidate/accepted MIDI boundary, accepted-only WAV workflow, and transactional persistence while working on M7.
@@ -136,7 +138,7 @@ Known verification observations:
 
 ## Current milestone: M7 Jarvis text and guided sound assistant
 
-The integrated Jarvis workspace is a working deterministic offline production helper, not a general-purpose LLM. It can interpret bounded composition text, guide sound intent, create explained proposals, and drive explicit A/B review. There is no credential implementation or real remote provider yet, and the UI states that boundary directly.
+The integrated Jarvis workspace is a working deterministic offline production helper, not a general-purpose LLM. It can interpret bounded composition text, guide sound intent, create explained proposals, and drive explicit A/B review. A native macOS Keychain abstraction now exists for a future opt-in provider, but no real remote provider or credential is selected/configured, and the UI states that boundary directly.
 
 ### Contracts and deterministic offline workflow now implemented
 
@@ -164,11 +166,20 @@ Implemented after the A/B checkpoint:
 - UI lint/tests pass (14/14), the production bundle builds, Debug Standalone/VST3 build, and complete Debug CTest passes (11/11).
 - Actual Debug Standalone visual inspection confirms the integrated tab and safe empty state. This is not a complete interaction, audible, Release, provider, or FL Studio pass.
 
+Implemented after the connected UI checkpoint:
+
+- `src/platform/CredentialStore.*` owns a bounded move-only credential and an exact macOS generic-password Keychain store with strict identifiers, device-only accessibility, exact update/read/remove behavior, and fail-closed Core Foundation request construction.
+- `tests/CredentialStoreTests.cpp` performs a real temporary-service Keychain round trip and removes the exact test item. UI/native status exposes no credential value or secret-bearing JavaScript operation.
+- Settings reports the complete current truth: deterministic offline mode active, remote provider not selected, no credential configured, Keychain supported, and no Jarvis data leaving the Mac.
+- Frontend UUID validation now matches the native deterministic opaque-ID format, and stable kebab-case question IDs map explicitly to React answer fields.
+- UI tests/lint/build: PASS, 15/15; complete Debug Standalone/VST3 and CTest: PASS, 12/12.
+- Actual Debug interaction confirms guided progress and input persistence, restored proposal review, A/B selection/rejection, and provider/privacy status. This is not an audible, Release, remote-provider, or FL Studio pass.
+
 Next M7 sequence:
 
-1. Commit and push the passing bridge/UI checkpoint with exact-path staging and an impersonal subject.
-2. Add the Keychain credential abstraction and offline/provider settings, but no real remote adapter until the product owner resolves that open decision.
-3. Run UI/Debug/Release/validator/security/visual gates and update the recruiter-facing README with real M7 Release screenshots only after the actual integrated interface passes visual inspection.
+1. Review, commit, and push the passing native Keychain/provider-settings checkpoint with exact-path staging and an impersonal subject.
+2. Run clean UI, complete Release, pluginval, artifact/install/hash, security, schema, and visual gates.
+3. Retain real M7 Release screenshots and verification evidence, finish the recruiter-facing README, open the stacked M7 draft PR, and keep every FL Studio check HUMAN RUN REQUIRED.
 
 M7 required producer workflow:
 
@@ -198,9 +209,9 @@ gh pr list --head feat/m6-presets-history --state all
 gh pr list --head feat/m7-guided-assistant --state all
 ```
 
-Confirm the repository is still private, inspect every local change, and never discard work. If the A/B/recovery changes are uncommitted, run the focused assistant/processor suites plus the full Debug suite, review exact diffs, and stage only the intended assistant/processor/CMake/test/documentation paths. The expected subject is `Integrated reversible Jarvis proposal audition`.
+Confirm the repository is still private, inspect every local change, and never discard work. The connected UI checkpoint is `de6db59`; current uncommitted work is the passing native Keychain/provider-settings stage plus its generated UI bundle and documentation. UI tests/lint/build pass 15/15 and complete Debug CTest passes 12/12. Review exact diffs, rerun affected gates after any edit, stage only exact intended paths, and use an impersonal checkpoint subject such as `Established secure Jarvis provider settings`.
 
-The M6 draft PR already exists and this branch is correctly stacked. Preserve meaningful impersonal commits at every passing M7 stage. The next code boundary is secure Keychain/provider settings; do not enable a real remote adapter by assumption.
+The M6 draft PR already exists and this branch is correctly stacked. Preserve meaningful impersonal commits at every passing M7 stage. After the Keychain checkpoint, the next boundary is the final M7 Release/evidence gate; do not enable a real remote adapter by assumption.
 
 ## Commands and local environment
 

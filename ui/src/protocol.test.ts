@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { chooseAnimationPolicy, parseGuidedProgress, parseHistoryComparison,
+import { chooseAnimationPolicy, parseAssistantProviderStatus, parseGuidedProgress, parseHistoryComparison,
   parseJarvisAuditionState, parseJarvisCompositionResult, parsePersistenceWorkspace,
   parseUiSnapshot, wavetableSamplesPerFrame } from "./protocol.ts";
 
@@ -40,6 +40,8 @@ const valid = {
 
 const idA = "8ca1788c-080f-4ea0-80a8-d9381084aa20";
 const idB = "6b9cb569-45ec-49d3-9805-dbcde3417f41";
+const deterministicIdA = "11111111-2222-f333-0444-555555555555";
+const deterministicIdB = "aaaaaaaa-bbbb-0ccc-fddd-eeeeeeeeeeee";
 const persistenceStatus = { enabled: true, presetAvailable: true, historyAvailable: true,
   message: "ready", currentPresetId: idA, currentPresetName: "Lead",
   currentPresetDirty: false, retentionDays: 180, missingAssets: [] };
@@ -95,7 +97,7 @@ test("M6 persistence and comparison payloads are bounded before UI state publica
 });
 
 test("M7 guided steps accept at most two unique bounded questions", () => {
-  const question = { id: "musicalRole", prompt: "What role should it play?",
+  const question = { id: "musical-role", prompt: "What role should it play?",
     purpose: "Sets register and envelope priorities", required: true };
   assert.notEqual(parseGuidedProgress({ ok: true, completion: 0,
     readyForProposal: false, questions: [question] }), null);
@@ -112,7 +114,8 @@ test("M7 guided steps accept at most two unique bounded questions", () => {
 test("M7 assistant proposals require explicit acceptance and bounded unique changes", () => {
   const change = { parameterId: "filterCutoff", currentNormalized: 0.25,
     proposedNormalized: 0.72, reason: "Opens the spectrum" };
-  const proposal = { proposalId: idA, requestId: idB, explanation: "A brighter lead",
+  const proposal = { proposalId: deterministicIdA, requestId: deterministicIdB,
+    explanation: "A brighter lead",
     confidence: 0.84, requiresExplicitAcceptance: true,
     assumptions: ["The lead should remain playable"], changes: [change] };
   const state = { ok: true, status: "proposal-ready", active: true,
@@ -141,4 +144,17 @@ test("M7 composition assistant publishes a candidate without implicit acceptance
     composition: { ...result.composition, hasCandidate: false } }), null);
   assert.equal(parseJarvisCompositionResult({ ...result,
     intent: { ...result.intent, seed: -1 } }), null);
+});
+
+test("M7 provider status cannot claim a credential without a provider and Keychain", () => {
+  const offline = { ok: true, mode: "offline", offlineAvailable: true,
+    remoteProviderAvailable: false, selectedProvider: "", keychainAvailable: true,
+    credentialConfigured: false,
+    message: "Offline Jarvis is active and no credential is requested" };
+  assert.notEqual(parseAssistantProviderStatus(offline), null);
+  assert.equal(parseAssistantProviderStatus({ ...offline, mode: "future-mode" }), null);
+  assert.equal(parseAssistantProviderStatus({ ...offline, credentialConfigured: true }), null);
+  assert.equal(parseAssistantProviderStatus({ ...offline,
+    remoteProviderAvailable: false, selectedProvider: "unselected-provider" }), null);
+  assert.equal(parseAssistantProviderStatus({ ...offline, offlineAvailable: false }), null);
 });

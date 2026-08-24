@@ -100,8 +100,9 @@ test("M6 exposes native preset recovery and transactional composition history", 
 test("M7 exposes a bounded offline Jarvis conversation and explicit review boundaries", async () => {
   const app = await readFile(resolve(sourceRoot, "App.tsx"), "utf8");
   const view = await readFile(resolve(sourceRoot, "JarvisView.tsx"), "utf8");
+  const settings = await readFile(resolve(sourceRoot, "AssistantProviderSettings.tsx"), "utf8");
   const editor = await readFile(resolve(sourceRoot, "../../src/plugin/PluginEditor.cpp"), "utf8");
-  for (const command of ["getJarvisState", "getJarvisQuestions",
+  for (const command of ["getAssistantProviderStatus", "getJarvisState", "getJarvisQuestions",
     "createJarvisSoundProposal", "auditionJarvisSide", "acceptJarvisProposal",
     "rejectJarvisProposal", "createJarvisComposition"])
     assert.match(editor, new RegExp(`withNativeFunction\\("${command}"`));
@@ -120,5 +121,13 @@ test("M7 exposes a bounded offline Jarvis conversation and explicit review bound
     "typing one guided answer must not unmount the current two-question step");
   assert.match(editor, /hasOnlyObjectProperties/);
   assert.match(editor, /requiresExplicitAcceptance/);
+  assert.match(app, /<AssistantProviderSettings/);
+  assert.match(settings, /Offline deterministic/);
+  assert.match(settings, /macOS Keychain supported/);
+  assert.match(settings, /No provider adapter or outbound request is enabled/);
+  assert.match(settings, /Credentials never enter React, presets, DAW state, logs, or Git/);
+  assert.doesNotMatch(settings, /type="password"|credential\s*:/i,
+    "provider credentials must never cross the JavaScript boundary");
   assert.doesNotMatch(view, /https?:\/\//);
+  assert.doesNotMatch(settings, /https?:\/\//);
 });

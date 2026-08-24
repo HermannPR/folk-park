@@ -1,5 +1,7 @@
 #include "PluginEditor.h"
 
+#include "platform/CredentialStore.h"
+
 #include <BinaryData.h>
 #include <cmath>
 #include <cstddef>
@@ -422,6 +424,22 @@ juce::var jarvisCompositionPayload(const PluginProcessor& processor,
     return juce::var(payload.get());
 }
 
+juce::var assistantProviderStatusPayload()
+{
+    auto payload = juce::DynamicObject::Ptr(new juce::DynamicObject());
+    payload->setProperty("ok", true);
+    payload->setProperty("mode", "offline");
+    payload->setProperty("offlineAvailable", true);
+    payload->setProperty("remoteProviderAvailable", false);
+    payload->setProperty("selectedProvider", "");
+    payload->setProperty("keychainAvailable",
+                         platform::MacKeychainCredentialStore::platformSupported());
+    payload->setProperty("credentialConfigured", false);
+    payload->setProperty("message",
+        "Offline Jarvis is active. No remote provider is selected and no credential is requested.");
+    return juce::var(payload.get());
+}
+
 juce::var wavetablePayload(const WavetableUiSnapshot& snapshot)
 {
     auto payload = juce::DynamicObject::Ptr(new juce::DynamicObject());
@@ -754,6 +772,16 @@ juce::WebBrowserComponent::Options PluginEditor::browserOptions()
             info->setProperty("version", FOLK_PARK_VERSION);
             info->setProperty("architecture", "x86_64");
             complete(juce::var(info.get()));
+        })
+        .withNativeFunction("getAssistantProviderStatus", [](const auto& arguments,
+                                                               auto complete)
+        {
+            if (!arguments.isEmpty())
+            {
+                complete("Assistant provider status takes no arguments");
+                return;
+            }
+            complete(assistantProviderStatusPayload());
         })
         .withNativeFunction("getJarvisState", [this](const auto& arguments, auto complete)
         {

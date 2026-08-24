@@ -71,7 +71,7 @@ Host project state contains one bounded, versioned preset payload plus optional 
 
 Offline composition text and guided sound design share one versioned `AssistantRequest`/`AssistantResponse` boundary but use distinct typed targets. Composition returns a validated candidate `MusicIntent`; sound design returns a catalog-validated `ParameterProposal`. Request UUID, target, processing origin, typed context, and result must match before a session can change.
 
-The provider interface is non-audio and asynchronous with cancellation and at-most-once completion. Offline and mock implementations require no credential. A future remote origin requires per-request producer consent and a Keychain-backed native credential store; natural language, credentials, and provider output never enter the audio callback or host project state.
+The provider interface is non-audio and asynchronous with cancellation and at-most-once completion. Offline and mock implementations require no credential. The macOS implementation stores bounded opaque future-provider bytes behind a native generic-password Keychain interface; strict identifiers, device-only accessibility, exact removal, and a move-only read result prevent credentials from entering React or serialized product state. A future remote origin still requires a selected adapter, provider-specific disclosure, and per-request producer consent. Natural language, credentials, and provider output never enter the audio callback or host project state.
 
 The bundled Jarvis workspace calls seven strict message-thread native functions. The bridge accepts only bounded named sound-intent fields or one bounded composition prompt/seed, rejects unknown object properties, and returns finite typed payloads. React validates progress, UUID-linked proposals, statuses, sides, unique parameter changes, explicit-acceptance flags, and candidate composition summaries before replacing view state. The conversation transcript is presentation-only and is neither serialized into a host project nor sent anywhere in the offline path.
 
@@ -87,4 +87,4 @@ Sound A/B captures immutable current/proposed normalized values for every change
 - ADR-0007: Versioned native presets, content-addressed assets, transactional history, and project recovery for M6 (accepted).
 - ADR-0008: Offline-first assistant orchestration, proposal-version migration, provider consent, and A/B acceptance for M7 (accepted).
 
-The real-provider selection and Keychain implementation remain open M7 work; offline/manual behavior and explicit assistant acceptance are fixed. Distribution licensing/signing and release packaging remain M8 boundaries.
+The real-provider selection remains open M7 product work; the native Keychain boundary, offline/manual behavior, and explicit assistant acceptance are fixed. Distribution licensing/signing and release packaging remain M8 boundaries.

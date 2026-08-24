@@ -3,7 +3,7 @@
 ## Current checkpoint
 
 - Milestone: M7 — offline Jarvis text, guided sound proposals, and secure provider boundary
-- Status: M7 contracts, deterministic offline workflows, processor-owned reversible A/B/project recovery, bounded native bridge, and producer-facing Jarvis workspace pass the complete Debug gate; Keychain implementation, full Release gates, and all FL Studio human runs remain required
+- Status: M7 contracts, deterministic offline workflows, processor-owned reversible A/B/project recovery, bounded native bridge, producer-facing Jarvis workspace, and native Keychain/provider settings pass the complete Debug gate; full Release gates and all FL Studio human runs remain required
 - Date: 2026-08-23 (America/Monterrey)
 - Branch: `feat/m7-guided-assistant`, stacked exactly on `feat/m6-presets-history`
 
@@ -58,8 +58,20 @@
 
 ## M7 work still required
 
-- Implement and test the macOS Keychain credential abstraction. Do not add a real adapter until the product-owner decision and privacy UX exist.
 - Run complete UI, Debug, Release, validator, artifact, visual, security, and evidence gates. Every FL Studio case remains HUMAN RUN REQUIRED.
+
+## M7 secure provider-settings checkpoint
+
+- Added a move-only bounded native credential owner plus `MacKeychainCredentialStore` using exact generic-password service/account pairs, a 16 KiB maximum, strict ASCII identifiers, device-only accessibility, and idempotent exact removal.
+- Hardened Keychain request construction to fail closed if any Core Foundation object cannot be created. No under-specified lookup, update, or removal query can be issued.
+- Added a real temporary-service Keychain test covering absent/store/read/update/read, empty/oversized/malformed identifier rejection, removal, and confirmed absence after cleanup.
+- Added one read-only native provider-status operation and a Settings surface that reports offline mode, no selected provider, no configured credential, Keychain availability, and the current no-network privacy boundary. No frontend credential field or secret-bearing bridge operation exists.
+- Corrected frontend UUID validation to match the authoritative native opaque 128-bit deterministic-ID contract and mapped stable kebab-case guided-question IDs to typed React answer fields.
+- Actual Debug Standalone interaction: PASS for two-at-a-time guided progress, typed-answer persistence, restored proposal display, A/B selection, rejection/restoration, and native provider/privacy status. This is not an audible, Release, provider-network, or FL Studio pass.
+- UI tests: PASS, 15/15; strict TypeScript: PASS; production build: PASS. `app.js` 829.27 kB (214.23 kB gzip), `app.css` 22.29 kB (5.72 kB gzip), local index 0.40 kB.
+- Debug Standalone/VST3 build: PASS. Complete Debug CTest: PASS, 12/12, including the native Keychain round trip and unchanged real-time allocation coverage.
+- The known Vite direct-eval warning remains confined to JUCE's pinned Android compatibility helper.
+- `git diff --check`: PASS.
 
 ## Previous M6 checkpoint
 

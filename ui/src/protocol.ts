@@ -147,8 +147,8 @@ export type AnimationPolicy = {
 };
 
 export type GuidedQuestion = {
-  id: "musicalRole" | "timbre" | "articulation" | "movement" | "space"
-    | "intensity" | "genreContext" | "referenceDescription";
+  id: "musical-role" | "timbre" | "articulation" | "movement" | "space"
+    | "intensity" | "genre-context" | "reference-description";
   prompt: string;
   purpose: string;
   required: boolean;
@@ -206,6 +206,17 @@ export type JarvisCompositionResult = {
   composition: CompositionSnapshot;
 };
 
+export type AssistantProviderStatus = {
+  ok: true;
+  mode: "offline";
+  offlineAvailable: true;
+  remoteProviderAvailable: boolean;
+  selectedProvider: string;
+  keychainAvailable: boolean;
+  credentialConfigured: boolean;
+  message: string;
+};
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
@@ -215,7 +226,9 @@ const isFiniteRange = (value: unknown, minimum: number, maximum: number): value 
 const isBoundedString = (value: unknown, maximum: number): value is string =>
   typeof value === "string" && value.length <= maximum;
 
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+// C++ deterministicUuid intentionally produces an opaque 128-bit hexadecimal ID rather
+// than asserting RFC version/variant bits. Match the authoritative native isUuid contract.
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const sha256Pattern = /^[0-9a-f]{64}$/;
 
 function parseTags(value: unknown): string[] | null {
@@ -424,8 +437,8 @@ export function parseUiSnapshot(value: unknown): UiSnapshot | null {
     modulationRoutes, parameters } as UiSnapshot;
 }
 
-const questionIds = ["musicalRole", "timbre", "articulation", "movement", "space",
-  "intensity", "genreContext", "referenceDescription"] as const;
+const questionIds = ["musical-role", "timbre", "articulation", "movement", "space",
+  "intensity", "genre-context", "reference-description"] as const;
 const assistantStatuses = ["idle", "collecting", "ready", "working", "proposal-ready",
   "previewing", "accepted", "rejected", "cancelled", "failed"] as const;
 const compositionParts = ["chords", "melody", "bass", "arp"] as const;
@@ -527,6 +540,21 @@ export function parseJarvisCompositionResult(value: unknown): JarvisCompositionR
     requestId: intent.requestId, seed: intent.seed, key: intent.key, scale: intent.scale,
     tempoBpm: intent.tempoBpm, bars: intent.bars, genre: intent.genre,
     emotion: intent.emotion, parts }, composition };
+}
+
+export function parseAssistantProviderStatus(value: unknown): AssistantProviderStatus | null {
+  if (!isRecord(value) || value.ok !== true || value.mode !== "offline"
+      || value.offlineAvailable !== true
+      || typeof value.remoteProviderAvailable !== "boolean"
+      || !isBoundedString(value.selectedProvider, 64)
+      || typeof value.keychainAvailable !== "boolean"
+      || typeof value.credentialConfigured !== "boolean"
+      || !isBoundedString(value.message, 512) || value.message.trim().length === 0) return null;
+  if (!value.remoteProviderAvailable
+      && (value.selectedProvider.length !== 0 || value.credentialConfigured)) return null;
+  if (value.credentialConfigured
+      && (!value.keychainAvailable || value.selectedProvider.length === 0)) return null;
+  return value as AssistantProviderStatus;
 }
 
 export function chooseAnimationPolicy(preferences: GraphicsPreferences): AnimationPolicy {

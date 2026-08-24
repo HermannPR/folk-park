@@ -69,6 +69,8 @@ target_sources(FolkPark PRIVATE
     src/persistence/HistoryRepository.h
     src/persistence/PersistenceCoordinator.cpp
     src/persistence/PersistenceCoordinator.h
+    src/platform/CredentialStore.cpp
+    src/platform/CredentialStore.h
     src/render/OfflinePreviewRenderer.cpp
     src/render/OfflinePreviewRenderer.h
     src/midi/MidiProof.cpp
@@ -113,6 +115,7 @@ target_link_libraries(FolkPark
         juce::juce_cryptography
         juce::juce_dsp
         juce::juce_gui_extra
+        "-framework Security"
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
@@ -309,6 +312,20 @@ target_link_libraries(FolkParkOfflineAssistantTests PRIVATE
     juce::juce_recommended_warning_flags)
 add_test(NAME FolkParkOfflineAssistantWorkflowTests COMMAND FolkParkOfflineAssistantTests)
 
+juce_add_console_app(FolkParkCredentialStoreTests PRODUCT_NAME "folk park Keychain tests")
+target_sources(FolkParkCredentialStoreTests PRIVATE
+    tests/CredentialStoreTests.cpp
+    src/platform/CredentialStore.cpp
+    src/platform/CredentialStore.h)
+target_include_directories(FolkParkCredentialStoreTests PRIVATE src)
+target_compile_definitions(FolkParkCredentialStoreTests PRIVATE JUCE_USE_CURL=0)
+target_link_libraries(FolkParkCredentialStoreTests PRIVATE
+    juce::juce_core
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags
+    "-framework Security")
+add_test(NAME FolkParkMacKeychainCredentialTests COMMAND FolkParkCredentialStoreTests)
+
 juce_add_console_app(FolkParkRealtimeTests PRODUCT_NAME "folk park real-time allocation tests")
 target_sources(FolkParkRealtimeTests PRIVATE
     tests/RealtimeTests.cpp
@@ -364,6 +381,8 @@ target_sources(FolkParkPluginTests PRIVATE
     src/persistence/HistoryRepository.h
     src/persistence/PersistenceCoordinator.cpp
     src/persistence/PersistenceCoordinator.h
+    src/platform/CredentialStore.cpp
+    src/platform/CredentialStore.h
     src/effects/EffectChain.cpp
     src/effects/EffectChain.h
     src/render/OfflinePreviewRenderer.cpp
@@ -405,7 +424,8 @@ target_link_libraries(FolkParkPluginTests PRIVATE
     juce::juce_dsp
     juce::juce_gui_extra
     juce::juce_recommended_config_flags
-    juce::juce_recommended_warning_flags)
+    juce::juce_recommended_warning_flags
+    "-framework Security")
 add_test(NAME FolkParkPluginStateAndUiTests COMMAND FolkParkPluginTests)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
