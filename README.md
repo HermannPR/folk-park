@@ -320,13 +320,13 @@ The canonical continuation point for another coding session is [docs/CURRENT_WOR
 | M7 | Offline Jarvis text workflow, adaptive sound questions, explained A/B proposals, optional secure provider | Automated gate verified; FL Jarvis/project checks pending |
 | M8 | FL Studio matrix, diagnostics/performance/recovery hardening, packaging, legal/asset audit, release docs | Automated gate verified; FL human matrix and owner distribution decisions pending |
 | Post-M8 visual checkpoint | Orbital Habitat theme, reusable physical controls, coherent responsive shell | Implemented and automated gates verified; FL visual/input confirmation pending |
-| Rhythm Lab | Audible hybrid drum engine, genre-aware generation, lane locking/editing, stems, and safe break slicing | Product plan established; implementation not started |
+| Rhythm Lab R1 | Synthesized drum engine plus indie/rock, Eurodance, techno, funk, and jazz generation | Native contracts/engine/generation/MIDI verified; product playback and UI integration next |
 
 The connected M7 workflow now asks focused sound-design questions, translates complete answers into bounded explanations, and exposes reversible A/B plus explicit accept/reject in the product interface. Offline/manual operation remains complete; an optional model provider cannot bypass the parameter catalog, embed user keys, or directly control the DAW.
 
 Next in M8: complete the human FL Studio matrix and resolve the owner decisions for CPU budget, signing/notarization, JUCE licensing, final identity, distribution, privacy notice, and asset approval. A diagnostics screenshot will be retained only from the real Release Standalone after the producer performs the intentional Preview action; no mockup will substitute for it.
 
-The next product-growth plan is [Rhythm Lab](plans/RHYTHM_LAB.md). It separates deterministic rhythm generation from an audible hybrid drum engine, adds per-lane lock/regenerate/edit controls, and treats Amen-style material as a licensed/original/user-import break-slicing workflow rather than silently bundling a copyrighted recording.
+The active product-growth plan is [Rhythm Lab](plans/RHYTHM_LAB.md). R1 now has strict versioned contracts, a sample-free synthesized kick/snare/closed-hat/open-hat/percussion engine, distinct deterministic indie/rock, Eurodance, techno, funk, and jazz profiles, explicit native candidate acceptance, channel-10 MIDI export/reopen parity, and zero measured callback allocations. Processor playback, project state, the visual workspace, and human listening remain next; the README does not present them as complete. Later Break Lab work treats Amen-style material as a licensed/original/user-import slicing workflow rather than silently bundling a copyrighted recording.
 
 ## Scope, originality, and release boundary
 

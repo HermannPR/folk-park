@@ -1,6 +1,6 @@
 # Rhythm Lab product plan
 
-Status: R1 started on `feat/rhythm-lab-r1`; contracts are the first checkpoint.
+Status: R1 active on `feat/rhythm-lab-r1`. Contracts, synthesized audio core, deterministic five-profile generation, explicit candidate acceptance, and drum MIDI reopen parity are implemented. Product playback/state/UI integration is next.
 
 ## Product promise
 
@@ -64,6 +64,8 @@ The breakcore profile can still reproduce the musical technique: 16th/32nd-note 
 ### R1 — Drum contracts and audible vertical slice
 
 Freeze versioned rhythm/kit schemas and stable parameters. Deliver kick, snare, closed hat, a four-lane deterministic pattern, lane audition, explicit acceptance, and MIDI export. Gate on finite output, determinism, state round trip, zero callback allocations, and no stuck voices.
+
+Current R1 status: contracts, five synthesized voices, deterministic patterns, explicit native session acceptance, MIDI export/reopen, finite/tail/reset tests, and measured zero allocation are complete. Processor-owned playback, project-state round trip, the producer workspace, and real audible/FL verification remain.
 
 ### R2 — Hybrid kit and editor
 

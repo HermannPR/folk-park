@@ -383,6 +383,7 @@
 - Added standards-compliant channel-10 drum MIDI serialization and reopen parity at 96, 480, 960, and 1920 PPQ.
 - Verified that all five genre profiles produce distinct stable timing fingerprints and long dense patterns respect their event cap.
 - Focused contract, engine, generator/MIDI, and real-time suites: PASS, 4/4 without project compiler warnings. Product UI/playback and FL Studio remain pending.
+- Complete Debug Standalone/VST3 build and CTest: PASS, 18/18 in 21.57 seconds after the contract, engine, and generation checkpoints.
 
 ## Human-required status
 

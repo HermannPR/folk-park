@@ -58,6 +58,7 @@ The DOCX is the master product and engineering contract. Read it without modifyi
 - Post-M8 Orbital Habitat implementation checkpoint: `b121e0e Implemented the Orbital Habitat visual system`. `ui/src/design-system.tsx` owns the reusable Button, IconButton, Panel, Sidebar, Navbar, Tabs, Slider, Knob, Toggle, Dropdown, Modal, Tooltip, TextInput, NumericInput, TextArea, ProgressBar, Meter, ContextMenu, Notification, and StatusIndicator primitives. `ui/src/styles.css` owns the complete token/material/background/responsive system; host controls preserve native JUCE gesture semantics. UI tests/lint/build pass 19/19, Release CTest passes 16/16, pluginval strictness 5 ends `SUCCESS`, and installed/build VST3 hash parity plus independent finite-audio MIDI render pass. Five real Release screenshots are retained under `evidence/m8/visual/`. FL Studio visual/input/listening checks remain human-required.
 - Rhythm Lab R1 branch: `feat/rhythm-lab-r1`, created from verified Orbital Habitat checkpoint `50b36a4`. Contract checkpoint: `c43454c Established synthesized Rhythm Lab contracts`. Producer direction is synthesized-first with indie/rock, Eurodance, techno, funk, and jazz profiles and no current sample library. ADR-0010 and version-1 `RhythmIntent`, `DrumPattern`, and `SynthDrumKit` contracts pass focused native validation.
 - Rhythm Lab synthesized engine checkpoint: `499d09b Implemented the synthesized drum engine`. The preallocated engine and measured zero-allocation callback coverage are committed; application pattern playback and UI integration remain pending.
+- Rhythm generation checkpoint: `4b0810f Implemented deterministic rhythm generation`. Five distinct profiles, explicit candidate/accepted state, variations/lineage, and channel-10 MIDI reopen parity are committed.
 - Earlier M6 commits are:
   - `735fb84 Established the M6 persistence and migration contracts`
   - `a69a8bc Implemented versioned native presets and validated assets`
@@ -343,6 +344,7 @@ M8 starts from the verified M7 artifacts; it must not redesign or reimplement M0
 - `RhythmSession` preserves separate candidate and accepted patterns. Generating or varying a candidate cannot replace the accepted pattern; `More Like This` retains explicit parent lineage.
 - `DrumMidi` maps accepted lanes to standard channel-10 drum pitches and writes/reopens tempo/signature-aware MIDI at 96, 480, 960, and 1920 PPQ.
 - Focused contract, synthesized engine, generation/MIDI, and measured real-time tests: PASS, 4/4 with no project compiler warning. Application playback/UI integration and FL Studio behavior remain pending.
+- Complete Debug Standalone/VST3 build and CTest after the three R1 checkpoints: PASS, 18/18 in 21.57 seconds. This validates regression compatibility but does not make the unconnected drum engine audible in the product yet.
 
 ## Commands and local environment
 
