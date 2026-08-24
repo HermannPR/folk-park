@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getComboBoxState, getSliderState, getToggleState } from "@juce/index.js";
+import { Dropdown, Knob, Toggle } from "./design-system.tsx";
 
 type SliderProps = {
   id: string;
@@ -41,14 +42,16 @@ export function HostSlider({ id, relay, label, decimals = 2 }: SliderProps) {
       state.propertiesChangedEvent.removeListener(propertyListener);
     };
   }, [state]);
-  return <label className="host-control" htmlFor={id}>
-    <span>{label}<output>{scaled.toFixed(decimals)}{state.properties.label ? ` ${state.properties.label}` : ""}</output></span>
-    <input id={id} type="range" min="0" max="1" step="0.001" value={normalized}
+  const tone = relay.includes("filter") || relay.includes("eq") ? "lime"
+    : relay.includes("reverb") || relay.includes("delay") ? "turquoise"
+      : relay.includes("drive") || relay.includes("dist") ? "orange" : "violet";
+  return <Knob className="host-control" id={id} normalized={normalized} tone={tone}
+    label={label} output={<>{scaled.toFixed(decimals)}{state.properties.label ? ` ${state.properties.label}` : ""}</>}
+    min="0" max="1" step="0.001" value={normalized}
       onPointerDown={() => state.sliderDragStarted()}
       onPointerUp={() => state.sliderDragEnded()}
       onPointerCancel={() => state.sliderDragEnded()}
-      onChange={(event) => state.setNormalisedValue(Number(event.currentTarget.value))} />
-  </label>;
+      onChange={(event) => state.setNormalisedValue(Number(event.currentTarget.value))} />;
 }
 
 type ComboProps = { id: string; relay: string; label: string };
@@ -68,12 +71,10 @@ export function HostCombo({ id, relay, label }: ComboProps) {
       state.propertiesChangedEvent.removeListener(propertyListener);
     };
   }, [state]);
-  return <label className="host-control" htmlFor={id}>
-    <span>{label}</span>
-    <select id={id} value={choice} onChange={(event) => state.setChoiceIndex(Number(event.currentTarget.value))}>
+  return <Dropdown className="host-control" id={id} label={label} value={choice}
+    onChange={(event) => state.setChoiceIndex(Number(event.currentTarget.value))}>
       {choices.map((name, index) => <option key={`${name}-${index}`} value={index}>{name}</option>)}
-    </select>
-  </label>;
+  </Dropdown>;
 }
 
 export function HostToggle({ id, relay, label }: ComboProps) {
@@ -89,9 +90,7 @@ export function HostToggle({ id, relay, label }: ComboProps) {
       state.propertiesChangedEvent.removeListener(propertyListener);
     };
   }, [state]);
-  return <label className="host-control host-toggle" htmlFor={id}>
-    <span>{label}<output>{checked ? "Bypassed" : "Active"}</output></span>
-    <input id={id} type="checkbox" checked={checked}
-      onChange={(event) => state.setValue(event.currentTarget.checked)} />
-  </label>;
+  return <Toggle className="host-control host-toggle" id={id} label={label}
+    output={checked ? "Bypassed" : "Active"} checked={checked}
+    onChange={(event) => state.setValue(event.currentTarget.checked)} />;
 }

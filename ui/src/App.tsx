@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getNativeFunction } from "@juce/index.js";
 import { AssistantProviderSettings } from "./AssistantProviderSettings.tsx";
+import { Navbar, Notification, Sidebar, Slider, StatusIndicator, Toggle } from "./design-system.tsx";
 import { DiagnosticsPanel } from "./DiagnosticsPanel.tsx";
 import { HostCombo, HostSlider, HostToggle, useHostNormalized } from "./host-controls.tsx";
 import { JarvisView } from "./JarvisView.tsx";
@@ -13,6 +14,14 @@ import { WavetableVisual } from "./WavetableVisual.tsx";
 
 const tabs = ["SYNTH", "COMPOSE", "JARVIS", "FX", "HISTORY", "SETTINGS"] as const;
 type Tab = typeof tabs[number];
+const tabIdentity: Record<Tab, { glyph: string; legend: string }> = {
+  SYNTH: { glyph: "◉", legend: "Sound" },
+  COMPOSE: { glyph: "✦", legend: "Pattern" },
+  JARVIS: { glyph: "◎", legend: "Guide" },
+  FX: { glyph: "⌁", legend: "Shape" },
+  HISTORY: { glyph: "◌", legend: "Memory" },
+  SETTINGS: { glyph: "✺", legend: "System" },
+};
 
 const native = {
   getUiSnapshot: getNativeFunction("getUiSnapshot"),
@@ -35,10 +44,6 @@ const native = {
 };
 
 type Preferences = { lowGraphics: boolean; reducedMotion: boolean };
-
-function StatusPill({ children, good = false }: { children: React.ReactNode; good?: boolean }) {
-  return <span className={`status-pill ${good ? "good" : ""}`}><i />{children}</span>;
-}
 
 function SynthView({ snapshot, visible, preferences, announce, refresh, publishSnapshot }:
   { snapshot: UiSnapshot; visible: boolean; preferences: Preferences;
@@ -155,14 +160,14 @@ function ComposeView({ initial, announce, publishComposition }:
         <label>BPM<input type="number" min="20" max="400" value={tempo} onChange={(event) => setTempo(Number(event.currentTarget.value))} /></label>
         <label>Bars<input type="number" min="1" max="64" value={bars} onChange={(event) => setBars(Number(event.currentTarget.value))} /></label>
       </div>
-      <div className="macro-grid">{macroIds.map((id, index) => <label key={id}>{id}<output>{(macros[index] ?? 0).toFixed(2)}</output><input type="range" min="0" max="1" step="0.01" value={macros[index]} onChange={(event) => {
+      <div className="macro-grid">{macroIds.map((id, index) => <Slider key={id} label={id} output={(macros[index] ?? 0).toFixed(2)} tone={index === 2 || index === 4 ? "pink" : index === 3 ? "lime" : "violet"} min="0" max="1" step="0.01" value={macros[index]} onChange={(event) => {
         const nextValue = Number(event.currentTarget.value);
         setMacros((values) => values.map((value, valueIndex) => valueIndex === index ? nextValue : value));
-      }} /></label>)}</div>
-      <div className="parts">{["Chords", "Melody", "Bass", "Arpeggio"].map((name, index) => <label key={name}><input type="checkbox" checked={parts[index]} onChange={(event) => {
+      }} />)}</div>
+      <div className="parts">{["Chords", "Melody", "Bass", "Arpeggio"].map((name, index) => <Toggle key={name} label={name} tone={index === 0 ? "violet" : index === 1 ? "lime" : index === 2 ? "orange" : "blue"} checked={parts[index]} onChange={(event) => {
         const nextChecked = event.currentTarget.checked;
         setParts((values) => values.map((value, valueIndex) => valueIndex === index ? nextChecked : value));
-      }} />{name}</label>)}</div>
+      }} />)}</div>
       <div className="actions"><button className="primary" onClick={() => void generate()}>Generate candidate</button><button onClick={() => void vary()}>More Like This</button><button onClick={() => void surprise()}>Surprise Me</button><button className="accept" onClick={() => void accept()}>Accept</button></div>
     </section>
     <section className="surface preview-panel">
@@ -266,21 +271,25 @@ export default function App() {
     return () => window.__JUCE__.backend.removeEventListener?.("processorSnapshot", listener);
   }, []);
   const announce = useCallback((message: string) => setAnnouncement(message.slice(0, 512)), []);
-  return <div className="app-shell">
-    <div className="atmosphere" aria-hidden="true"><i /><i /><i /></div>
-    <header className="app-header">
-      <div className="brand"><span>Silicon Dreams</span><h1>folk park</h1><small>0.1 · M7 guided production assistant</small></div>
+  return <div className={`app-shell ${preferences.lowGraphics ? "low-graphics" : ""} ${preferences.reducedMotion ? "reduced-motion" : ""}`}>
+    <div className="atmosphere" aria-hidden="true"><span className="scene-sun" /><span className="scene-horizon" /><i /><i /><i /><b /><b /></div>
+    <Navbar className="app-header">
+      <div className="brand"><i className="brand-egg" aria-hidden="true" /><div><span>Orbital Audio Habitat</span><h1>folk park</h1><small>0.1 · surreal production workstation</small></div></div>
       <div className="preset-stack"><button className="preset" onClick={() => setTab("HISTORY")}><span>Current sound</span><strong>{snapshot?.persistence.currentPresetName ?? "Init / session"}{snapshot?.persistence.currentPresetDirty ? " *" : ""}</strong><i>⌄</i></button><label className="assistant-preview"><span>Ask Jarvis</span><input maxLength={1024} value={jarvisDraft} onFocus={() => setTab("JARVIS")} onChange={(event) => setJarvisDraft(event.currentTarget.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); setTab("JARVIS"); } }} placeholder="Describe a sound or musical idea…" /></label></div>
-      <div className="header-status"><StatusPill good={snapshot !== null}>{snapshot === null ? "Bridge" : `${snapshot.activeVoices} voices`}</StatusPill><StatusPill good={snapshot?.architecture === "x86_64"}>x86_64</StatusPill><button onClick={() => void native.undo().then((value) => announce(String(value)))}>Undo</button><button onClick={() => void native.redo().then((value) => announce(String(value)))}>Redo</button><button className="panic" onClick={() => void native.panic().then((value) => announce(String(value)))}>Panic</button></div>
-    </header>
-    <nav className="navigation" aria-label="Primary">
+      <div className="header-status"><StatusIndicator good={snapshot !== null}>{snapshot === null ? "Bridge" : `${snapshot.activeVoices} voices`}</StatusIndicator><StatusIndicator good={snapshot?.architecture === "x86_64"} tone="blue">x86_64</StatusIndicator><button onClick={() => void native.undo().then((value) => announce(String(value)))}>Undo</button><button onClick={() => void native.redo().then((value) => announce(String(value)))}>Redo</button><button className="panic" onClick={() => void native.panic().then((value) => announce(String(value)))}><i aria-hidden="true" />Panic</button></div>
+    </Navbar>
+    <div className="workstation-shell">
+    <Sidebar className="navigation" aria-label="Primary">
+      <span className="dock-orbit" aria-hidden="true"><i /></span>
       {tabs.map((name, index) => <button key={name} className={tab === name ? "active" : ""} aria-current={tab === name ? "page" : undefined} onClick={() => setTab(name)} onKeyDown={(event) => {
         if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
         const next = (index + (event.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length;
         setTab(tabs[next] ?? "SYNTH");
-      }}>{name}</button>)}
-    </nav>
-    <main>
+      }}><i aria-hidden="true">{tabIdentity[name].glyph}</i><span>{name}</span><small>{tabIdentity[name].legend}</small></button>)}
+      <span className="dock-signal" aria-hidden="true"><i /><i /><i /></span>
+    </Sidebar>
+    <main className="workspace">
+      <div className="workspace-orbit" aria-hidden="true"><i /><span /></div>
       {snapshot === null ? <section className="surface recovery"><h2>Native snapshot unavailable</h2><p>{error}</p><button onClick={() => void refresh()}>Retry complete recovery</button></section> : <>
         {tab === "SYNTH" && <SynthView snapshot={snapshot} visible={visible} preferences={preferences} announce={announce} refresh={refresh} publishSnapshot={setSnapshot} />}
         {tab === "COMPOSE" && <ComposeView initial={snapshot.composition} announce={announce}
@@ -291,15 +300,16 @@ export default function App() {
           reviewComposition={() => setTab("COMPOSE")} />}
         {tab === "FX" && <FxView snapshot={snapshot} announce={announce} />}
         {tab === "HISTORY" && <PersistenceView announce={announce} refreshSoundSnapshot={refresh} />}
-        {tab === "SETTINGS" && <div className="settings-layout"><section className="surface settings"><div className="section-heading"><div><span>UI</span><h2>Performance + accessibility</h2></div><small>Local presentation only</small></div><label><input type="checkbox" checked={preferences.lowGraphics} onChange={(event) => {
+        {tab === "SETTINGS" && <div className="settings-layout"><section className="surface settings"><div className="section-heading"><div><span>UI</span><h2>Performance + accessibility</h2></div><small>Local presentation only</small></div><Toggle label="Low Graphics" output="2D canvas at 12 FPS" checked={preferences.lowGraphics} onChange={(event) => {
           const nextChecked = event.currentTarget.checked;
           setPreferences((value) => ({ ...value, lowGraphics: nextChecked }));
-        }} />Low Graphics · 2D canvas at 12 FPS</label><label><input type="checkbox" checked={preferences.reducedMotion} onChange={(event) => {
+        }} /><Toggle label="Reduced Motion" output="Render only on state changes" checked={preferences.reducedMotion} onChange={(event) => {
           const nextChecked = event.currentTarget.checked;
           setPreferences((value) => ({ ...value, reducedMotion: nextChecked }));
-        }} />Reduced Motion · render only on state changes</label><button onClick={() => void refresh()}>Request complete native snapshot</button><p>No remote fonts, trackers, CDNs, providers, or runtime assets are loaded.</p></section><AssistantProviderSettings announce={announce} /><DiagnosticsPanel announce={announce} /></div>}
+        }} /><button onClick={() => void refresh()}>Request complete native snapshot</button><p>No remote fonts, trackers, CDNs, providers, or runtime assets are loaded.</p></section><AssistantProviderSettings announce={announce} /><DiagnosticsPanel announce={announce} /></div>}
       </>}
     </main>
-    <footer><span aria-live="polite">{announcement}</span><span>{snapshot?.version ?? "offline"} · {visible ? "visible" : "graphics paused"}</span></footer>
+    </div>
+    <footer><Notification aria-live="polite">{announcement}</Notification><span className="footer-gems" aria-hidden="true"><i /><i /><i /></span><span>{snapshot?.version ?? "offline"} · {visible ? "visible" : "graphics paused"}</span></footer>
   </div>;
 }

@@ -68,6 +68,30 @@ test("controlled UI events are captured before deferred state updater callbacks"
     "React clears currentTarget after the event handler; deferred updaters must use captured primitives");
 });
 
+test("orbital workstation design system stays complete, local, and accessibility-aware", async () => {
+  const app = await readFile(resolve(sourceRoot, "App.tsx"), "utf8");
+  const system = await readFile(resolve(sourceRoot, "design-system.tsx"), "utf8");
+  const styles = await readFile(resolve(sourceRoot, "styles.css"), "utf8");
+  for (const component of ["Button", "IconButton", "Panel", "Sidebar", "Navbar", "Tabs",
+    "Slider", "Knob", "Toggle", "Dropdown", "Modal", "Tooltip", "TextInput",
+    "NumericInput", "ProgressBar", "Meter", "ContextMenu", "Notification",
+    "StatusIndicator"])
+    assert.match(system, new RegExp(`export function ${component}\\(`));
+  for (const token of ["--void", "--surface", "--violet", "--lime", "--pink", "--orange",
+    "--turquoise", "--gradient-violet", "--shadow-plastic", "--radius-panel",
+    "--motion-medium", "--space-4", "--mono"])
+    assert.match(styles, new RegExp(token));
+  assert.match(app, /<Sidebar/);
+  assert.match(app, /tabIdentity/);
+  assert.match(app, /preferences\.lowGraphics \? "low-graphics"/);
+  assert.match(styles, /prefers-reduced-motion/);
+  assert.match(system, /aria-valuenow/);
+  assert.match(system, /aria-modal="true"/);
+  assert.doesNotMatch(system, /https?:\/\//);
+  assert.doesNotMatch(styles, /url\s*\(/,
+    "the product theme must remain an authored local CSS/geometry system without runtime assets");
+});
+
 test("M5 exposes the complete ordered effect chain and isolated accepted WAV action", async () => {
   const app = await readFile(resolve(sourceRoot, "App.tsx"), "utf8");
   const controls = await readFile(resolve(sourceRoot, "host-controls.tsx"), "utf8");
