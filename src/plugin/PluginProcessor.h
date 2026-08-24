@@ -1,6 +1,7 @@
 #pragma once
 
 #include "assistant/AssistantAudition.h"
+#include "assistant/OfflineAssistant.h"
 #include "effects/EffectChain.h"
 #include "midi/CompositionSession.h"
 #include "midi/MidiDelivery.h"
@@ -168,6 +169,18 @@ public:
     [[nodiscard]] juce::Result acceptAssistantProposal();
     [[nodiscard]] juce::Result rejectAssistantProposal();
     [[nodiscard]] assistant::AssistantAuditionSnapshot getAssistantAuditionSnapshot() const;
+    [[nodiscard]] assistant::GuidedProgress getAssistantQuestions(
+        const assistant::SoundIntent& intent) const
+    {
+        return offlineAssistant.questionsFor(intent);
+    }
+    [[nodiscard]] assistant::AssistantProviderResult runOfflineAssistant(
+        const assistant::AssistantRequest& request) const
+    {
+        return request.target == assistant::AssistantTarget::sound
+            ? offlineAssistant.respond(request, getAssistantParameterSnapshot())
+            : offlineAssistant.respond(request);
+    }
     [[nodiscard]] juce::Result requestWavetableImport(const juce::File& file,
                                                       int oscillatorIndex,
                                                       int requestedCycleLength = 0)
@@ -259,6 +272,7 @@ private:
     mutable std::mutex assistantAuditionMutex;
     assistant::AssistantAuditionSession assistantAudition;
     std::optional<AssistantRevisionBoundary> assistantRevisionBoundary;
+    assistant::OfflineAssistantEngine offlineAssistant;
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> masterGain;
     std::atomic<bool> panicRequested{false};
 

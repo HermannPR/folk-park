@@ -69,7 +69,7 @@ Git rules:
 - M4: Silicon Dreams UI, real A/B visuals, four-octave C2–B5 piano, octave shift, and held-key repeat suppression; automated gate passed; FL UI/input checks pending.
 - M5: ordered Distortion → Chorus → tempo-synced Delay → Reverb → Compressor → Parametric EQ and isolated accepted-composition WAV rendering; automated gate passed; FL effects/render checks pending.
 - M6: native presets/assets/migration, transactional composition history, and editor-independent project recovery; automated gate verified; every FL persistence case remains human-required.
-- M7: composition text, guided Jarvis sound workflow, reversible A/B, and optional secure provider boundary; contracts, offline workflows, processor A/B, and recovery implemented, UI integration in progress.
+- M7: composition text, guided Jarvis sound workflow, reversible A/B, and optional secure provider boundary; contracts, offline workflows, processor A/B/recovery, bounded bridge, and producer-facing UI implemented, Keychain/provider settings and final gates in progress.
 - M8: host/release hardening, packaging, legal/asset audit, and release documentation; planned.
 
 Do not reimplement M0–M6. Preserve the oscillator displays, C2–B5 keyboard, held-key repeat behavior, effects, candidate/accepted MIDI boundary, accepted-only WAV workflow, and transactional persistence while working on M7.
@@ -136,7 +136,7 @@ Known verification observations:
 
 ## Current milestone: M7 Jarvis text and guided sound assistant
 
-Do not treat the grey M7 UI hint or passing non-UI layers as a working in-product assistant/LLM. The deterministic offline parser, question/proposal engine, processor A/B, and project recovery exist, but there is no conversation UI, credential implementation, or real provider yet.
+The integrated Jarvis workspace is a working deterministic offline production helper, not a general-purpose LLM. It can interpret bounded composition text, guide sound intent, create explained proposals, and drive explicit A/B review. There is no credential implementation or real remote provider yet, and the UI states that boundary directly.
 
 ### Contracts and deterministic offline workflow now implemented
 
@@ -156,13 +156,19 @@ Do not treat the grey M7 UI hint or passing non-UI layers as a working in-produc
 - Host project session version 2 stores only an active bounded A/B comparison and restores it on its audible side without an editor; version 1 remains supported. Malformed assistant state rejects before live mutation.
 - Focused assistant/processor recovery CTest: PASS, 2/2. Complete Debug build and CTest: PASS, 11/11, including real-time allocation coverage.
 
+Implemented after the A/B checkpoint:
+
+- Seven strict native operations expose assistant state, guided questions, sound-proposal creation, A/B switching, explicit decisions, and composition candidates.
+- The `JARVIS` workspace provides a shared typed prompt, message transcript, describe/walkthrough modes, at-most-two-question steps, explained change review, reversible A/B, explicit accept/reject, and separate piano-roll composition review.
+- UI protocol parsing rejects malformed/future/non-finite/duplicate/oversized responses before publication.
+- UI lint/tests pass (14/14), the production bundle builds, Debug Standalone/VST3 build, and complete Debug CTest passes (11/11).
+- Actual Debug Standalone visual inspection confirms the integrated tab and safe empty state. This is not a complete interaction, audible, Release, provider, or FL Studio pass.
+
 Next M7 sequence:
 
-1. Commit and push the passing reversible A/B/project-recovery checkpoint with exact-path staging and an impersonal subject.
-2. Expose typed composition requests, guided questions, proposal state, A/B switching, and explicit decisions through the bounded native bridge.
-3. Replace the grey hint with the complete React Jarvis conversation/settings UI and strict protocol validation.
-4. Add the Keychain credential abstraction and offline/provider settings, but no real remote adapter until the product owner resolves that open decision.
-5. Run UI/Debug/Release/validator/security/visual gates and update this recruiter-facing README with real M7 screenshots only after the actual integrated interface passes visual inspection.
+1. Commit and push the passing bridge/UI checkpoint with exact-path staging and an impersonal subject.
+2. Add the Keychain credential abstraction and offline/provider settings, but no real remote adapter until the product owner resolves that open decision.
+3. Run UI/Debug/Release/validator/security/visual gates and update the recruiter-facing README with real M7 Release screenshots only after the actual integrated interface passes visual inspection.
 
 M7 required producer workflow:
 
@@ -194,7 +200,7 @@ gh pr list --head feat/m7-guided-assistant --state all
 
 Confirm the repository is still private, inspect every local change, and never discard work. If the A/B/recovery changes are uncommitted, run the focused assistant/processor suites plus the full Debug suite, review exact diffs, and stage only the intended assistant/processor/CMake/test/documentation paths. The expected subject is `Integrated reversible Jarvis proposal audition`.
 
-The M6 draft PR already exists and this branch is correctly stacked. Preserve meaningful impersonal commits at every passing M7 stage. After the A/B checkpoint, continue with the bounded native bridge before React UI integration.
+The M6 draft PR already exists and this branch is correctly stacked. Preserve meaningful impersonal commits at every passing M7 stage. The next code boundary is secure Keychain/provider settings; do not enable a real remote adapter by assumption.
 
 ## Commands and local environment
 

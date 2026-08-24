@@ -3,7 +3,7 @@
 ## Current checkpoint
 
 - Milestone: M7 — offline Jarvis text, guided sound proposals, and secure provider boundary
-- Status: M7 contracts, deterministic offline workflows, processor-owned reversible A/B, and project recovery pass the complete Debug gate; UI, Keychain implementation, full Release gates, and all FL Studio human runs remain required
+- Status: M7 contracts, deterministic offline workflows, processor-owned reversible A/B/project recovery, bounded native bridge, and producer-facing Jarvis workspace pass the complete Debug gate; Keychain implementation, full Release gates, and all FL Studio human runs remain required
 - Date: 2026-08-23 (America/Monterrey)
 - Branch: `feat/m7-guided-assistant`, stacked exactly on `feat/m6-presets-history`
 
@@ -42,9 +42,22 @@
 - Complete Debug CTest: PASS, 11/11, including the unchanged zero-allocation callback suite.
 - `git diff --check`: PASS.
 
+## M7 native bridge and conversation workspace checkpoint
+
+- Added seven bounded native operations for assistant state, stable guided questions, sound-proposal creation, A/B switching, explicit acceptance/rejection, and composition-candidate creation.
+- Kept all offline assistant execution and parameter snapshotting outside the audio callback. Sound creation begins on original A; composition text creates a candidate only.
+- Replaced the disabled header hint with a functional `JARVIS` workspace and shared quick-entry field.
+- Added a producer-readable message form, sound/composition modes, describe/guided entry, no-more-than-two-question steps, deterministic seed, proposal explanation/confidence/assumptions/change review, reversible A/B controls, and explicit decisions.
+- Made the offline boundary visible in-product: no account, API key, network request, hidden edit, or general-purpose LLM is claimed at this checkpoint.
+- Added strict UI parsing for bounded guided progress, UUID-linked proposals, unique finite parameter changes, explicit acceptance, known status/side values, and candidate-only composition results.
+- Added processor orchestration and adversarial UI/interface tests. UI TypeScript/lint: PASS; UI tests: PASS, 14/14.
+- Production UI bundle: PASS; `app.js` 824.71 kB (213.20 kB gzip), `app.css` 21.11 kB, and local index 0.40 kB. The known direct-eval warning remains confined to JUCE's pinned Android compatibility helper.
+- Debug Standalone and VST3 build: PASS. Complete Debug CTest: PASS, 11/11, including the unchanged zero-allocation callback suite.
+- Actual Debug Standalone visual inspection: PASS for the connected Jarvis tab, shared typed prompt, offline disclosure, describe/guided choice, and empty safe proposal state. Complete interaction evidence and Release screenshots remain part of the final M7 gate.
+- `git diff --check`: PASS.
+
 ## M7 work still required
 
-- Add the native bridge and complete typed Jarvis conversation/settings UI.
 - Implement and test the macOS Keychain credential abstraction. Do not add a real adapter until the product-owner decision and privacy UX exist.
 - Run complete UI, Debug, Release, validator, artifact, visual, security, and evidence gates. Every FL Studio case remains HUMAN RUN REQUIRED.
 
@@ -258,7 +271,7 @@
 - Imported wavetable sources are retained in bounded content-addressed local storage and referenced by versioned project state. Automated missing-asset recovery is covered, but FL Studio save-close-reopen, chooser recovery, and audible parity remain human checks.
 - The M4 interface edits all 32 route slots, but host automation of route structure is not supported; route changes are reviewed native transactions stored in plug-in state.
 - Three.js is a presentation dependency only. The measured local analysis cost and frame caps do not replace FL Studio CPU/GPU profiling on the target machine.
-- User-drawn LFOs and oversampling are optional M2 items and were deliberately deferred. The M7 offline assistant engine and processor A/B state are implemented, but the producer-facing interface is not yet complete.
+- User-drawn LFOs and oversampling are optional M2 items and were deliberately deferred. The M7 offline assistant and producer-facing workspace are implemented; secure optional-provider settings and final Release evidence remain incomplete.
 - The CPU number is a reproducible local baseline, not a guarantee for every host/audio-device configuration. FL Studio profiling is still required.
 - pluginval's optional separate Steinberg-validator subtest was skipped because no validator executable path is installed.
 - Accepted compositions and their delivery state now round-trip in the bounded M6 project payload and remain searchable in local history. Actual FL Studio project reopen is not yet human-verified.
@@ -269,4 +282,4 @@
 
 ## Next smallest verifiable task
 
-Commit the passing reversible A/B and project-recovery checkpoint, then expose the typed offline composition/sound workflow through the bounded native bridge and producer-facing Jarvis UI. Keep every unexecuted FL Studio case marked HUMAN RUN REQUIRED.
+Implement and test the macOS Keychain credential abstraction plus honest offline/provider settings without enabling a real remote adapter. Keep every unexecuted FL Studio case marked HUMAN RUN REQUIRED.

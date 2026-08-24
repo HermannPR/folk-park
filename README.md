@@ -4,7 +4,7 @@
 
 `folk park` combines a playable dual-wavetable instrument, MIDI idea generation, an ordered effects chain, offline audio rendering, and crash-aware local persistence in one Standalone/VST3 product. Release 0.1 targets FL Studio on Intel (`x86_64`) macOS.
 
-> **Current status — M6 automated checkpoint verified; M7 in development.** The Standalone and VST3 Release artifacts build, all 11 Release suites pass, pluginval 1.0.4 succeeds at strictness 5, and the installed VST3 independently renders audio from MIDI. M7 now provides typed assistant/provider contracts, a deterministic offline composition and sound-proposal engine, and processor-owned reversible A/B state with project recovery. The conversation interface is not connected yet, so this is not presented as a usable in-product assistant. FL Studio checks remain explicitly human-required.
+> **Current status — M6 automated checkpoint verified; M7 integration passes Debug gates.** The M6 Standalone/VST3 Release artifacts build, all 11 Release suites pass, pluginval 1.0.4 succeeds at strictness 5, and the installed VST3 independently renders audio from MIDI. M7 adds the connected offline Jarvis workspace, guided sound questions, explained reversible A/B proposals, and text-to-composition candidates. Keychain/provider settings and the full M7 Release/validator/evidence gate remain in progress. FL Studio checks remain explicitly human-required.
 
 ## Product tour
 
@@ -32,6 +32,12 @@ Versioned `.folkparkpreset` files store the complete sound, modulation, effects,
 
 ![folk park History workspace with native preset and recovery controls](evidence/m6/standalone-m6-history.png)
 
+### Ask Jarvis without surrendering control
+
+The M7 workspace accepts a typed sound goal or musical idea. For sound design, producers can describe the result directly or use a walkthrough that asks no more than two focused questions at a time. Jarvis then shows its interpretation, assumptions, confidence, and every proposed current→new parameter value. Original A remains audible until the producer chooses proposal B; acceptance or rejection is always explicit. For composition, text creates only a candidate that must still be reviewed in the existing piano roll before delivery.
+
+The current engine is intentionally honest: it is a deterministic offline production helper, not a general-purpose LLM. It requires no account, key, or network. The typed provider boundary exists for later opt-in integration, but a remote model cannot be enabled until macOS Keychain storage, consent/privacy UX, response validation, cancellation, and the product-owner decision are complete.
+
 ## Why this project is technically interesting
 
 This is not only a UI prototype. The repository contains the instrument DSP, host integration, persistence formats, deterministic music engine, production interface, validation suites, and retained release evidence.
@@ -56,7 +62,7 @@ flowchart LR
     Assistant[M7 offline and optional-provider assistant] -.->|validated proposals only| Processor
 ```
 
-The processor is the host adapter and authority for state. The synth owns fixed-capacity voice/DSP memory. Composition, file conversion, persistence, rendering, and future assistant work happen away from the callback. The assistant boundary is deliberately limited to validated intent and parameter proposals; it will not execute arbitrary code or silently write into a DAW.
+The processor is the host adapter and authority for state. The synth owns fixed-capacity voice/DSP memory. Composition, file conversion, persistence, rendering, and assistant work happen away from the callback. The assistant boundary is deliberately limited to validated intent and parameter proposals; it cannot execute arbitrary code or silently write into a DAW.
 
 More detail is available in [Architecture](docs/ARCHITECTURE.md), [Real-time safety](docs/REALTIME_SAFETY.md), and the accepted [architecture decisions](docs/adr/).
 
@@ -137,7 +143,7 @@ The complete evidence report and validator log are retained under [evidence/m6](
 
 ## M7 development checkpoint
 
-The current branch adds the non-UI foundation for Jarvis without requiring a network connection, provider account, or API key:
+The current branch adds a connected Jarvis production workflow without requiring a network connection, provider account, or API key:
 
 - Bounded typed composition/sound requests and responses with UUID, origin, target, consent, and stale-response validation.
 - Deterministic offline parsing for key, scale, bars, tempo, requested parts, genre, emotion, and musical density/variation language.
@@ -147,8 +153,11 @@ The current branch adds the non-UI foundation for Jarvis without requiring a net
 - A controllable mock provider with cancellation and at-most-once completion for failure-path testing.
 - Processor-owned A/B audition that canonicalizes proposals to each host parameter's legal step, keeps temporary preview out of preset dirty tracking, restores A on rejection, and marks B dirty only after explicit acceptance.
 - Version-2 host project state that reopens an active A/B comparison on the audible side while preserving backward compatibility with version 1.
+- Seven bounded native operations for state, questions, proposal generation, A/B switching, explicit decisions, and candidate-only composition generation.
+- A producer-facing message form with sound/composition modes, direct description or guided questions, deterministic seed, full proposal review, A/B controls, and a route into the existing piano roll.
+- Strict frontend parsers that reject unsupported statuses, malformed UUID relationships, duplicate/non-finite/oversized changes, implicit acceptance, and invalid composition candidates.
 
-The complete Debug build and all 11 current Debug suites pass at this checkpoint. The Jarvis conversation UI/native bridge, secure macOS Keychain integration, Release validation, and screenshots of the actual M7 interface still remain. The four screenshots above are real M6 Release captures, not M7 concept art.
+The production UI builds, TypeScript/lint passes, all 14 UI tests pass, and the complete Debug Standalone/VST3 build plus all 11 current Debug suites pass at this checkpoint. Secure macOS Keychain/provider settings, full Release/validator/security gates, and retained M7 Release screenshots still remain. The four screenshots above are real M6 Release captures, not M7 concept art.
 
 ## Build and run
 
@@ -234,10 +243,10 @@ The canonical continuation point for another coding session is [docs/CURRENT_WOR
 | M4 | Silicon Dreams UI, real A/B wave/spectrum views, four-octave audition keyboard | Automated gate passed; FL UI/input checks pending |
 | M5 | Six ordered effects and isolated accepted-composition WAV preview | Automated gate passed; FL effects/WAV checks pending |
 | M6 | Native presets, migrations, assets, searchable history, project recovery | Automated gate verified; FL persistence checks pending |
-| M7 | Offline Jarvis text workflow, adaptive sound questions, explained A/B proposals, optional secure provider | In development — contracts, offline engine, processor A/B, and recovery pass Debug tests; UI/provider boundary remains |
+| M7 | Offline Jarvis text workflow, adaptive sound questions, explained A/B proposals, optional secure provider | In development — connected offline UI and A/B workflow pass Debug gates; Keychain/provider settings and final evidence remain |
 | M8 | FL Studio matrix, performance/recovery hardening, packaging, legal/asset audit, release docs | Planned |
 
-The M7 foundation now asks focused sound-design questions, translates complete answers into bounded explanations, and owns reversible A/B plus explicit accept/reject below the UI. The remaining integration exposes that workflow through the product interface. Offline/manual operation remains complete; an optional model provider cannot bypass the parameter catalog, embed user keys, or directly control the DAW.
+The connected M7 workflow now asks focused sound-design questions, translates complete answers into bounded explanations, and exposes reversible A/B plus explicit accept/reject in the product interface. Offline/manual operation remains complete; an optional model provider cannot bypass the parameter catalog, embed user keys, or directly control the DAW.
 
 ## Scope, originality, and release boundary
 

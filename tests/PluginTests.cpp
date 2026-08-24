@@ -381,6 +381,68 @@ void testAssistantProposalAuditionAndAcceptance()
            "Assistant failure and A/B decisions must not stop finite active audio");
 }
 
+void testProcessorOfflineJarvisOrchestration()
+{
+    using namespace folkpark;
+    PluginProcessor processor(disabledPersistence());
+
+    assistant::AssistantRequest compositionRequest;
+    compositionRequest.requestId = midi::deterministicUuid(72001, "processor-jarvis-composition");
+    compositionRequest.target = assistant::AssistantTarget::composition;
+    compositionRequest.prompt = "Create an 8 bar F# harmonic minor arp and bass at 132 bpm";
+    midi::MusicIntent fallbackIntent;
+    fallbackIntent.requestId = compositionRequest.requestId;
+    fallbackIntent.seed = 72001;
+    compositionRequest.compositionFallback = fallbackIntent;
+    const auto composition = processor.runOfflineAssistant(compositionRequest);
+    expect(composition.status.wasOk() && composition.response.has_value()
+               && composition.response->musicIntent.has_value(),
+           "Processor must expose the deterministic offline composition assistant without an editor");
+    if (composition.response && composition.response->musicIntent)
+    {
+        expect(processor.generateCompositionCandidate(*composition.response->musicIntent).wasOk()
+                   && processor.getCompositionSnapshot().hasCandidate
+                   && !processor.getCompositionSnapshot().hasAccepted,
+               "Jarvis composition text must create only a reviewable candidate");
+    }
+
+    assistant::SoundIntent unanswered;
+    unanswered.requestId = midi::deterministicUuid(72002, "processor-jarvis-questions");
+    unanswered.entryMode = assistant::SoundEntryMode::guided;
+    const auto questions = processor.getAssistantQuestions(unanswered);
+    expect(questions.questions.size() == 2 && !questions.readyForProposal,
+           "Processor must expose the stable two-at-a-time offline walkthrough");
+
+    assistant::AssistantRequest soundRequest;
+    soundRequest.requestId = midi::deterministicUuid(72003, "processor-jarvis-sound");
+    soundRequest.target = assistant::AssistantTarget::sound;
+    soundRequest.prompt = "Build a bright plucky wide lead with spacious movement";
+    assistant::SoundIntent soundIntent;
+    soundIntent.requestId = soundRequest.requestId;
+    soundIntent.seed = 72003;
+    soundIntent.entryMode = assistant::SoundEntryMode::guided;
+    soundIntent.answers.musicalRole = "wide lead";
+    soundIntent.answers.timbre = "bright glassy";
+    soundIntent.answers.articulation = "plucky";
+    soundIntent.answers.movement = "moving";
+    soundIntent.answers.space = "spacious";
+    soundIntent.answers.intensity = 0.75f;
+    soundIntent.answers.genreContext = "melodic techno";
+    soundRequest.soundIntent = soundIntent;
+    const auto sound = processor.runOfflineAssistant(soundRequest);
+    expect(sound.status.wasOk() && sound.response.has_value()
+               && sound.response->parameterProposal.has_value(),
+           "Processor must map a complete guided intent against its real host snapshot");
+    if (sound.response && sound.response->parameterProposal)
+    {
+        expect(processor.beginAssistantProposal(*sound.response->parameterProposal).wasOk()
+                   && processor.getAssistantAuditionSnapshot().active()
+                   && processor.getAssistantAuditionSnapshot().audibleSide
+                        == assistant::AuditionSide::original,
+               "An offline sound response must enter review without silently applying B");
+    }
+}
+
 void testUiIndependenceAndPanic()
 {
     folkpark::PluginProcessor closedEditorProcessor(disabledPersistence());
@@ -923,6 +985,7 @@ int main()
     juce::ScopedJuceInitialiser_GUI initialiseGui;
     testStateRoundTrip();
     testAssistantProposalAuditionAndAcceptance();
+    testProcessorOfflineJarvisOrchestration();
     testHostAwareUndoRedo();
     testUiIndependenceAndPanic();
     testCompositionAcceptanceAndProcessorRouting();

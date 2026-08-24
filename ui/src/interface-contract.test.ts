@@ -7,7 +7,7 @@ const sourceRoot = import.meta.dirname;
 
 test("production information architecture and accessibility surfaces remain explicit", async () => {
   const app = await readFile(resolve(sourceRoot, "App.tsx"), "utf8");
-  for (const tab of ["SYNTH", "COMPOSE", "FX", "HISTORY", "SETTINGS"])
+  for (const tab of ["SYNTH", "COMPOSE", "JARVIS", "FX", "HISTORY", "SETTINGS"])
     assert.match(app, new RegExp(`"${tab}"`));
   assert.match(app, /aria-label="Primary"/);
   assert.match(app, /aria-current=/);
@@ -94,5 +94,31 @@ test("M6 exposes native preset recovery and transactional composition history", 
   assert.match(editor, /permanently removes only expired non-favorites/);
   assert.match(view, /Composition acceptance and audio remain available/);
   assert.doesNotMatch(app, /History and preset persistence are prepared/);
+  assert.doesNotMatch(view, /https?:\/\//);
+});
+
+test("M7 exposes a bounded offline Jarvis conversation and explicit review boundaries", async () => {
+  const app = await readFile(resolve(sourceRoot, "App.tsx"), "utf8");
+  const view = await readFile(resolve(sourceRoot, "JarvisView.tsx"), "utf8");
+  const editor = await readFile(resolve(sourceRoot, "../../src/plugin/PluginEditor.cpp"), "utf8");
+  for (const command of ["getJarvisState", "getJarvisQuestions",
+    "createJarvisSoundProposal", "auditionJarvisSide", "acceptJarvisProposal",
+    "rejectJarvisProposal", "createJarvisComposition"])
+    assert.match(editor, new RegExp(`withNativeFunction\\("${command}"`));
+  assert.match(app, /<JarvisView/);
+  assert.match(app, /Ask Jarvis/);
+  assert.match(view, /Walk me through it/);
+  assert.match(view, /No API key, network request, hidden edit, or automatic acceptance/);
+  assert.match(view, /not a general-purpose LLM/);
+  assert.match(view, /A · Original/);
+  assert.match(view, /B · Proposal/);
+  assert.match(view, /Accept B/);
+  assert.match(view, /Reject and restore A/);
+  assert.match(view, /Review piano roll before accepting/);
+  const answerHandler = view.match(/const setAnswer =[\s\S]*?\n  };/)?.[0] ?? "";
+  assert.doesNotMatch(answerHandler, /setProgress/,
+    "typing one guided answer must not unmount the current two-question step");
+  assert.match(editor, /hasOnlyObjectProperties/);
+  assert.match(editor, /requiresExplicitAcceptance/);
   assert.doesNotMatch(view, /https?:\/\//);
 });

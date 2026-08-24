@@ -146,6 +146,66 @@ export type AnimationPolicy = {
   framesPerSecond: number;
 };
 
+export type GuidedQuestion = {
+  id: "musicalRole" | "timbre" | "articulation" | "movement" | "space"
+    | "intensity" | "genreContext" | "referenceDescription";
+  prompt: string;
+  purpose: string;
+  required: boolean;
+};
+
+export type GuidedProgress = {
+  ok: true;
+  completion: number;
+  readyForProposal: boolean;
+  questions: GuidedQuestion[];
+};
+
+export type AssistantParameterChange = {
+  parameterId: string;
+  currentNormalized: number;
+  proposedNormalized: number;
+  reason: string;
+};
+
+export type AssistantParameterProposal = {
+  proposalId: string;
+  requestId: string;
+  explanation: string;
+  confidence: number;
+  requiresExplicitAcceptance: true;
+  assumptions: string[];
+  changes: AssistantParameterChange[];
+};
+
+export type JarvisAuditionState = {
+  ok: true;
+  status: "idle" | "collecting" | "ready" | "working" | "proposal-ready"
+    | "previewing" | "accepted" | "rejected" | "cancelled" | "failed";
+  active: boolean;
+  audibleSide: "original" | "proposal";
+  message: string;
+  summary: string;
+  proposal: AssistantParameterProposal | null;
+};
+
+export type JarvisCompositionResult = {
+  ok: true;
+  summary: string;
+  intent: {
+    requestId: string;
+    seed: number;
+    key: string;
+    scale: string;
+    tempoBpm: number;
+    bars: number;
+    genre: string;
+    emotion: string;
+    parts: Array<"chords" | "melody" | "bass" | "arp">;
+  };
+  composition: CompositionSnapshot;
+};
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
@@ -362,6 +422,111 @@ export function parseUiSnapshot(value: unknown): UiSnapshot | null {
   }
   return { ...value, wavetableA, wavetableB, composition, persistence,
     modulationRoutes, parameters } as UiSnapshot;
+}
+
+const questionIds = ["musicalRole", "timbre", "articulation", "movement", "space",
+  "intensity", "genreContext", "referenceDescription"] as const;
+const assistantStatuses = ["idle", "collecting", "ready", "working", "proposal-ready",
+  "previewing", "accepted", "rejected", "cancelled", "failed"] as const;
+const compositionParts = ["chords", "melody", "bass", "arp"] as const;
+
+export function parseGuidedProgress(value: unknown): GuidedProgress | null {
+  if (!isRecord(value) || value.ok !== true
+      || !isFiniteRange(value.completion, 0, 1)
+      || typeof value.readyForProposal !== "boolean"
+      || !Array.isArray(value.questions) || value.questions.length > 2) return null;
+  const questions: GuidedQuestion[] = [];
+  const ids = new Set<string>();
+  for (const entry of value.questions) {
+    if (!isRecord(entry) || !questionIds.includes(entry.id as typeof questionIds[number])
+        || ids.has(String(entry.id))
+        || !isBoundedString(entry.prompt, 256) || entry.prompt.trim().length === 0
+        || !isBoundedString(entry.purpose, 256) || entry.purpose.trim().length === 0
+        || typeof entry.required !== "boolean") return null;
+    ids.add(String(entry.id));
+    questions.push(entry as GuidedQuestion);
+  }
+  if (value.readyForProposal && (value.completion !== 1 || questions.length !== 0)) return null;
+  return { ok: true, completion: value.completion, readyForProposal: value.readyForProposal,
+    questions };
+}
+
+function parseAssistantProposal(value: unknown): AssistantParameterProposal | null {
+  if (!isRecord(value) || typeof value.proposalId !== "string" || !uuidPattern.test(value.proposalId)
+      || typeof value.requestId !== "string" || !uuidPattern.test(value.requestId)
+      || !isBoundedString(value.explanation, 1024) || value.explanation.trim().length === 0
+      || !isFiniteRange(value.confidence, 0, 1)
+      || value.requiresExplicitAcceptance !== true
+      || !Array.isArray(value.assumptions) || value.assumptions.length > 12
+      || !Array.isArray(value.changes) || value.changes.length === 0
+      || value.changes.length > 102) return null;
+  const assumptions: string[] = [];
+  for (const assumption of value.assumptions) {
+    if (!isBoundedString(assumption, 256) || assumption.trim().length === 0)
+      return null;
+    assumptions.push(assumption);
+  }
+  const changes: AssistantParameterChange[] = [];
+  const ids = new Set<string>();
+  for (const entry of value.changes) {
+    if (!isRecord(entry) || !isBoundedString(entry.parameterId, 64)
+        || entry.parameterId.length === 0 || ids.has(entry.parameterId)
+        || !isFiniteRange(entry.currentNormalized, 0, 1)
+        || !isFiniteRange(entry.proposedNormalized, 0, 1)
+        || entry.currentNormalized === entry.proposedNormalized
+        || !isBoundedString(entry.reason, 512) || entry.reason.trim().length === 0) return null;
+    ids.add(entry.parameterId);
+    changes.push(entry as AssistantParameterChange);
+  }
+  return { proposalId: value.proposalId, requestId: value.requestId,
+    explanation: value.explanation, confidence: value.confidence,
+    requiresExplicitAcceptance: true, assumptions, changes };
+}
+
+export function parseJarvisAuditionState(value: unknown): JarvisAuditionState | null {
+  if (!isRecord(value) || value.ok !== true
+      || !assistantStatuses.includes(value.status as typeof assistantStatuses[number])
+      || typeof value.active !== "boolean"
+      || !["original", "proposal"].includes(String(value.audibleSide))
+      || !isBoundedString(value.message, 1024)
+      || (value.summary !== undefined && !isBoundedString(value.summary, 1024))) return null;
+  const proposal = value.proposal === undefined || value.proposal === null
+    ? null : parseAssistantProposal(value.proposal);
+  if (value.proposal !== undefined && value.proposal !== null && proposal === null) return null;
+  const activeStatus = value.status === "proposal-ready" || value.status === "previewing";
+  if (value.active !== activeStatus || (value.active && proposal === null)) return null;
+  return { ok: true, status: value.status as JarvisAuditionState["status"],
+    active: value.active, audibleSide: value.audibleSide as "original" | "proposal",
+    message: value.message, summary: typeof value.summary === "string" ? value.summary : "",
+    proposal };
+}
+
+export function parseJarvisCompositionResult(value: unknown): JarvisCompositionResult | null {
+  if (!isRecord(value) || value.ok !== true || !isBoundedString(value.summary, 1024)
+      || value.summary.trim().length === 0 || !isRecord(value.intent)) return null;
+  const intent = value.intent;
+  if (typeof intent.requestId !== "string" || !uuidPattern.test(intent.requestId)
+      || !Number.isInteger(intent.seed) || !isFiniteRange(intent.seed, 0, 4294967295)
+      || !isBoundedString(intent.key, 16) || intent.key.length === 0
+      || !isBoundedString(intent.scale, 32) || intent.scale.length === 0
+      || !isFiniteRange(intent.tempoBpm, 20, 400)
+      || !Number.isInteger(intent.bars) || !isFiniteRange(intent.bars, 1, 64)
+      || !isBoundedString(intent.genre, 64) || !isBoundedString(intent.emotion, 64)
+      || !Array.isArray(intent.parts) || intent.parts.length === 0 || intent.parts.length > 4)
+    return null;
+  const parts: Array<typeof compositionParts[number]> = [];
+  const unique = new Set<string>();
+  for (const part of intent.parts) {
+    if (!compositionParts.includes(part as typeof compositionParts[number])
+        || unique.has(String(part))) return null;
+    unique.add(String(part)); parts.push(part as typeof compositionParts[number]);
+  }
+  const composition = parseComposition(value.composition);
+  if (composition === null || !composition.hasCandidate) return null;
+  return { ok: true, summary: value.summary, intent: {
+    requestId: intent.requestId, seed: intent.seed, key: intent.key, scale: intent.scale,
+    tempoBpm: intent.tempoBpm, bars: intent.bars, genre: intent.genre,
+    emotion: intent.emotion, parts }, composition };
 }
 
 export function chooseAnimationPolicy(preferences: GraphicsPreferences): AnimationPolicy {

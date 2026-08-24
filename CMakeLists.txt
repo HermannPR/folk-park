@@ -51,6 +51,8 @@ target_sources(FolkPark PRIVATE
     src/assistant/AssistantContracts.h
     src/assistant/AssistantModels.cpp
     src/assistant/AssistantModels.h
+    src/assistant/OfflineAssistant.cpp
+    src/assistant/OfflineAssistant.h
     src/effects/EffectChain.cpp
     src/effects/EffectChain.h
     src/plugin/PluginEditor.cpp
@@ -346,6 +348,8 @@ target_sources(FolkParkPluginTests PRIVATE
     src/assistant/AssistantContracts.h
     src/assistant/AssistantModels.cpp
     src/assistant/AssistantModels.h
+    src/assistant/OfflineAssistant.cpp
+    src/assistant/OfflineAssistant.h
     src/plugin/PluginEditor.cpp
     src/plugin/PluginEditor.h
     src/plugin/PluginProcessor.cpp
