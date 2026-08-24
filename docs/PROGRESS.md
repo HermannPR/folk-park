@@ -359,4 +359,4 @@
 
 ## Next smallest verifiable task
 
-Implement and test the macOS Keychain credential abstraction plus honest offline/provider settings without enabling a real remote adapter. Keep every unexecuted FL Studio case marked HUMAN RUN REQUIRED.
+Capture the real Release diagnostics panel after Hermann deliberately clicks Preview, then run the safe first FL Studio session in `docs/FL_STUDIO_TEST_MATRIX.md` using a new disposable project. Record only Hermann's observed results; keep every unexecuted case `HUMAN RUN REQUIRED`. Do not begin rollback/uninstall, asset/database failure, signing, licensing, provider, or distribution work without its separate explicit owner boundary.

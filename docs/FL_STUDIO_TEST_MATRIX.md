@@ -8,7 +8,24 @@ Environment at M0 intake:
 - macOS: 15.7.9 (24G830)
 - Architecture: x86_64-capable Intel host
 - Tester: Hermann Pauwells
-- Installed M7 VST3 binary SHA-256: `b17c88bab2c1356c7b01980b96f918a28acbdd337f7ee2e437f9c63a7d7119ca`
+- Installed M8 VST3 binary SHA-256: `9295e582e705837020f72f657105d5efd2213d5e8904dee628d7e55e52a82a84`
+- Installed candidate: `~/Library/Audio/Plug-Ins/VST3/folk park.vst3`
+- Retained rollback: `~/Library/Audio/Plug-Ins/VST3/folk park.vst3.backup-20260824T133139Z`
+
+## Safe first session
+
+Use a new empty FL Studio project. Do not use an important song, imported wavetable, preset library, or history database for validation. Keep normal audio volume low at first and save any test project under an unmistakable disposable name.
+
+Run this short smoke sequence before the deeper matrix:
+
+1. Open Plugin Manager, rescan, and confirm `folk park` appears as a VST3 generator.
+2. Insert it into the new project; open, resize, close, and reopen the editor.
+3. Trigger C3 from FL's piano roll, then press Stop and Folk Park Panic; listen for clean stereo output and confirm no note remains held.
+4. Test one pointer key and one mapped computer key. Hold the computer key long enough to confirm macOS key repeat does not retrigger-spam the note.
+5. Open Settings and click Preview diagnostics. Review the report before deliberately testing Copy.
+6. Save the disposable project, close it, reopen it, and confirm the plug-in and basic sound state return.
+
+Record each observed result in the table before continuing. If discovery, insertion, audio, Stop/Panic, or project reopen fails, stop the session and preserve the project plus diagnostics; do not proceed to asset/database failure or uninstall tests.
 
 | Case | Expected result | Actual | Evidence |
 | --- | --- | --- | --- |
@@ -49,6 +66,6 @@ Environment at M0 intake:
 | Offline render | Matches real-time within documented tolerance | HUMAN RUN REQUIRED | Pending |
 | Failure modes | Invalid state/provider/database/UI failure does not stop audio | HUMAN RUN REQUIRED | Pending |
 | M8 diagnostics | Preview shows only bounded technical fields; clipboard stays unchanged until Copy; copied text exactly matches preview | HUMAN RUN REQUIRED | Native contract/UI tests pass; FL clipboard interaction pending |
-| M8 install/repair/rollback | Verify thin x86_64/hash, replace with retained backup, rescan, then restore the chosen prior bundle | HUMAN RUN REQUIRED | Script dry-run/contracts pass; no FL replacement performed |
+| M8 install/repair/rollback | Verify thin x86_64/hash, replace with retained backup, rescan, then restore the chosen prior bundle | HUMAN RUN REQUIRED | M8 install/hash/signature parity and retained M7 rollback pass; FL rescan/rollback observation pending |
 | M8 recoverable uninstall | Move only installed VST3 to Trash, confirm FL no longer discovers it, then reinstall without losing presets/assets/history | HUMAN RUN REQUIRED | Script contract passes; Application Support deletion is prohibited |
-| M8 extended stability | Run a representative FL project, cycle editor and notes/Stop/Panic, monitor finite audio/CPU, then save/reopen | HUMAN RUN REQUIRED | Native 120-second extended Debug run passes; not an FL/listening pass |
+| M8 extended stability | Run a representative FL project, cycle editor and notes/Stop/Panic, monitor finite audio/CPU, then save/reopen | HUMAN RUN REQUIRED | Native 120-second extended Debug and Release runs pass; not an FL/listening pass |
