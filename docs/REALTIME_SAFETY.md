@@ -26,3 +26,10 @@ Every DSP change must document allocations and ownership, add a finite-output/re
 - Modulation uses two fixed 32-route snapshots. Validation/copy occurs outside audio and complete snapshots activate at a block boundary.
 - Audible continuous oscillator and filter values use fixed per-sample smoothing; unison count uses per-lane weights rather than allocation or voice-container changes.
 - `tests/RealtimeTests.cpp` overrides allocation entry points and measures 32 process blocks after setup. The test includes pending wavetable and modulation activation plus table crossfade and currently reports zero allocations in Debug and Release.
+
+## M7 assistant boundary
+
+- Prompt parsing, guided questions, provider completion, proposal validation, A/B serialization, and APVTS comparison gestures are non-audio operations.
+- `processBlock` does not reference an assistant session, prompt, provider, project payload, mutex, or dynamic proposal collection; it continues reading the existing atomic host parameters.
+- A/B gestures use the same host parameter path as manual UI changes. No new parameter, queue, allocation, lock, or branch was added to the callback.
+- The complete Debug gate still passes `FolkParkRealtimeAllocationTests` after processor A/B and project-recovery integration.

@@ -45,6 +45,14 @@ juce_add_plugin(FolkPark
     VST3_CATEGORIES Instrument Synth)
 
 target_sources(FolkPark PRIVATE
+    src/assistant/AssistantAudition.cpp
+    src/assistant/AssistantAudition.h
+    src/assistant/AssistantContracts.cpp
+    src/assistant/AssistantContracts.h
+    src/assistant/AssistantModels.cpp
+    src/assistant/AssistantModels.h
+    src/assistant/OfflineAssistant.cpp
+    src/assistant/OfflineAssistant.h
     src/effects/EffectChain.cpp
     src/effects/EffectChain.h
     src/plugin/PluginEditor.cpp
@@ -61,6 +69,8 @@ target_sources(FolkPark PRIVATE
     src/persistence/HistoryRepository.h
     src/persistence/PersistenceCoordinator.cpp
     src/persistence/PersistenceCoordinator.h
+    src/platform/CredentialStore.cpp
+    src/platform/CredentialStore.h
     src/render/OfflinePreviewRenderer.cpp
     src/render/OfflinePreviewRenderer.h
     src/midi/MidiProof.cpp
@@ -105,6 +115,7 @@ target_link_libraries(FolkPark
         juce::juce_cryptography
         juce::juce_dsp
         juce::juce_gui_extra
+        "-framework Security"
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
@@ -265,6 +276,8 @@ add_test(NAME FolkParkMidiDeliveryParityTests COMMAND FolkParkMidiDeliveryTests)
 juce_add_console_app(FolkParkAssistantModelTests PRODUCT_NAME "folk park assistant model tests")
 target_sources(FolkParkAssistantModelTests PRIVATE
     tests/AssistantModelsTests.cpp
+    src/assistant/AssistantContracts.cpp
+    src/assistant/AssistantContracts.h
     src/assistant/AssistantModels.cpp
     src/assistant/AssistantModels.h
     src/midi/Composition.cpp
@@ -276,6 +289,42 @@ target_link_libraries(FolkParkAssistantModelTests PRIVATE
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags)
 add_test(NAME FolkParkAssistantSchemaModelTests COMMAND FolkParkAssistantModelTests)
+
+juce_add_console_app(FolkParkOfflineAssistantTests PRODUCT_NAME "folk park offline assistant tests")
+target_sources(FolkParkOfflineAssistantTests PRIVATE
+    tests/OfflineAssistantTests.cpp
+    src/assistant/AssistantAudition.cpp
+    src/assistant/AssistantAudition.h
+    src/assistant/AssistantContracts.cpp
+    src/assistant/AssistantContracts.h
+    src/assistant/AssistantModels.cpp
+    src/assistant/AssistantModels.h
+    src/assistant/OfflineAssistant.cpp
+    src/assistant/OfflineAssistant.h
+    src/midi/Composition.cpp
+    src/midi/Composition.h)
+target_include_directories(FolkParkOfflineAssistantTests PRIVATE src)
+target_compile_definitions(FolkParkOfflineAssistantTests PRIVATE JUCE_USE_CURL=0)
+target_link_libraries(FolkParkOfflineAssistantTests PRIVATE
+    juce::juce_core
+    juce::juce_data_structures
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)
+add_test(NAME FolkParkOfflineAssistantWorkflowTests COMMAND FolkParkOfflineAssistantTests)
+
+juce_add_console_app(FolkParkCredentialStoreTests PRODUCT_NAME "folk park Keychain tests")
+target_sources(FolkParkCredentialStoreTests PRIVATE
+    tests/CredentialStoreTests.cpp
+    src/platform/CredentialStore.cpp
+    src/platform/CredentialStore.h)
+target_include_directories(FolkParkCredentialStoreTests PRIVATE src)
+target_compile_definitions(FolkParkCredentialStoreTests PRIVATE JUCE_USE_CURL=0)
+target_link_libraries(FolkParkCredentialStoreTests PRIVATE
+    juce::juce_core
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags
+    "-framework Security")
+add_test(NAME FolkParkMacKeychainCredentialTests COMMAND FolkParkCredentialStoreTests)
 
 juce_add_console_app(FolkParkRealtimeTests PRODUCT_NAME "folk park real-time allocation tests")
 target_sources(FolkParkRealtimeTests PRIVATE
@@ -310,6 +359,14 @@ add_test(NAME FolkParkRealtimeAllocationTests COMMAND FolkParkRealtimeTests)
 juce_add_console_app(FolkParkPluginTests PRODUCT_NAME "folk park plug-in tests")
 target_sources(FolkParkPluginTests PRIVATE
     tests/PluginTests.cpp
+    src/assistant/AssistantAudition.cpp
+    src/assistant/AssistantAudition.h
+    src/assistant/AssistantContracts.cpp
+    src/assistant/AssistantContracts.h
+    src/assistant/AssistantModels.cpp
+    src/assistant/AssistantModels.h
+    src/assistant/OfflineAssistant.cpp
+    src/assistant/OfflineAssistant.h
     src/plugin/PluginEditor.cpp
     src/plugin/PluginEditor.h
     src/plugin/PluginProcessor.cpp
@@ -324,6 +381,8 @@ target_sources(FolkParkPluginTests PRIVATE
     src/persistence/HistoryRepository.h
     src/persistence/PersistenceCoordinator.cpp
     src/persistence/PersistenceCoordinator.h
+    src/platform/CredentialStore.cpp
+    src/platform/CredentialStore.h
     src/effects/EffectChain.cpp
     src/effects/EffectChain.h
     src/render/OfflinePreviewRenderer.cpp
@@ -365,7 +424,8 @@ target_link_libraries(FolkParkPluginTests PRIVATE
     juce::juce_dsp
     juce::juce_gui_extra
     juce::juce_recommended_config_flags
-    juce::juce_recommended_warning_flags)
+    juce::juce_recommended_warning_flags
+    "-framework Security")
 add_test(NAME FolkParkPluginStateAndUiTests COMMAND FolkParkPluginTests)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")

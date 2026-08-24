@@ -2,10 +2,89 @@
 
 ## Current checkpoint
 
-- Milestone: M6 — native presets, transactional history, and host project recovery
-- Status: M6 automated gate verified; every FL Studio human run remains required before Release 0.1 can claim host completion
+- Milestone: M7 — offline Jarvis text, guided sound proposals, and secure provider boundary
+- Status: M7 automated checkpoint verified for Debug/Release, pluginval, installed-artifact parity, security, and real Release Standalone interaction; all FL Studio human runs remain required
 - Date: 2026-08-23 (America/Monterrey)
-- Branch: `feat/m6-presets-history`, stacked exactly on `feat/m5-effects-preview`
+- Branch: `feat/m7-guided-assistant`, stacked exactly on `feat/m6-presets-history`
+
+## M7 contract checkpoint
+
+- Added versioned typed `AssistantRequest`/`AssistantResponse` variants for composition versus sound and offline/mock/remote processing origins.
+- Bounded prompts at 1,024 characters, required matching UUID/target/origin/typed context, rejected mixed variants and stale responses, and made per-request consent mandatory for remote origin.
+- Added one asynchronous non-audio `AssistantProvider` interface with cancellation and at-most-once completion semantics; no real provider or network dependency is selected yet.
+- Preserved the original 73-ID proposal contract as `parameter-proposal-v1.schema.json` and migrated the current proposal schema/model to v2 for all 102 host parameters.
+- Resolved every proposed ID against `src/common/ParameterIds.h`; v1 rejects effect IDs, v2 accepts the complete catalog, and unknown/duplicate IDs, invalid values, missing reasons, and implicit acceptance are rejected.
+- Recorded ADR-0008 for offline-first composition text, guided sound A/B, provider consent, credential boundaries, and the open real-provider decision.
+- Focused assistant model/contract build and CTest: PASS, 1/1.
+
+## M7 deterministic offline workflow checkpoint
+
+- Added a deterministic, bounded composition-text mapper for key, scale, bars, BPM, requested parts, genre, emotion, density, rhythm complexity, repetition, and variation. It normalizes through the existing `MusicIntent` validator and produces a candidate only; it does not deliver into the DAW.
+- Added stable guided sound topics with no more than two focused questions per step. The seven required answers are tracked independently so a missing intensity is not confused with a neutral default.
+- Added an offline proposal mapper that compares captured current host values against bounded proposed values, uses only real parameter-catalog IDs, explains every change, records assumptions/confidence, and preserves explicit acceptance.
+- Added current-parameter snapshot rejection for empty/oversized, unknown, duplicate, non-finite, and out-of-range values.
+- Added a deterministic mock provider with controlled pending completion, origin validation, cancellation, and at-most-once callback behavior. The offline engine rejects remote-origin execution.
+- Focused assistant contract/workflow CTest: PASS, 2/2.
+- Complete Debug build: PASS for native tests, Standalone, and VST3.
+- Complete Debug CTest: PASS, 11/11.
+- `git diff --check`: PASS.
+
+## M7 reversible A/B and project recovery checkpoint
+
+- Added an assistant audition state machine with immutable proposal data, original/proposal sides, exact relevant-live-value validation, explicit accept/reject outcomes, and safe invalidation when a host edit makes the comparison stale.
+- Canonicalized proposed normalized values through each real APVTS parameter's legal range/step before audition, covering logarithmic, integer, choice, and boolean host controls without false stale detection.
+- Temporary A/B switches notify the host but do not mark the native sound dirty. Rejection restores the exact captured A values and original dirty boundary; explicit acceptance finishes on B and marks the sound dirty once.
+- Native preset saving is blocked while an A/B decision is pending. A successful preset load/reset supersedes the comparison only after the new preset applies.
+- Migrated the bounded host project session from version 1 to version 2 while retaining version-1 restore. An active A/B proposal, status, audible side, assumptions, explanations, and exact values survive editor-independent project save/reopen.
+- Strict project parsing rejects unsupported status/side/schema, unknown properties/children, malformed text/flags, duplicate/unknown catalog IDs, non-finite/out-of-range values, no-op/stale proposals, and oversized collections before live mutation.
+- Focused offline-assistant and processor-state CTest: PASS, 2/2.
+- Complete Debug build: PASS for native tests, Standalone, and VST3.
+- Complete Debug CTest: PASS, 11/11, including the unchanged zero-allocation callback suite.
+- `git diff --check`: PASS.
+
+## M7 native bridge and conversation workspace checkpoint
+
+- Added seven bounded native operations for assistant state, stable guided questions, sound-proposal creation, A/B switching, explicit acceptance/rejection, and composition-candidate creation.
+- Kept all offline assistant execution and parameter snapshotting outside the audio callback. Sound creation begins on original A; composition text creates a candidate only.
+- Replaced the disabled header hint with a functional `JARVIS` workspace and shared quick-entry field.
+- Added a producer-readable message form, sound/composition modes, describe/guided entry, no-more-than-two-question steps, deterministic seed, proposal explanation/confidence/assumptions/change review, reversible A/B controls, and explicit decisions.
+- Made the offline boundary visible in-product: no account, API key, network request, hidden edit, or general-purpose LLM is claimed at this checkpoint.
+- Added strict UI parsing for bounded guided progress, UUID-linked proposals, unique finite parameter changes, explicit acceptance, known status/side values, and candidate-only composition results.
+- Added processor orchestration and adversarial UI/interface tests. UI TypeScript/lint: PASS; UI tests: PASS, 14/14.
+- Production UI bundle: PASS; `app.js` 824.71 kB (213.20 kB gzip), `app.css` 21.11 kB, and local index 0.40 kB. The known direct-eval warning remains confined to JUCE's pinned Android compatibility helper.
+- Debug Standalone and VST3 build: PASS. Complete Debug CTest: PASS, 11/11, including the unchanged zero-allocation callback suite.
+- Actual Debug Standalone visual inspection: PASS for the connected Jarvis tab, shared typed prompt, offline disclosure, describe/guided choice, and empty safe proposal state. Complete interaction evidence and Release screenshots remain part of the final M7 gate.
+- `git diff --check`: PASS.
+
+## M7 secure provider-settings checkpoint
+
+- Added a move-only bounded native credential owner plus `MacKeychainCredentialStore` using exact generic-password service/account pairs, a 16 KiB maximum, strict ASCII identifiers, device-only accessibility, and idempotent exact removal.
+- Hardened Keychain request construction to fail closed if any Core Foundation object cannot be created. No under-specified lookup, update, or removal query can be issued.
+- Added a real temporary-service Keychain test covering absent/store/read/update/read, empty/oversized/malformed identifier rejection, removal, and confirmed absence after cleanup.
+- Added one read-only native provider-status operation and a Settings surface that reports offline mode, no selected provider, no configured credential, Keychain availability, and the current no-network privacy boundary. No frontend credential field or secret-bearing bridge operation exists.
+- Corrected frontend UUID validation to match the authoritative native opaque 128-bit deterministic-ID contract and mapped stable kebab-case guided-question IDs to typed React answer fields.
+- Actual Debug Standalone interaction: PASS for two-at-a-time guided progress, typed-answer persistence, restored proposal display, A/B selection, rejection/restoration, and native provider/privacy status. This is not an audible, Release, provider-network, or FL Studio pass.
+- UI tests: PASS, 15/15; strict TypeScript: PASS; production build: PASS. `app.js` 829.27 kB (214.23 kB gzip), `app.css` 22.29 kB (5.72 kB gzip), local index 0.40 kB.
+- Debug Standalone/VST3 build: PASS. Complete Debug CTest: PASS, 12/12, including the native Keychain round trip and unchanged real-time allocation coverage.
+- The known Vite direct-eval warning remains confined to JUCE's pinned Android compatibility helper.
+- `git diff --check`: PASS.
+
+## M7 final verification checkpoint
+
+- Clean `npm ci --ignore-scripts` and production-dependency audit: PASS, 0 vulnerabilities. UI tests/lint/build: PASS, 15/15.
+- Complete Debug Standalone/VST3 build and CTest: PASS, 12/12.
+- Complete Release Standalone/VST3 build and CTest: PASS, 13/13, including packaged VST3 scan/instantiate/finite-stereo rendering and native Keychain coverage.
+- Release Standalone/VST3: thin Mach-O `x86_64`; VST3 local ad-hoc signature verifies deeply/strictly.
+- pluginval 1.0.4 strictness 5: `SUCCESS` across editor lifecycle, state, automation, buses, and 44.1/48/96 kHz × 64/128/256/512/1024 samples.
+- Installed user VST3: PASS; installed/build hashes match, architecture/signature verify, and the installed bundle independently renders finite stereo MIDI audio.
+- Release/installed VST3 SHA-256: `b17c88bab2c1356c7b01980b96f918a28acbdd337f7ee2e437f9c63a7d7119ca`.
+- Release Standalone SHA-256: `4523ffa815cfcdd7fb4d666644f75dde82869f6ebf673f9707f31314c8d3b1da`.
+- Development-origin, project-source `eval`, sensitive-token pattern, JSON-schema, and `git diff --check` gates: PASS. All 14 project HTTP strings are JSON Schema identifiers.
+- Actual Release Standalone interaction: PASS for native offline/provider/Keychain truth, explained proposal creation, A→B selection, rejection restoring A, guided answers persisting and advancing to the next focused pair, and application quit. This is not an audible, physical-device, provider-network, or FL Studio pass.
+- Evidence: `evidence/m7/verification.md`, strictness-5 pluginval log, and five actual Release screenshots.
+- Every M7 FL Studio case remains `HUMAN RUN REQUIRED` in `docs/FL_STUDIO_TEST_MATRIX.md`.
+
+## Previous M6 checkpoint
 
 ## Implemented M6 checkpoint
 
@@ -215,7 +294,7 @@
 - Imported wavetable sources are retained in bounded content-addressed local storage and referenced by versioned project state. Automated missing-asset recovery is covered, but FL Studio save-close-reopen, chooser recovery, and audible parity remain human checks.
 - The M4 interface edits all 32 route slots, but host automation of route structure is not supported; route changes are reviewed native transactions stored in plug-in state.
 - Three.js is a presentation dependency only. The measured local analysis cost and frame caps do not replace FL Studio CPU/GPU profiling on the target machine.
-- User-drawn LFOs and oversampling are optional M2 items and were deliberately deferred. Native preset/history integration is in M6 hardening; the M7 guided assistant is not implemented yet.
+- User-drawn LFOs and oversampling are optional M2 items and were deliberately deferred. The M7 offline assistant, producer-facing workspace, secure optional-provider boundary, and final Release evidence are verified; FL Studio checks remain human-required.
 - The CPU number is a reproducible local baseline, not a guarantee for every host/audio-device configuration. FL Studio profiling is still required.
 - pluginval's optional separate Steinberg-validator subtest was skipped because no validator executable path is installed.
 - Accepted compositions and their delivery state now round-trip in the bounded M6 project payload and remain searchable in local history. Actual FL Studio project reopen is not yet human-verified.
@@ -226,4 +305,4 @@
 
 ## Next smallest verifiable task
 
-Open the private M6 draft PR with base exactly `feat/m5-effects-preview`, then begin M7 from the recorded M6 gate. M7 must implement the offline guided sound workflow and optional secure-provider boundary without weakening manual operation, the parameter catalog, explicit A/B acceptance, or the audio-thread contract. Keep every unexecuted FL Studio case marked HUMAN RUN REQUIRED.
+Implement and test the macOS Keychain credential abstraction plus honest offline/provider settings without enabling a real remote adapter. Keep every unexecuted FL Studio case marked HUMAN RUN REQUIRED.

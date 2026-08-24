@@ -34,11 +34,18 @@ The DOCX is the master product and engineering contract. Read it without modifyi
 ## Repository and Git state
 
 - Private repository: `HermannPR/folk-park`.
-- M6 branch: `feat/m6-presets-history`.
-- M6 is stacked on `feat/m5-effects-preview`; the M6 draft PR base must be exactly `feat/m5-effects-preview`.
+- Current branch: `feat/m7-guided-assistant`, stacked exactly on `feat/m6-presets-history`.
+- Any M7 draft PR must use base exactly `feat/m6-presets-history` unless the documented stacked topology intentionally changes.
 - M5 draft PR: <https://github.com/HermannPR/folk-park/pull/5>.
 - M6 private draft PR: <https://github.com/HermannPR/folk-park/pull/6>, base exactly `feat/m5-effects-preview`, head `feat/m6-presets-history`.
 - Final M6 checkpoint: `b3e9e78 Verified and documented the M6 checkpoint`.
+- M6 handoff checkpoint: `282c344 Established the M7 continuation handoff`.
+- First M7 checkpoint: `74d6e43 Established M7 assistant and provider contracts`.
+- Offline workflow checkpoint: `639a749 Implemented deterministic offline Jarvis workflows`.
+- A/B audition checkpoint: `63191e8 Integrated reversible Jarvis proposal audition`.
+- Connected Jarvis UI checkpoint: `de6db59 Implemented the offline Jarvis workspace`.
+- Secure provider-settings checkpoint: `1415f70 Established secure Jarvis provider settings`.
+- No M7 PR exists yet.
 - Earlier M6 commits are:
   - `735fb84 Established the M6 persistence and migration contracts`
   - `a69a8bc Implemented versioned native presets and validated assets`
@@ -65,7 +72,7 @@ Git rules:
 - M4: Silicon Dreams UI, real A/B visuals, four-octave C2–B5 piano, octave shift, and held-key repeat suppression; automated gate passed; FL UI/input checks pending.
 - M5: ordered Distortion → Chorus → tempo-synced Delay → Reverb → Compressor → Parametric EQ and isolated accepted-composition WAV rendering; automated gate passed; FL effects/render checks pending.
 - M6: native presets/assets/migration, transactional composition history, and editor-independent project recovery; automated gate verified; every FL persistence case remains human-required.
-- M7: guided Jarvis sound workflow and optional secure provider; planned, not implemented.
+- M7: composition text, guided Jarvis sound workflow, reversible A/B, optional secure provider boundary, and full automated/Release evidence; automated checkpoint verified, with every FL Studio case still human-required.
 - M8: host/release hardening, packaging, legal/asset audit, and release documentation; planned.
 
 Do not reimplement M0–M6. Preserve the oscillator displays, C2–B5 keyboard, held-key repeat behavior, effects, candidate/accepted MIDI boundary, accepted-only WAV workflow, and transactional persistence while working on M7.
@@ -102,7 +109,7 @@ Do not reimplement M0–M6. Preserve the oscillator displays, C2–B5 keyboard, 
 - Native payloads expose safe metadata/filenames rather than unrestricted personal paths.
 - `ui/src/protocol.ts` rejects malformed/future/non-finite/duplicate/oversize snapshots before view replacement.
 - `ui/src/PersistenceView.tsx` implements the History workspace with availability/degraded state, explicit Save As/replace semantics, preset browser, recovery, history search/compare/recall/trash/retention, and confirmed cleanup.
-- The recruiter-facing `README.md` explains the full product/architecture/status and embeds actual M6 Release screenshots.
+- The recruiter-facing `README.md` explains the full product/architecture/status and embeds actual M6 and M7 Release screenshots. Never substitute concept art for product evidence.
 
 ## M6 verification actually completed
 
@@ -130,16 +137,62 @@ Known verification observations:
 - A concurrent first CMake/Vite attempt temporarily lost the generated embedded index; the required serial UI build → CMake reconfigure/build and complete gate passed. Keep these steps serial.
 - Every FL Studio test remains `HUMAN RUN REQUIRED`; see `docs/FL_STUDIO_TEST_MATRIX.md`.
 
-## Next milestone: M7 guided sound assistant
+## Current milestone: M7 Jarvis text and guided sound assistant
 
-Do not treat the grey M7 UI hint or existing schema models as a working LLM. There is no conversational workflow/provider integration yet.
+The integrated Jarvis workspace is a working deterministic offline production helper, not a general-purpose LLM. It can interpret bounded composition text, guide sound intent, create explained proposals, and drive explicit A/B review. A native macOS Keychain abstraction now exists for a future opt-in provider, but no real remote provider or credential is selected/configured, and the UI states that boundary directly.
 
-Before editing M7:
+### Contracts and deterministic offline workflow now implemented
 
-1. Confirm the final M6 checkpoint is committed/pushed and the private draft PR has the exact M5 base.
-2. Create the next milestone branch according to the established stacked-branch strategy; do not add M7 work to the M6 verification commit.
-3. Read `docs/PRODUCT_AMENDMENTS.md`, `docs/AI_PROVIDER_SECURITY.md`, `docs/PARAMETER_CATALOG.md`, `schemas/sound-intent.schema.json`, `schemas/parameter-proposal.schema.json`, `src/assistant/AssistantModels.*`, the M7 section of `plans/RELEASE_0_1.md`, and the corresponding master DOCX section completely.
-4. Freeze the exact offline conversation/session/proposal/A-B/acceptance contract before implementing provider code.
+- `src/assistant/AssistantContracts.*` defines tagged composition/sound requests and responses across offline/mock/remote origins plus a non-audio asynchronous provider interface.
+- Prompts are bounded at 1,024 characters; request/response UUID, target, origin, and typed payload must match; mixed variants and stale responses fail.
+- Remote origin requires explicit consent on the submitted request.
+- `schemas/parameter-proposal-v1.schema.json` preserves the M3 73-ID proposal format. The current `schemas/parameter-proposal.schema.json` and C++ model are v2 with a 102-change maximum.
+- All proposal IDs resolve against the authoritative C++ catalog. V1 cannot address effects; v2 can address all M5 effect IDs. Unknown/duplicate IDs, non-finite/out-of-range values, missing v2 reasons/assumptions, unsupported versions, and disabled explicit acceptance fail.
+- ADR-0008 freezes the offline composition, guided sound, A/B, provider-consent, credential, and no-real-adapter-yet decisions.
+- Commit `74d6e43` freezes and pushes this first M7 contract checkpoint.
+- `src/assistant/OfflineAssistant.*` implements deterministic composition-text parsing, stable two-at-a-time guided questions, current-to-proposed catalog mapping, explained assumptions/confidence, and a controlled mock provider.
+- Guided intensity is optional until the producer answers it, preventing the previous neutral default from falsely completing that question.
+- `tests/OfflineAssistantTests.cpp` covers determinism, natural-language bounds, real catalog mapping, current-value parity, describe/guided/manual modes, invalid snapshots, origin isolation, cancellation, collision, and at-most-once completion.
+- Complete Debug build and CTest: PASS, 11/11. Focused assistant suites: PASS, 2/2. `git diff --check`: PASS.
+- `src/assistant/AssistantAudition.*` owns immutable original/proposal comparison, strict stale/no-op rejection, reversible switching, and explicit accepted/rejected outcomes.
+- `PluginProcessor` canonicalizes proposal targets to real APVTS legal steps, suppresses temporary-preview dirty tracking, invalidates on external host edits, and exposes non-audio begin/switch/accept/reject APIs.
+- Host project session version 2 stores only an active bounded A/B comparison and restores it on its audible side without an editor; version 1 remains supported. Malformed assistant state rejects before live mutation.
+- Focused assistant/processor recovery CTest: PASS, 2/2. Complete Debug build and CTest: PASS, 11/11, including real-time allocation coverage.
+
+Implemented after the A/B checkpoint:
+
+- Seven strict native operations expose assistant state, guided questions, sound-proposal creation, A/B switching, explicit decisions, and composition candidates.
+- The `JARVIS` workspace provides a shared typed prompt, message transcript, describe/walkthrough modes, at-most-two-question steps, explained change review, reversible A/B, explicit accept/reject, and separate piano-roll composition review.
+- UI protocol parsing rejects malformed/future/non-finite/duplicate/oversized responses before publication.
+- UI lint/tests pass (14/14), the production bundle builds, Debug Standalone/VST3 build, and complete Debug CTest passes (11/11).
+- Actual Debug Standalone visual inspection confirms the integrated tab and safe empty state. This is not a complete interaction, audible, Release, provider, or FL Studio pass.
+
+Implemented after the connected UI checkpoint:
+
+- `src/platform/CredentialStore.*` owns a bounded move-only credential and an exact macOS generic-password Keychain store with strict identifiers, device-only accessibility, exact update/read/remove behavior, and fail-closed Core Foundation request construction.
+- `tests/CredentialStoreTests.cpp` performs a real temporary-service Keychain round trip and removes the exact test item. UI/native status exposes no credential value or secret-bearing JavaScript operation.
+- Settings reports the complete current truth: deterministic offline mode active, remote provider not selected, no credential configured, Keychain supported, and no Jarvis data leaving the Mac.
+- Frontend UUID validation now matches the native deterministic opaque-ID format, and stable kebab-case question IDs map explicitly to React answer fields.
+- UI tests/lint/build: PASS, 15/15; complete Debug Standalone/VST3 and CTest: PASS, 12/12.
+- Actual Debug interaction confirms guided progress and input persistence, restored proposal review, A/B selection/rejection, and provider/privacy status. This is not an audible, Release, remote-provider, or FL Studio pass.
+
+### Final M7 automated gate
+
+- Clean UI install/audit and UI tests/lint/build: PASS, 0 vulnerabilities and 15/15 tests.
+- Complete Debug Standalone/VST3 build and CTest: PASS, 12/12.
+- Complete Release Standalone/VST3 build and CTest: PASS, 13/13, including packaged VST3 finite-audio smoke and native Keychain coverage.
+- pluginval 1.0.4 strictness 5: `SUCCESS`; Release/installed VST3 architecture, deep/strict local signature, hash parity, and independent installed-bundle render: PASS.
+- Release/installed VST3 SHA-256: `b17c88bab2c1356c7b01980b96f918a28acbdd337f7ee2e437f9c63a7d7119ca`.
+- Release Standalone SHA-256: `4523ffa815cfcdd7fb4d666644f75dde82869f6ebf673f9707f31314c8d3b1da`.
+- Source origin/eval/token, JSON-schema, and diff checks: PASS.
+- Real Release interaction: PASS for provider/privacy status, explained proposal creation, A/B selection, rejection restoring A, and guided progress to the next question pair. This is not an audible, provider-network, physical-device, or FL Studio pass.
+- Evidence: `evidence/m7/verification.md`, pluginval log, and actual Release screenshots. Every FL Studio case remains `HUMAN RUN REQUIRED`.
+
+Next sequence:
+
+1. Review, commit, and push the final M7 evidence/README checkpoint with exact-path staging and an impersonal subject.
+2. Open the M7 draft PR with base exactly `feat/m6-presets-history`, then record its URL here without rewriting history.
+3. Begin M8 release-candidate hardening from the verified M7 boundary; keep every FL Studio check HUMAN RUN REQUIRED until the user runs it.
 
 M7 required producer workflow:
 
@@ -166,11 +219,12 @@ git diff --check
 git remote -v
 gh repo view HermannPR/folk-park --json visibility,nameWithOwner
 gh pr list --head feat/m6-presets-history --state all
+gh pr list --head feat/m7-guided-assistant --state all
 ```
 
-Confirm the repository is still private, inspect every local change, and never discard work. If the final M6 evidence is uncommitted, review exact diffs and stage only the intended README/docs/evidence paths. The expected final subject is `Verified and documented the M6 checkpoint`.
+Confirm the repository is still private, inspect every local change, and never discard work. The secure settings checkpoint is `1415f70`; current uncommitted work is the final passing M7 evidence/README stage. Clean UI/audit passes with 15/15 tests, Debug CTest passes 12/12, Release CTest passes 13/13, pluginval strictness 5 succeeds, installed/build VST3 parity and independent render pass, and real Release screenshots are retained. Review exact diffs, stage only intended evidence/documentation paths, and use an impersonal checkpoint subject such as `Verified and documented the M7 checkpoint`.
 
-Once M6 is pushed and its private draft PR exists, update this handoff with the actual PR/next branch if necessary, then start the smallest buildable M7 contract checkpoint. Prefer meaningful impersonal commits at every passing stage.
+The M6 draft PR already exists and this branch is correctly stacked. Preserve meaningful impersonal commits at every passing stage. After the final M7 checkpoint and stacked draft PR, the next boundary is M8 release hardening; do not enable a real remote adapter by assumption.
 
 ## Commands and local environment
 

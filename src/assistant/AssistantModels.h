@@ -5,6 +5,8 @@
 #include <juce_core/juce_core.h>
 
 #include <cstdint>
+#include <optional>
+#include <span>
 #include <vector>
 
 namespace folkpark::assistant
@@ -24,7 +26,7 @@ struct SoundAnswers
     juce::String articulation;
     juce::String movement;
     juce::String space;
-    float intensity = 0.5f;
+    std::optional<float> intensity;
     juce::String genreContext;
     juce::String referenceDescription;
 };
@@ -50,8 +52,10 @@ struct ParameterChange
 
 struct ParameterProposal
 {
-    static constexpr int currentSchemaVersion = 1;
-    static constexpr std::size_t maximumChanges = 73;
+    static constexpr int oldestSupportedSchemaVersion = 1;
+    static constexpr int currentSchemaVersion = 2;
+    static constexpr std::size_t maximumV1Changes = 73;
+    static constexpr std::size_t maximumChanges = 102;
 
     int schemaVersion = currentSchemaVersion;
     juce::String proposalId;
@@ -63,7 +67,17 @@ struct ParameterProposal
     bool requiresExplicitAcceptance = true;
 };
 
+struct CurrentParameterValue
+{
+    juce::String parameterId;
+    float normalized = 0.0f;
+};
+
 [[nodiscard]] juce::String stableId(SoundEntryMode value);
+[[nodiscard]] bool isKnownParameterId(const juce::String& parameterId,
+                                      int proposalSchemaVersion = ParameterProposal::currentSchemaVersion) noexcept;
 [[nodiscard]] juce::Result validateSoundIntent(const SoundIntent& intent);
 [[nodiscard]] juce::Result validateParameterProposal(const ParameterProposal& proposal);
+[[nodiscard]] juce::Result validateCurrentParameterValues(
+    std::span<const CurrentParameterValue> values);
 }

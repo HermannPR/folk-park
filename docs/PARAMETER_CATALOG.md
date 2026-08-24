@@ -131,3 +131,9 @@ The serial order is fixed: Distortion, Chorus, tempo-synced Delay, Reverb, Compr
 | `eqHighGain` | EQ High Shelf | Float | -18–18 / .01 | 0 | dB |
 
 Effect values are copied atomically once per processor block. The DSP boundary clamps every value to this catalog and replaces non-finite values with the documented default before processing.
+
+## M7 assistant proposal compatibility
+
+`ParameterProposal` values use host-normalized `[0, 1]` values and stable IDs from this catalog; they never redefine a parameter range, step, default, or unit. Schema v1 is retained for the 73 synth/modulation IDs that existed when the M3 foundation was recorded. Schema v2 is current and permits the complete 102-ID catalog, including all 29 M5 effects.
+
+Every proposal ID is resolved natively against `src/common/ParameterIds.h`. Unknown IDs, duplicate IDs, non-finite/out-of-range values, missing per-change reasons, unsupported versions, and any attempt to disable explicit acceptance are rejected before preview or host-parameter publication.
