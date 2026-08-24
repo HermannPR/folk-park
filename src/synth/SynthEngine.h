@@ -211,6 +211,9 @@ private:
         bool sustained = false;
 
         std::array<std::array<float, maximumUnisonVoices>, 2> oscillatorPhases{};
+        std::array<std::array<float, maximumUnisonVoices>, 2> cachedOscillatorNotes{};
+        std::array<std::array<float, maximumUnisonVoices>, 2> cachedOscillatorFrequencies{};
+        std::array<std::array<int, maximumUnisonVoices>, 2> cachedOscillatorMipLevels{};
         float subPhase = 0.0f;
         std::array<float, 4> lfoPhases{};
         std::uint32_t noiseState = 1;

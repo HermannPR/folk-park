@@ -1,6 +1,7 @@
 #include "SynthEngine.h"
 
 #include <algorithm>
+#include <bit>
 #include <cmath>
 #include <limits>
 
@@ -562,6 +563,12 @@ void SynthEngine::Voice::reset() noexcept
     sustained = false;
     for (auto& oscillator : oscillatorPhases)
         oscillator.fill(0.0f);
+    for (auto& notes : cachedOscillatorNotes)
+        notes.fill(std::numeric_limits<float>::quiet_NaN());
+    for (auto& frequencies : cachedOscillatorFrequencies)
+        frequencies.fill(1.0f);
+    for (auto& levels : cachedOscillatorMipLevels)
+        levels.fill(0);
     subPhase = 0.0f;
     lfoPhases.fill(0.0f);
     noiseState = 1;
@@ -621,15 +628,24 @@ SynthEngine::StereoSample SynthEngine::Voice::renderOscillator(
     for (int lane = 0; lane < maximumUnisonVoices; ++lane)
     {
         const auto laneWeight = smoothedUnisonWeights[oscillator][static_cast<std::size_t>(lane)];
+        if (laneWeight <= 1.0e-6f)
+            continue;
         const auto lanePosition
             = smoothedUnisonLanePositions[oscillator][static_cast<std::size_t>(lane)];
         const auto detuneSemitones = lanePosition * parameters.unisonDetuneCents
             * juce::jlimit(0.0f, 1.0f, parameters.unisonBlend) / 100.0f;
         const auto note = currentPitch + parameters.coarseSemitones + parameters.fineCents / 100.0f
             + bendSemitones + pitchModulation + detuneSemitones;
-        const auto frequency = juce::jlimit(1.0f, static_cast<float>(0.45 * currentSampleRate),
-                                           midiNoteToFrequency(note));
-        const auto mipLevel = bank.current->mipLevelForFrequency(frequency, currentSampleRate);
+        auto& cachedNote = cachedOscillatorNotes[oscillator][static_cast<std::size_t>(lane)];
+        auto& frequency = cachedOscillatorFrequencies[oscillator][static_cast<std::size_t>(lane)];
+        auto& mipLevel = cachedOscillatorMipLevels[oscillator][static_cast<std::size_t>(lane)];
+        if (std::bit_cast<std::uint32_t>(note) != std::bit_cast<std::uint32_t>(cachedNote))
+        {
+            cachedNote = note;
+            frequency = juce::jlimit(1.0f, static_cast<float>(0.45 * currentSampleRate),
+                                     midiNoteToFrequency(note));
+            mipLevel = bank.current->mipLevelForFrequency(frequency, currentSampleRate);
+        }
         auto& phase = oscillatorPhases[static_cast<std::size_t>(oscillatorIndex)][static_cast<std::size_t>(lane)];
         const auto waveform = bank.read(position, phase, mipLevel) * gain * laneWeight;
         const auto pan = juce::jlimit(-1.0f, 1.0f, parameters.pan + panModulation
