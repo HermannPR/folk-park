@@ -3,7 +3,7 @@
 ## Current checkpoint
 
 - Milestone: M7 — offline Jarvis text, guided sound proposals, and secure provider boundary
-- Status: M7 versioned request/response/catalog contract checkpoint passes focused tests; offline engines, A/B integration, UI, provider/Keychain implementation, full gates, and all FL Studio human runs remain required
+- Status: M7 contracts and deterministic offline composition/guided-sound engines pass the complete Debug gate; A/B integration, UI, Keychain implementation, full Release gates, and all FL Studio human runs remain required
 - Date: 2026-08-23 (America/Monterrey)
 - Branch: `feat/m7-guided-assistant`, stacked exactly on `feat/m6-presets-history`
 
@@ -17,10 +17,20 @@
 - Recorded ADR-0008 for offline-first composition text, guided sound A/B, provider consent, credential boundaries, and the open real-provider decision.
 - Focused assistant model/contract build and CTest: PASS, 1/1.
 
+## M7 deterministic offline workflow checkpoint
+
+- Added a deterministic, bounded composition-text mapper for key, scale, bars, BPM, requested parts, genre, emotion, density, rhythm complexity, repetition, and variation. It normalizes through the existing `MusicIntent` validator and produces a candidate only; it does not deliver into the DAW.
+- Added stable guided sound topics with no more than two focused questions per step. The seven required answers are tracked independently so a missing intensity is not confused with a neutral default.
+- Added an offline proposal mapper that compares captured current host values against bounded proposed values, uses only real parameter-catalog IDs, explains every change, records assumptions/confidence, and preserves explicit acceptance.
+- Added current-parameter snapshot rejection for empty/oversized, unknown, duplicate, non-finite, and out-of-range values.
+- Added a deterministic mock provider with controlled pending completion, origin validation, cancellation, and at-most-once callback behavior. The offline engine rejects remote-origin execution.
+- Focused assistant contract/workflow CTest: PASS, 2/2.
+- Complete Debug build: PASS for native tests, Standalone, and VST3.
+- Complete Debug CTest: PASS, 11/11.
+- `git diff --check`: PASS.
+
 ## M7 work still required
 
-- Implement bounded deterministic offline composition text parsing and adaptive guided sound questions/proposals.
-- Implement a deterministic mock provider plus cancellation/timeout/retry state tests.
 - Integrate immutable original/proposal A/B snapshots and explicit accept/reject with processor/project state without audio-thread work.
 - Add the native bridge and complete typed Jarvis conversation/settings UI.
 - Implement and test the macOS Keychain credential abstraction. Do not add a real adapter until the product-owner decision and privacy UX exist.
@@ -236,7 +246,7 @@
 - Imported wavetable sources are retained in bounded content-addressed local storage and referenced by versioned project state. Automated missing-asset recovery is covered, but FL Studio save-close-reopen, chooser recovery, and audible parity remain human checks.
 - The M4 interface edits all 32 route slots, but host automation of route structure is not supported; route changes are reviewed native transactions stored in plug-in state.
 - Three.js is a presentation dependency only. The measured local analysis cost and frame caps do not replace FL Studio CPU/GPU profiling on the target machine.
-- User-drawn LFOs and oversampling are optional M2 items and were deliberately deferred. Native preset/history integration is in M6 hardening; the M7 guided assistant is not implemented yet.
+- User-drawn LFOs and oversampling are optional M2 items and were deliberately deferred. The M7 offline assistant engine is implemented, but processor A/B integration and the producer-facing interface are not yet complete.
 - The CPU number is a reproducible local baseline, not a guarantee for every host/audio-device configuration. FL Studio profiling is still required.
 - pluginval's optional separate Steinberg-validator subtest was skipped because no validator executable path is installed.
 - Accepted compositions and their delivery state now round-trip in the bounded M6 project payload and remain searchable in local history. Actual FL Studio project reopen is not yet human-verified.
@@ -247,4 +257,4 @@
 
 ## Next smallest verifiable task
 
-Commit the passing M7 contract checkpoint, then implement the deterministic offline composition-text parser, adaptive guided-question engine, bounded catalog proposal mapper, and mock provider on the same typed boundary. Add adversarial fixtures before processor or UI integration, and keep every unexecuted FL Studio case marked HUMAN RUN REQUIRED.
+Commit the passing deterministic offline workflow checkpoint, then integrate immutable original/proposal A/B snapshots with explicit accept/reject and project recovery before exposing the workflow through the native bridge/UI. Keep every unexecuted FL Studio case marked HUMAN RUN REQUIRED.

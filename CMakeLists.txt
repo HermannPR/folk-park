@@ -279,6 +279,25 @@ target_link_libraries(FolkParkAssistantModelTests PRIVATE
     juce::juce_recommended_warning_flags)
 add_test(NAME FolkParkAssistantSchemaModelTests COMMAND FolkParkAssistantModelTests)
 
+juce_add_console_app(FolkParkOfflineAssistantTests PRODUCT_NAME "folk park offline assistant tests")
+target_sources(FolkParkOfflineAssistantTests PRIVATE
+    tests/OfflineAssistantTests.cpp
+    src/assistant/AssistantContracts.cpp
+    src/assistant/AssistantContracts.h
+    src/assistant/AssistantModels.cpp
+    src/assistant/AssistantModels.h
+    src/assistant/OfflineAssistant.cpp
+    src/assistant/OfflineAssistant.h
+    src/midi/Composition.cpp
+    src/midi/Composition.h)
+target_include_directories(FolkParkOfflineAssistantTests PRIVATE src)
+target_compile_definitions(FolkParkOfflineAssistantTests PRIVATE JUCE_USE_CURL=0)
+target_link_libraries(FolkParkOfflineAssistantTests PRIVATE
+    juce::juce_core
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)
+add_test(NAME FolkParkOfflineAssistantWorkflowTests COMMAND FolkParkOfflineAssistantTests)
+
 juce_add_console_app(FolkParkRealtimeTests PRODUCT_NAME "folk park real-time allocation tests")
 target_sources(FolkParkRealtimeTests PRIVATE
     tests/RealtimeTests.cpp

@@ -4,7 +4,7 @@
 
 `folk park` combines a playable dual-wavetable instrument, MIDI idea generation, an ordered effects chain, offline audio rendering, and crash-aware local persistence in one Standalone/VST3 product. Release 0.1 targets FL Studio on Intel (`x86_64`) macOS.
 
-> **Current status — M6 automated checkpoint verified.** The Standalone and VST3 Release artifacts build, all 11 Release suites pass, pluginval 1.0.4 succeeds at strictness 5, and the installed VST3 independently renders audio from MIDI. FL Studio checks remain explicitly human-required. The guided Jarvis sound assistant is planned for M7 and is not presented as working yet.
+> **Current status — M6 automated checkpoint verified; M7 in development.** The Standalone and VST3 Release artifacts build, all 11 Release suites pass, pluginval 1.0.4 succeeds at strictness 5, and the installed VST3 independently renders audio from MIDI. The first M7 checkpoints now provide typed assistant/provider contracts plus a tested deterministic offline composition and sound-proposal engine. That engine is not connected to the processor or interface yet, and is not presented as a usable in-product assistant. FL Studio checks remain explicitly human-required.
 
 ## Product tour
 
@@ -53,7 +53,7 @@ flowchart LR
     Bridge <--> UI[Bundled React interface]
     Compose[Deterministic composition] -->|validated accepted schedule| Processor
     Persistence[Presets, assets, SQLite history] <-->|snapshots outside audio| Processor
-    Assistant[Planned M7 guided assistant] -.->|validated proposals only| Processor
+    Assistant[M7 offline and optional-provider assistant] -.->|validated proposals only| Processor
 ```
 
 The processor is the host adapter and authority for state. The synth owns fixed-capacity voice/DSP memory. Composition, file conversion, persistence, rendering, and future assistant work happen away from the callback. The assistant boundary is deliberately limited to validated intent and parameter proposals; it will not execute arbitrary code or silently write into a DAW.
@@ -111,6 +111,7 @@ Reliability tests cover malformed and oversized project state, future/duplicate/
 | DSP | Fixed-capacity custom wavetable, modulation, voice, filter, effects, and render engines |
 | UI | React 19, TypeScript, Vite, Three.js, bundled through JUCE WebView resources |
 | Persistence | Versioned JSON schemas, atomic native files, SHA-256 asset store, system SQLite |
+| Assistant | Deterministic offline parser/walkthrough, typed catalog proposals, asynchronous provider boundary |
 | Build | CMake presets, Ninja, Apple clang, Intel `x86_64` only for 0.1 |
 | Quality | CTest/native property and integration suites, Node interface tests, pluginval, binary/signature/hash inspection |
 
@@ -133,6 +134,19 @@ Verified on 2026-08-23 in America/Monterrey:
 | Release Standalone SHA-256 | `3e4cf0d884ad8a770100e7cc34ac6281959879acaf1495c9d03fefd79b1f810f` |
 
 The complete evidence report and validator log are retained under [evidence/m6](evidence/m6/). Automated success is not an FL Studio pass: discovery, insertion, listening, physical input/focus behavior, automation, drag/routing, project reopen, preset/asset recovery, effects, and WAV import remain [HUMAN RUN REQUIRED](docs/FL_STUDIO_TEST_MATRIX.md).
+
+## M7 development checkpoint
+
+The current branch adds the non-UI foundation for Jarvis without requiring a network connection, provider account, or API key:
+
+- Bounded typed composition/sound requests and responses with UUID, origin, target, consent, and stale-response validation.
+- Deterministic offline parsing for key, scale, bars, tempo, requested parts, genre, emotion, and musical density/variation language.
+- A stable guided walkthrough that asks no more than two focused sound questions at a time.
+- Explained sound proposals using only the 102 real host parameter IDs and the exact captured current value for each proposed A/B change.
+- Explicit acceptance preserved in every proposal; manual mode never invokes the assistant.
+- A controllable mock provider with cancellation and at-most-once completion for failure-path testing.
+
+The complete Debug build and all 11 current Debug suites pass at this checkpoint. Processor-owned reversible A/B state, the Jarvis conversation UI, secure macOS Keychain integration, Release validation, and screenshots of the actual M7 interface still remain. The four screenshots above are real M6 Release captures, not M7 concept art.
 
 ## Build and run
 
@@ -199,7 +213,7 @@ For local FL Studio testing, `./scripts/install_user_vst3.sh release` copies the
 | `src/render` | Isolated accepted-composition WAV renderer |
 | `src/persistence` | Preset codec/store, content-addressed assets, SQLite history, coordination |
 | `src/plugin` | JUCE host adapter, project state, native bridge, editor lifecycle |
-| `src/assistant` | Strict intent/proposal models; M7 conversational workflow not yet implemented |
+| `src/assistant` | Typed contracts, deterministic offline intent/proposal engine, and provider boundary |
 | `ui/src` | React workspaces, host controls, piano, visualizers, bridge validation |
 | `schemas` | Versioned public JSON compatibility contracts |
 | `tests` | DSP, property, persistence, bridge, real-time, and packaged VST3 coverage |
@@ -218,10 +232,10 @@ The canonical continuation point for another coding session is [docs/CURRENT_WOR
 | M4 | Silicon Dreams UI, real A/B wave/spectrum views, four-octave audition keyboard | Automated gate passed; FL UI/input checks pending |
 | M5 | Six ordered effects and isolated accepted-composition WAV preview | Automated gate passed; FL effects/WAV checks pending |
 | M6 | Native presets, migrations, assets, searchable history, project recovery | Automated gate verified; FL persistence checks pending |
-| M7 | Offline Jarvis text workflow, adaptive sound questions, explained A/B proposals, optional secure provider | Planned |
+| M7 | Offline Jarvis text workflow, adaptive sound questions, explained A/B proposals, optional secure provider | In development — contracts and offline engine pass Debug tests; integration remains |
 | M8 | FL Studio matrix, performance/recovery hardening, packaging, legal/asset audit, release docs | Planned |
 
-The planned M7 assistant will ask focused sound-design questions, translate the answers into bounded parameter proposals, explain confidence and tradeoffs, provide reversible A/B audition, and wait for explicit acceptance. Offline/manual operation remains complete; an optional model provider cannot bypass the parameter catalog, embed user keys, or directly control the DAW.
+The M7 foundation now asks focused sound-design questions and translates complete answers into bounded, explained parameter proposals. The remaining integration will provide reversible A/B audition and explicit accept/reject in the product interface. Offline/manual operation remains complete; an optional model provider cannot bypass the parameter catalog, embed user keys, or directly control the DAW.
 
 ## Scope, originality, and release boundary
 

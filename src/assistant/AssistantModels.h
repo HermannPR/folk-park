@@ -5,6 +5,7 @@
 #include <juce_core/juce_core.h>
 
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 namespace folkpark::assistant
@@ -24,7 +25,7 @@ struct SoundAnswers
     juce::String articulation;
     juce::String movement;
     juce::String space;
-    float intensity = 0.5f;
+    std::optional<float> intensity;
     juce::String genreContext;
     juce::String referenceDescription;
 };

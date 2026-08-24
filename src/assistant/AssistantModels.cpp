@@ -23,7 +23,7 @@ bool hasAnyAnswer(const SoundAnswers& answers) noexcept
     return !answers.musicalRole.trim().isEmpty() || !answers.timbre.trim().isEmpty()
         || !answers.articulation.trim().isEmpty() || !answers.movement.trim().isEmpty()
         || !answers.space.trim().isEmpty() || !answers.genreContext.trim().isEmpty()
-        || !answers.referenceDescription.trim().isEmpty();
+        || !answers.referenceDescription.trim().isEmpty() || answers.intensity.has_value();
 }
 
 template <typename Values>
@@ -65,8 +65,10 @@ juce::Result validateSoundIntent(const SoundIntent& intent)
         || !validText(answers.space, 128) || !validText(answers.genreContext, 128)
         || !validText(answers.referenceDescription, 512))
         return juce::Result::fail("SoundIntent contains an answer outside its length bound");
-    if (!std::isfinite(answers.intensity) || answers.intensity < 0.0f || answers.intensity > 1.0f)
-        return juce::Result::fail("SoundIntent intensity must be finite and normalized");
+    if (answers.intensity.has_value()
+        && (!std::isfinite(*answers.intensity) || *answers.intensity < 0.0f
+            || *answers.intensity > 1.0f))
+        return juce::Result::fail("SoundIntent intensity must be finite and normalized when provided");
     if (intent.entryMode != SoundEntryMode::manual && !hasAnyAnswer(answers))
         return juce::Result::fail("Describe and guided modes require at least one producer answer");
     return juce::Result::ok();

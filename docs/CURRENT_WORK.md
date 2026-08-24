@@ -40,7 +40,8 @@ The DOCX is the master product and engineering contract. Read it without modifyi
 - M6 private draft PR: <https://github.com/HermannPR/folk-park/pull/6>, base exactly `feat/m5-effects-preview`, head `feat/m6-presets-history`.
 - Final M6 checkpoint: `b3e9e78 Verified and documented the M6 checkpoint`.
 - M6 handoff checkpoint: `282c344 Established the M7 continuation handoff`.
-- No M7 PR exists at this contract checkpoint.
+- First M7 checkpoint: `74d6e43 Established M7 assistant and provider contracts`.
+- No M7 PR exists yet.
 - Earlier M6 commits are:
   - `735fb84 Established the M6 persistence and migration contracts`
   - `a69a8bc Implemented versioned native presets and validated assets`
@@ -67,7 +68,7 @@ Git rules:
 - M4: Silicon Dreams UI, real A/B visuals, four-octave C2–B5 piano, octave shift, and held-key repeat suppression; automated gate passed; FL UI/input checks pending.
 - M5: ordered Distortion → Chorus → tempo-synced Delay → Reverb → Compressor → Parametric EQ and isolated accepted-composition WAV rendering; automated gate passed; FL effects/render checks pending.
 - M6: native presets/assets/migration, transactional composition history, and editor-independent project recovery; automated gate verified; every FL persistence case remains human-required.
-- M7: composition text, guided Jarvis sound workflow, reversible A/B, and optional secure provider boundary; contract checkpoint in progress.
+- M7: composition text, guided Jarvis sound workflow, reversible A/B, and optional secure provider boundary; contracts and deterministic offline workflow implemented, processor/UI integration in progress.
 - M8: host/release hardening, packaging, legal/asset audit, and release documentation; planned.
 
 Do not reimplement M0–M6. Preserve the oscillator displays, C2–B5 keyboard, held-key repeat behavior, effects, candidate/accepted MIDI boundary, accepted-only WAV workflow, and transactional persistence while working on M7.
@@ -104,7 +105,7 @@ Do not reimplement M0–M6. Preserve the oscillator displays, C2–B5 keyboard, 
 - Native payloads expose safe metadata/filenames rather than unrestricted personal paths.
 - `ui/src/protocol.ts` rejects malformed/future/non-finite/duplicate/oversize snapshots before view replacement.
 - `ui/src/PersistenceView.tsx` implements the History workspace with availability/degraded state, explicit Save As/replace semantics, preset browser, recovery, history search/compare/recall/trash/retention, and confirmed cleanup.
-- The recruiter-facing `README.md` explains the full product/architecture/status and embeds actual M6 Release screenshots.
+- The recruiter-facing `README.md` explains the full product/architecture/status and embeds actual M6 Release screenshots. Add actual M7 screenshots only after the integrated interface works; never substitute concept art for product evidence.
 
 ## M6 verification actually completed
 
@@ -134,9 +135,9 @@ Known verification observations:
 
 ## Current milestone: M7 Jarvis text and guided sound assistant
 
-Do not treat the grey M7 UI hint or the passing contract models as a working assistant/LLM. There is no offline parser, question/proposal engine, A/B processor integration, conversation UI, credential implementation, or real provider yet.
+Do not treat the grey M7 UI hint or the passing non-UI engine as a working in-product assistant/LLM. The deterministic offline parser and question/proposal engine exist, but there is no A/B processor integration, conversation UI, credential implementation, or real provider yet.
 
-### Contract checkpoint now implemented in the worktree
+### Contracts and deterministic offline workflow now implemented
 
 - `src/assistant/AssistantContracts.*` defines tagged composition/sound requests and responses across offline/mock/remote origins plus a non-audio asynchronous provider interface.
 - Prompts are bounded at 1,024 characters; request/response UUID, target, origin, and typed payload must match; mixed variants and stale responses fail.
@@ -144,14 +145,20 @@ Do not treat the grey M7 UI hint or the passing contract models as a working ass
 - `schemas/parameter-proposal-v1.schema.json` preserves the M3 73-ID proposal format. The current `schemas/parameter-proposal.schema.json` and C++ model are v2 with a 102-change maximum.
 - All proposal IDs resolve against the authoritative C++ catalog. V1 cannot address effects; v2 can address all M5 effect IDs. Unknown/duplicate IDs, non-finite/out-of-range values, missing v2 reasons/assumptions, unsupported versions, and disabled explicit acceptance fail.
 - ADR-0008 freezes the offline composition, guided sound, A/B, provider-consent, credential, and no-real-adapter-yet decisions.
-- The focused assistant target builds and `FolkParkAssistantSchemaModelTests` passes 1/1 after these changes.
+- Commit `74d6e43` freezes and pushes this first M7 contract checkpoint.
+- `src/assistant/OfflineAssistant.*` implements deterministic composition-text parsing, stable two-at-a-time guided questions, current-to-proposed catalog mapping, explained assumptions/confidence, and a controlled mock provider.
+- Guided intensity is optional until the producer answers it, preventing the previous neutral default from falsely completing that question.
+- `tests/OfflineAssistantTests.cpp` covers determinism, natural-language bounds, real catalog mapping, current-value parity, describe/guided/manual modes, invalid snapshots, origin isolation, cancellation, collision, and at-most-once completion.
+- Complete Debug build and CTest: PASS, 11/11. Focused assistant suites: PASS, 2/2. `git diff --check`: PASS.
 
 Next M7 sequence:
 
-1. Preserve the current contract work and commit it with an impersonal subject after exact diff/test review.
-2. Implement the deterministic offline composition parser, adaptive guided-question/proposal engine, and a mock provider before processor/UI integration.
-3. Add adversarial tests for sanitization, ambiguity/follow-ups, prompt bounds, determinism, catalog mapping, stale/cancelled requests, provider failure, and explicit acceptance.
-4. Then integrate reversible A/B and explicit accept/reject into processor state without adding callback work.
+1. Commit and push the passing deterministic offline workflow checkpoint with exact-path staging and an impersonal subject.
+2. Integrate immutable original/proposal A/B snapshots and explicit accept/reject into processor/project state without adding callback work.
+3. Add adversarial tests for stale/cancelled proposals, failure rollback, editor-independent recovery, and zero callback allocations.
+4. Then expose the typed composition/sound conversation through the native bridge and React UI.
+5. Add the Keychain credential abstraction and offline/provider settings, but no real remote adapter until the product owner resolves that open decision.
+6. Update this recruiter-facing README with real M7 screenshots only after the actual integrated interface passes visual inspection.
 
 M7 required producer workflow:
 
@@ -181,9 +188,9 @@ gh pr list --head feat/m6-presets-history --state all
 gh pr list --head feat/m7-guided-assistant --state all
 ```
 
-Confirm the repository is still private, inspect every local change, and never discard work. If the M7 contract changes are uncommitted, run the focused assistant test plus full Debug suite, review exact diffs, and stage only the intended contract/schema/test/documentation paths. The expected first M7 subject is `Established M7 assistant and provider contracts`.
+Confirm the repository is still private, inspect every local change, and never discard work. If the offline workflow changes are uncommitted, run both focused assistant suites plus the full Debug suite, review exact diffs, and stage only the intended assistant/CMake/test/documentation paths. The expected subject is `Implemented deterministic offline Jarvis workflows`.
 
-The M6 draft PR already exists and this branch is correctly stacked. Review/commit the M7 contract checkpoint if it is still uncommitted, then continue with the offline engine checkpoint. Prefer meaningful impersonal commits at every passing stage.
+The M6 draft PR already exists and this branch is correctly stacked. Preserve meaningful impersonal commits at every passing M7 stage. After the offline workflow checkpoint, continue with processor-owned reversible A/B state before UI integration.
 
 ## Commands and local environment
 
