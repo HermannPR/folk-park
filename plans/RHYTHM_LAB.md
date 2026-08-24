@@ -1,6 +1,6 @@
 # Rhythm Lab product plan
 
-Status: proposed post-0.1 milestone; implementation has not started.
+Status: R1 started on `feat/rhythm-lab-r1`; contracts are the first checkpoint.
 
 ## Product promise
 
@@ -29,15 +29,17 @@ The drum system must produce drum timbres. It must not route General MIDI drum p
 
 ## Initial genre profiles
 
-Recommended first set:
+Producer-selected first set:
 
-- House / techno
-- Hip-hop / trap
-- Funk / breakbeat
-- Ambient / experimental
-- Breakcore
+- Indie / rock
+- Eurodance
+- Techno
+- Funk
+- Jazz
 
-Rock, Latin, drum and bass, garage, and additional regional styles should follow through data-driven profile definitions rather than parallel engine implementations.
+Breakcore remains planned for Break Lab after the synthesized core is stable. House, hip-hop/trap, ambient, Latin, drum and bass, garage, and additional regional styles should follow through data-driven profile definitions rather than parallel engine implementations.
+
+The first engine is synthesized-only because the producer has no reviewed sample library. Its contracts remain hybrid-ready, but R1 must not download or fabricate provenance for external samples.
 
 ## Amen-style break handling
 
@@ -69,7 +71,7 @@ Add clap, open hat, percussion, cymbal, texture, sample layers, kit browser, lan
 
 ### R3 — Genre profiles and Jarvis rhythm guidance
 
-Add the initial five genre profiles and bounded natural-language rhythm proposals. Gate on seed reproducibility, musical bounds, explanation/acceptance, stale-response rejection, and profile-independent engine behavior.
+Complete the five producer-selected genre profiles and add bounded natural-language rhythm proposals. Gate on seed reproducibility, musical bounds, explanation/acceptance, stale-response rejection, and profile-independent engine behavior.
 
 ### R4 — Break Lab
 
@@ -77,12 +79,12 @@ Add reviewed loop import, transient slicing, break arrangement, breakcore contro
 
 ## Inputs useful from the producer
 
-Implementation can begin with the defaults above. Before factory-content selection, the producer should provide:
+Producer direction recorded on 2026-08-24:
 
-1. The three most important genres for the first usable release.
-2. A preference for synthesized, sampled, or hybrid drums; **hybrid** is the recommended default.
-3. Any personally owned loops or one-shots intended for testing, along with whether they may remain private test material or can legally ship.
-4. A few reference tracks for feel only. References guide timing and sound goals; they are not copied or bundled.
+1. Preferred genres: indie, rock, Eurodance, techno, funk, and jazz. Indie/rock share the first bounded profile family.
+2. Synthesized or sampled sounds are acceptable; hybrid is acceptable. R1 uses synthesized voices because no reviewed sample library is available.
+3. No producer-owned sample or loop pack is currently available.
+4. Reference tracks may be provided later for feel only. References guide timing and sound goals; they are not copied or bundled.
 
 ## Explicit non-goals for the first stage
 

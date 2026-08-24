@@ -360,6 +360,14 @@
 - Actual Release Standalone screenshots and visual/navigation inspection are retained for Synth, Compose, Jarvis, FX, and History under `evidence/m8/visual/`. This is not an audible or FL Studio pass.
 - Established `plans/RHYTHM_LAB.md` as the separate future drum-product plan. It requires audible hybrid drum voices, deterministic patterns, per-lane control, stems, and a licensed/original/user-import break slicer; implementation has not started.
 
+## Rhythm Lab R1 contract checkpoint
+
+- Recorded the producer direction: indie/rock, Eurodance, techno, funk, and jazz; synthesized-first because no reviewed sample library is available.
+- Added ADR-0010 and strict version-1 native/JSON contracts for `RhythmIntent`, `DrumPattern`, and the authored `synth_core_v1` kit while preserving every M3 composition contract.
+- Added stable kick, snare, closed/open hat, and percussion lane identities plus bounded synthesis parameters ready for an allocation-free engine.
+- Focused Debug configure/build and contract test: PASS, 1/1. Ten JSON schemas parse successfully and `git diff --check` passes.
+- This checkpoint contains no audible drum engine, generated pattern, sample asset, application UI, or FL Studio evidence yet.
+
 ## Human-required status
 
 - Standalone physical keyboard/audio-device playability: PARTIAL. Automated real-window C3 hold/repeat/release passed; listening through the user's selected audio device remains human.

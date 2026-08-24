@@ -57,6 +57,8 @@ target_sources(FolkPark PRIVATE
     src/assistant/OfflineAssistant.h
     src/effects/EffectChain.cpp
     src/effects/EffectChain.h
+    src/drums/Rhythm.cpp
+    src/drums/Rhythm.h
     src/plugin/PluginEditor.cpp
     src/plugin/PluginEditor.h
     src/plugin/PluginProcessor.cpp
@@ -255,6 +257,21 @@ target_link_libraries(FolkParkCompositionTests PRIVATE
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags)
 add_test(NAME FolkParkCompositionPropertyTests COMMAND FolkParkCompositionTests)
+
+juce_add_console_app(FolkParkRhythmContractTests PRODUCT_NAME "folk park rhythm contract tests")
+target_sources(FolkParkRhythmContractTests PRIVATE
+    tests/RhythmContractTests.cpp
+    src/drums/Rhythm.cpp
+    src/drums/Rhythm.h
+    src/midi/Composition.cpp
+    src/midi/Composition.h)
+target_include_directories(FolkParkRhythmContractTests PRIVATE src)
+target_compile_definitions(FolkParkRhythmContractTests PRIVATE JUCE_USE_CURL=0)
+target_link_libraries(FolkParkRhythmContractTests PRIVATE
+    juce::juce_core
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)
+add_test(NAME FolkParkRhythmContractValidationTests COMMAND FolkParkRhythmContractTests)
 
 juce_add_console_app(FolkParkMidiDeliveryTests PRODUCT_NAME "folk park MIDI delivery tests")
 target_sources(FolkParkMidiDeliveryTests PRIVATE
