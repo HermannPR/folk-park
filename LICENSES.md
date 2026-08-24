@@ -10,5 +10,6 @@ No folk park binary is authorized for public distribution at this checkpoint.
 | TypeScript | 7.0.2 | UI type checking | Apache-2.0; build-time only. |
 | Vite | 8.2.2 | Deterministic production UI bundle | MIT; build-time dependency graph is locked by npm. |
 | Three.js | 0.185.1 | Bounded oscillator/modulation scene only | MIT; no third-party example assets are bundled. |
+| SQLite | macOS system SQLite C API; SDK/runtime supplied by the target OS | Transactional local preset/history index behind `HistoryRepository` | System library only; no SQLite source or binary is committed or redistributed. SQLite is public domain. |
 
 Project-created waveforms and UI assets must have provenance recorded here. User-imported WAV files remain user-owned and are not committed. Serum factory assets, names, artwork, source code, and private preset payloads are prohibited.

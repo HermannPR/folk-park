@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { chooseAnimationPolicy, parseUiSnapshot, wavetableSamplesPerFrame } from "./protocol.ts";
+import { chooseAnimationPolicy, parseHistoryComparison, parsePersistenceWorkspace,
+  parseUiSnapshot, wavetableSamplesPerFrame } from "./protocol.ts";
 
 const wavetable = {
   frameCount: 1,
@@ -36,6 +37,12 @@ const valid = {
   parameters: [{ id: "masterGain", normalized: 0.5 }],
 };
 
+const idA = "8ca1788c-080f-4ea0-80a8-d9381084aa20";
+const idB = "6b9cb569-45ec-49d3-9805-dbcde3417f41";
+const persistenceStatus = { enabled: true, presetAvailable: true, historyAvailable: true,
+  message: "ready", currentPresetId: idA, currentPresetName: "Lead",
+  currentPresetDirty: false, retentionDays: 180, missingAssets: [] };
+
 test("accepts one complete bounded native snapshot", () => {
   assert.notEqual(parseUiSnapshot(valid), null);
 });
@@ -61,4 +68,27 @@ test("animation policy pauses hidden views and honors accessibility fallbacks", 
     { mode: "canvas2d", framesPerSecond: 12 });
   assert.deepEqual(chooseAnimationPolicy({ visible: true, lowGraphics: false, reducedMotion: false }),
     { mode: "three", framesPerSecond: 30 });
+});
+
+test("M6 persistence and comparison payloads are bounded before UI state publication", () => {
+  const workspace = { ok: true, status: persistenceStatus, presetError: "", historyError: "",
+    presets: [{ id: idA, name: "Lead", author: "Producer", tags: ["lead"], genre: "house",
+      emotion: "bright", favorite: false, missingAssets: false,
+      fileName: "Lead.folkparkpreset" }],
+    history: [{ id: idB, parentId: "", createdUnixMs: 1, updatedUnixMs: 1,
+      generatorVersion: "1.0.0-m3", promptSummary: "", presetId: idA,
+      favorite: false, tags: ["house", "bright"], deleted: false }] };
+  assert.notEqual(parsePersistenceWorkspace(workspace), null);
+  assert.equal(parsePersistenceWorkspace({ ...workspace,
+    status: { ...persistenceStatus, missingAssets: [{ slot: "oscillatorA", displayName: "x.wav",
+      sha256: "not-a-hash", byteSize: 100 }] } }), null);
+  assert.equal(parsePersistenceWorkspace({ ...workspace,
+    presets: [...workspace.presets, { ...workspace.presets[0], id: "../unsafe" }] }), null);
+
+  const detail = { id: idA, parentId: "", createdUnixMs: 1,
+    generatorVersion: "1.0.0-m3", presetId: idA, favorite: false, tags: ["lead"],
+    seed: 42, key: "D", scale: "natural_minor", tempoBpm: 124, bars: 4,
+    genre: "house", emotion: "bright", clipCount: 4, noteCount: 120 };
+  assert.notEqual(parseHistoryComparison({ first: detail, second: { ...detail, id: idB } }), null);
+  assert.equal(parseHistoryComparison({ first: detail, second: detail }), null);
 });

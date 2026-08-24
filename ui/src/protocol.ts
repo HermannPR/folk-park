@@ -55,10 +55,85 @@ export type UiSnapshot = {
   modulationRouteCount: number;
   modulationRoutes: ModulationRouteSnapshot[];
   composition: CompositionSnapshot;
+  persistence: PersistenceStatus;
   wavetableA: WavetableSnapshot;
   wavetableB: WavetableSnapshot;
   parameters: ParameterSnapshot[];
 };
+
+export type MissingAsset = {
+  slot: "oscillatorA" | "oscillatorB";
+  displayName: string;
+  sha256: string;
+  byteSize: number;
+};
+
+export type PersistenceStatus = {
+  enabled: boolean;
+  presetAvailable: boolean;
+  historyAvailable: boolean;
+  message: string;
+  currentPresetId: string;
+  currentPresetName: string;
+  currentPresetDirty: boolean;
+  retentionDays: number;
+  missingAssets: MissingAsset[];
+};
+
+export type PresetLibrarySummary = {
+  id: string;
+  name: string;
+  author: string;
+  tags: string[];
+  genre: string;
+  emotion: string;
+  favorite: boolean;
+  missingAssets: boolean;
+  fileName: string;
+};
+
+export type HistorySummary = {
+  id: string;
+  parentId: string;
+  createdUnixMs: number;
+  updatedUnixMs: number;
+  generatorVersion: string;
+  promptSummary: string;
+  presetId: string;
+  favorite: boolean;
+  tags: string[];
+  deleted: boolean;
+};
+
+export type PersistenceWorkspace = {
+  ok: boolean;
+  status: PersistenceStatus;
+  presetError: string;
+  historyError: string;
+  presets: PresetLibrarySummary[];
+  history: HistorySummary[];
+};
+
+export type HistoryDetail = {
+  id: string;
+  parentId: string;
+  createdUnixMs: number;
+  generatorVersion: string;
+  presetId: string;
+  favorite: boolean;
+  tags: string[];
+  seed: number;
+  key: string;
+  scale: string;
+  tempoBpm: number;
+  bars: number;
+  genre: string;
+  emotion: string;
+  clipCount: number;
+  noteCount: number;
+};
+
+export type HistoryComparison = { first: HistoryDetail; second: HistoryDetail };
 
 export type GraphicsPreferences = {
   visible: boolean;
@@ -79,6 +154,116 @@ const isFiniteRange = (value: unknown, minimum: number, maximum: number): value 
 
 const isBoundedString = (value: unknown, maximum: number): value is string =>
   typeof value === "string" && value.length <= maximum;
+
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const sha256Pattern = /^[0-9a-f]{64}$/;
+
+function parseTags(value: unknown): string[] | null {
+  if (!Array.isArray(value) || value.length > 24) return null;
+  const tags: string[] = [];
+  const unique = new Set<string>();
+  for (const tag of value) {
+    if (!isBoundedString(tag, 48) || tag.length === 0 || unique.has(tag)) return null;
+    unique.add(tag); tags.push(tag);
+  }
+  return tags;
+}
+
+export function parsePersistenceStatus(value: unknown): PersistenceStatus | null {
+  if (!isRecord(value)
+      || typeof value.enabled !== "boolean"
+      || typeof value.presetAvailable !== "boolean"
+      || typeof value.historyAvailable !== "boolean"
+      || !isBoundedString(value.message, 512)
+      || !isBoundedString(value.currentPresetId, 64)
+      || (value.currentPresetId.length > 0 && !uuidPattern.test(value.currentPresetId))
+      || !isBoundedString(value.currentPresetName, 96)
+      || typeof value.currentPresetDirty !== "boolean"
+      || !Number.isInteger(value.retentionDays)
+      || !isFiniteRange(value.retentionDays, 1, 3650)
+      || !Array.isArray(value.missingAssets)
+      || value.missingAssets.length > 2) return null;
+  const missingAssets: MissingAsset[] = [];
+  for (const asset of value.missingAssets) {
+    if (!isRecord(asset)
+        || !["oscillatorA", "oscillatorB"].includes(String(asset.slot))
+        || !isBoundedString(asset.displayName, 128) || asset.displayName.length === 0
+        || typeof asset.sha256 !== "string" || !sha256Pattern.test(asset.sha256)
+        || !Number.isInteger(asset.byteSize)
+        || !isFiniteRange(asset.byteSize, 1, 64 * 1024 * 1024)) return null;
+    missingAssets.push(asset as MissingAsset);
+  }
+  return { ...value, missingAssets } as PersistenceStatus;
+}
+
+function parsePresetSummary(value: unknown): PresetLibrarySummary | null {
+  if (!isRecord(value) || typeof value.id !== "string" || !uuidPattern.test(value.id)
+      || !isBoundedString(value.name, 96) || value.name.length === 0
+      || !isBoundedString(value.author, 96)
+      || !isBoundedString(value.genre, 64) || !isBoundedString(value.emotion, 64)
+      || typeof value.favorite !== "boolean" || typeof value.missingAssets !== "boolean"
+      || !isBoundedString(value.fileName, 96) || !value.fileName.endsWith(".folkparkpreset")) return null;
+  const tags = parseTags(value.tags);
+  return tags === null ? null : { ...value, tags } as PresetLibrarySummary;
+}
+
+function parseHistorySummary(value: unknown): HistorySummary | null {
+  if (!isRecord(value) || typeof value.id !== "string" || !uuidPattern.test(value.id)
+      || !isBoundedString(value.parentId, 64)
+      || (value.parentId.length > 0 && !uuidPattern.test(value.parentId))
+      || !Number.isInteger(value.createdUnixMs) || !isFiniteRange(value.createdUnixMs, 0, 9e15)
+      || !Number.isInteger(value.updatedUnixMs) || !isFiniteRange(value.updatedUnixMs, 0, 9e15)
+      || !isBoundedString(value.generatorVersion, 32)
+      || !isBoundedString(value.promptSummary, 512)
+      || !isBoundedString(value.presetId, 64)
+      || (value.presetId.length > 0 && !uuidPattern.test(value.presetId))
+      || typeof value.favorite !== "boolean" || typeof value.deleted !== "boolean") return null;
+  const tags = parseTags(value.tags);
+  return tags === null ? null : { ...value, tags } as HistorySummary;
+}
+
+export function parsePersistenceWorkspace(value: unknown): PersistenceWorkspace | null {
+  if (!isRecord(value) || typeof value.ok !== "boolean"
+      || !isBoundedString(value.presetError, 512)
+      || !isBoundedString(value.historyError, 512)
+      || !Array.isArray(value.presets) || value.presets.length > 512
+      || !Array.isArray(value.history) || value.history.length > 100) return null;
+  const status = parsePersistenceStatus(value.status);
+  const presets = value.presets.map(parsePresetSummary);
+  const history = value.history.map(parseHistorySummary);
+  if (status === null || presets.some((entry) => entry === null)
+      || history.some((entry) => entry === null)) return null;
+  return { ok: value.ok, status, presetError: value.presetError,
+    historyError: value.historyError, presets: presets as PresetLibrarySummary[],
+    history: history as HistorySummary[] };
+}
+
+function parseHistoryDetail(value: unknown): HistoryDetail | null {
+  if (!isRecord(value) || typeof value.id !== "string" || !uuidPattern.test(value.id)
+      || !isBoundedString(value.parentId, 64)
+      || (value.parentId.length > 0 && !uuidPattern.test(value.parentId))
+      || !Number.isInteger(value.createdUnixMs) || !isFiniteRange(value.createdUnixMs, 0, 9e15)
+      || !isBoundedString(value.generatorVersion, 32)
+      || !isBoundedString(value.presetId, 64)
+      || (value.presetId.length > 0 && !uuidPattern.test(value.presetId))
+      || typeof value.favorite !== "boolean" || !Number.isInteger(value.seed)
+      || !isFiniteRange(value.seed, 0, 4294967295)
+      || !isBoundedString(value.key, 16) || !isBoundedString(value.scale, 32)
+      || !isFiniteRange(value.tempoBpm, 20, 400) || !Number.isInteger(value.bars)
+      || !isFiniteRange(value.bars, 1, 64) || !isBoundedString(value.genre, 64)
+      || !isBoundedString(value.emotion, 64) || !Number.isInteger(value.clipCount)
+      || !isFiniteRange(value.clipCount, 1, 4) || !Number.isInteger(value.noteCount)
+      || !isFiniteRange(value.noteCount, 0, 16384)) return null;
+  const tags = parseTags(value.tags);
+  return tags === null ? null : { ...value, tags } as HistoryDetail;
+}
+
+export function parseHistoryComparison(value: unknown): HistoryComparison | null {
+  if (!isRecord(value)) return null;
+  const first = parseHistoryDetail(value.first);
+  const second = parseHistoryDetail(value.second);
+  return first === null || second === null || first.id === second.id ? null : { first, second };
+}
 
 function parseWavetable(value: unknown): WavetableSnapshot | null {
   if (!isRecord(value)
@@ -151,7 +336,14 @@ export function parseUiSnapshot(value: unknown): UiSnapshot | null {
   const wavetableA = parseWavetable(value.wavetableA);
   const wavetableB = parseWavetable(value.wavetableB);
   const composition = parseComposition(value.composition);
-  if (wavetableA === null || wavetableB === null || composition === null) return null;
+  const persistence = value.persistence === undefined
+    ? { enabled: false, presetAvailable: false, historyAvailable: false,
+      message: "Persistence status was not supplied by this compatible snapshot",
+      currentPresetId: "", currentPresetName: "Init / session", currentPresetDirty: false,
+      retentionDays: 180, missingAssets: [] } satisfies PersistenceStatus
+    : parsePersistenceStatus(value.persistence);
+  if (wavetableA === null || wavetableB === null || composition === null
+      || persistence === null) return null;
   const parameters: ParameterSnapshot[] = [];
   const modulationRoutes: ModulationRouteSnapshot[] = [];
   for (const route of value.modulationRoutes) {
@@ -168,7 +360,8 @@ export function parseUiSnapshot(value: unknown): UiSnapshot | null {
     ids.add(entry.id);
     parameters.push({ id: entry.id, normalized: entry.normalized });
   }
-  return { ...value, wavetableA, wavetableB, composition, modulationRoutes, parameters } as UiSnapshot;
+  return { ...value, wavetableA, wavetableB, composition, persistence,
+    modulationRoutes, parameters } as UiSnapshot;
 }
 
 export function chooseAnimationPolicy(preferences: GraphicsPreferences): AnimationPolicy {

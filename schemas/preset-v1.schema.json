@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://folkpark.audio/schemas/preset-v1.json",
+  "title": "folk park legacy native preset placeholder",
+  "description": "Oldest supported pre-M6 input. It is accepted only through the bounded v1-to-v2 migration.",
+  "type": "object",
+  "required": ["schemaVersion", "productVersion", "metadata", "parameters"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "productVersion": { "type": "string", "minLength": 1, "maxLength": 32 },
+    "metadata": { "type": "object", "maxProperties": 32 },
+    "parameters": {
+      "type": "object",
+      "maxProperties": 512,
+      "propertyNames": { "pattern": "^[A-Za-z][A-Za-z0-9]{0,63}$" },
+      "additionalProperties": { "type": "number" }
+    },
+    "modulationRoutes": { "type": "array", "maxItems": 32 },
+    "assets": { "type": "array", "maxItems": 128 }
+  },
+  "additionalProperties": true
+}

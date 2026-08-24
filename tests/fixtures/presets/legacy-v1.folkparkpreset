@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "productVersion": "0.0.9",
+  "metadata": {
+    "name": "Legacy fixture",
+    "author": "folk park tests"
+  },
+  "parameters": {
+    "masterGain": 0.25
+  },
+  "modulationRoutes": [],
+  "assets": []
+}

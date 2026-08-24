@@ -1,11 +1,13 @@
 #include "PluginProcessor.h"
 #include "ParameterIds.h"
 #include "PluginEditor.h"
+#include "persistence/CompositionJson.h"
 
 #include <cmath>
 #include <cerrno>
 #include <cstdlib>
 #include <limits>
+#include <set>
 
 namespace folkpark
 {
@@ -14,6 +16,45 @@ namespace
 using Layout = juce::AudioProcessorValueTreeState::ParameterLayout;
 const juce::Identifier modulationRoutesType{"ModulationRoutes"};
 const juce::Identifier modulationRouteType{"ModulationRoute"};
+const juce::Identifier projectSessionType{"FolkParkProjectSession"};
+constexpr int projectSessionSchemaVersion = 1;
+constexpr int maximumPluginStateBytes = 8 * 1024 * 1024;
+constexpr auto projectSnapshotId = "00000000-0000-4000-8000-000000000001";
+
+bool hasOnlyProjectSessionProperties(const juce::ValueTree& state)
+{
+    constexpr std::array allowed{
+        "schemaVersion", "presetPayload", "currentPresetDirty",
+        "acceptedCompositionPayload", "historyEntryId"};
+    for (int index = 0; index < state.getNumProperties(); ++index)
+    {
+        const auto name = state.getPropertyName(index).toString();
+        if (std::none_of(allowed.begin(), allowed.end(), [&name](const char* candidate)
+                         { return name == candidate; }))
+            return false;
+    }
+    return true;
+}
+
+juce::var binaryPayload(const juce::String& text)
+{
+    return juce::var(juce::MemoryBlock(text.toRawUTF8(),
+                                      static_cast<std::size_t>(text.getNumBytesAsUTF8())));
+}
+
+bool readBinaryPayload(const juce::var& value,
+                       std::int64_t maximumBytes,
+                       juce::String& text)
+{
+    const auto* data = value.getBinaryData();
+    if (!value.isBinaryData() || data == nullptr || data->isEmpty()
+        || static_cast<std::int64_t>(data->getSize()) > maximumBytes
+        || data->getSize() > static_cast<std::size_t>(std::numeric_limits<int>::max()))
+        return false;
+    text = juce::String::fromUTF8(static_cast<const char*>(data->getData()),
+                                 static_cast<int>(data->getSize()));
+    return static_cast<std::size_t>(text.getNumBytesAsUTF8()) == data->getSize();
+}
 
 void addFloat(Layout& layout,
               const char* id,
@@ -247,14 +288,46 @@ juce::Result parseModulationRoutes(const juce::ValueTree& root, synth::Modulatio
     output = synth::ModulationRegistry::makeSnapshot(parsedSpan);
     return juce::Result::ok();
 }
+
+persistence::PersistenceConfiguration defaultPersistenceConfiguration()
+{
+    return {true,
+            juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                .getChildFile("Application Support")
+                .getChildFile("folk park")};
+}
+
+int compositionNoteCount(const midi::CompositionBundle& bundle) noexcept
+{
+    std::size_t count = 0;
+    for (const auto& clip : bundle.clips)
+        count += clip.events.size();
+    return static_cast<int>(juce::jmin<std::size_t>(
+        count, static_cast<std::size_t>(std::numeric_limits<int>::max())));
+}
+
+persistence::HistorySummary historySummary(const persistence::HistoryEntry& entry)
+{
+    return {entry.schemaVersion, entry.id, entry.parentId, entry.createdUnixMs,
+            entry.updatedUnixMs, entry.generatorVersion, entry.storePromptSummary,
+            entry.promptSummary, entry.presetId, entry.favorite, entry.tags, entry.deleted};
+}
 }
 
 PluginProcessor::PluginProcessor()
+    : PluginProcessor(defaultPersistenceConfiguration())
+{
+}
+
+PluginProcessor::PluginProcessor(PersistenceConfiguration persistenceConfiguration)
     : AudioProcessor(BusesProperties().withOutput("Output", juce::AudioChannelSet::stereo(), true)),
       parameters(*this, &undoManager, "FolkParkState", createParameterLayout()),
-      wavetableImportService([this](int oscillatorIndex, const synth::WavetableBank& bank)
+      wavetableImportService([this](int oscillatorIndex,
+                                    const synth::WavetableBank& bank,
+                                    const synth::WavetableConverter::Metadata& metadata,
+                                    const juce::File& source)
       {
-          return publishWavetable(oscillatorIndex, bank);
+          return publishImportedWavetable(oscillatorIndex, bank, metadata, source);
       })
 {
     if (auto builtIn = synth::WavetableBank::createBuiltIn())
@@ -343,6 +416,27 @@ PluginProcessor::PluginProcessor()
         raw(parameterIds::compressorMix), raw(parameterIds::eqBypass),
         raw(parameterIds::eqLowGain), raw(parameterIds::eqMidFrequency),
         raw(parameterIds::eqMidGain), raw(parameterIds::eqMidQ), raw(parameterIds::eqHighGain)};
+
+    persistence::PresetMetadata defaultsMetadata;
+    defaultsMetadata.id = "00000000-0000-4000-8000-000000000000";
+    defaultsMetadata.name = "Migration defaults";
+    auto migrationDefaults = captureCurrentPreset(defaultsMetadata);
+    persistenceCoordinator = std::make_unique<persistence::PersistenceCoordinator>(
+        std::move(persistenceConfiguration), std::move(migrationDefaults));
+    for (const auto* id : parameterIds::synthAndModulation)
+        parameters.addParameterListener(id, this);
+    for (const auto* id : parameterIds::allEffects)
+        parameters.addParameterListener(id, this);
+    cleanParameterRevision.store(parameterRevision.load(std::memory_order_relaxed),
+                                 std::memory_order_relaxed);
+}
+
+PluginProcessor::~PluginProcessor()
+{
+    for (const auto* id : parameterIds::synthAndModulation)
+        parameters.removeParameterListener(id, this);
+    for (const auto* id : parameterIds::allEffects)
+        parameters.removeParameterListener(id, this);
 }
 
 bool PluginProcessor::publishWavetable(int oscillatorIndex,
@@ -355,10 +449,53 @@ bool PluginProcessor::publishWavetable(int oscillatorIndex,
     if (!engine.publishWavetable(oscillatorIndex, bank))
         return false;
     const auto preview = makeWavetableUiSnapshot(bank);
-    const std::lock_guard lock(wavetableUiMutex);
-    wavetableUiSnapshots[static_cast<std::size_t>(oscillatorIndex)] = preview;
-    currentWavetables[static_cast<std::size_t>(oscillatorIndex)] = immutable;
+    {
+        const std::lock_guard lock(wavetableUiMutex);
+        const auto index = static_cast<std::size_t>(oscillatorIndex);
+        wavetableUiSnapshots[index] = preview;
+        currentWavetables[index] = immutable;
+        currentWavetableAssets[index].reset();
+    }
+    if (persistenceCoordinator != nullptr)
+        persistenceCoordinator->markCurrentSoundDirty(
+            "Wavetable changed; save the sound to retain it as a preset");
     return true;
+}
+
+juce::Result PluginProcessor::publishImportedWavetable(
+    int oscillatorIndex,
+    const synth::WavetableBank& bank,
+    const synth::WavetableConverter::Metadata& metadata,
+    const juce::File& source)
+{
+    if (oscillatorIndex < 0 || oscillatorIndex > 1 || !source.existsAsFile()
+        || metadata.sourceSha256.isEmpty())
+        return juce::Result::fail("Confirmed wavetable source metadata is incomplete");
+
+    std::optional<persistence::AssetReference> retained;
+    if (persistenceCoordinator != nullptr && persistenceCoordinator->status().enabled)
+    {
+        persistence::AssetReference reference;
+        const auto slot = oscillatorIndex == 0 ? persistence::AssetSlot::oscillatorA
+                                               : persistence::AssetSlot::oscillatorB;
+        const auto imported = persistenceCoordinator->importWavetableSource(source, slot, reference);
+        if (imported.failed())
+            return imported;
+        if (reference.sha256 != metadata.sourceSha256.toLowerCase())
+            return juce::Result::fail("Confirmed WAV changed between preview and retention");
+        retained = reference;
+    }
+    if (!publishWavetable(oscillatorIndex, bank))
+        return juce::Result::fail("Audio exchange is busy; confirm again after the pending crossfade");
+    if (retained.has_value())
+    {
+        const std::lock_guard lock(wavetableUiMutex);
+        currentWavetableAssets[static_cast<std::size_t>(oscillatorIndex)] = std::move(retained);
+    }
+    if (persistenceCoordinator != nullptr)
+        persistenceCoordinator->markCurrentSoundDirty(
+            "Confirmed WAV retained; save the current sound to create a restorable preset");
+    return juce::Result::ok();
 }
 
 WavetableUiSnapshot PluginProcessor::getWavetableUiSnapshot(int oscillatorIndex) const
@@ -726,6 +863,9 @@ juce::Result PluginProcessor::setModulationRoutes(std::span<const synth::Modulat
     if (!engine.publishModulationRoutes(routes))
         return juce::Result::fail("A modulation update is already pending the next audio block");
     configuredModulationRoutes = synth::ModulationRegistry::makeSnapshot(routes);
+    if (persistenceCoordinator != nullptr)
+        persistenceCoordinator->markCurrentSoundDirty(
+            "Modulation routes changed; save the current sound to retain them");
     return juce::Result::ok();
 }
 
@@ -733,6 +873,343 @@ synth::ModulationSnapshot PluginProcessor::getConfiguredModulationRoutes() const
 {
     const std::lock_guard lock(modulationStateMutex);
     return configuredModulationRoutes;
+}
+
+persistence::PresetDocument PluginProcessor::captureCurrentPreset(
+    const persistence::PresetMetadata& metadata) const
+{
+    auto document = persistence::makePresetTemplate(
+        FOLK_PARK_VERSION, metadata.id, metadata.name);
+    document.metadata = metadata;
+    for (auto& value : document.parameters)
+        if (const auto* parameter = parameters.getParameter(value.id))
+            value.normalized = parameter->getValue();
+    for (auto& effect : document.effects)
+        for (auto& value : effect.parameters)
+            if (const auto* parameter = parameters.getParameter(value.id))
+                value.normalized = parameter->getValue();
+    const auto routes = getConfiguredModulationRoutes();
+    document.modulationRoutes.assign(
+        routes.routes.begin(), routes.routes.begin() + static_cast<std::ptrdiff_t>(routes.routeCount));
+    {
+        const std::lock_guard lock(wavetableUiMutex);
+        for (const auto& reference : currentWavetableAssets)
+            if (reference.has_value())
+                document.assets.push_back(*reference);
+    }
+    return document;
+}
+
+juce::Result PluginProcessor::initialisePersistence()
+{
+    if (persistenceCoordinator == nullptr)
+        return juce::Result::fail("Persistence coordinator is unavailable");
+    return persistenceCoordinator->initialise();
+}
+
+persistence::PersistenceStatusSnapshot PluginProcessor::getPersistenceStatus() const
+{
+    auto snapshot = persistenceCoordinator != nullptr
+        ? persistenceCoordinator->status()
+        : persistence::PersistenceStatusSnapshot{};
+    if (parameterRevision.load(std::memory_order_acquire)
+        != cleanParameterRevision.load(std::memory_order_acquire))
+        snapshot.currentPresetDirty = true;
+    return snapshot;
+}
+
+persistence::PresetLibraryResult PluginProcessor::listPresets()
+{
+    if (persistenceCoordinator == nullptr)
+        return {juce::Result::fail("Persistence coordinator is unavailable"), {}};
+    return persistenceCoordinator->listPresets();
+}
+
+juce::Result PluginProcessor::saveCurrentPreset(const PresetSaveRequest& request)
+{
+    if (persistenceCoordinator == nullptr)
+        return juce::Result::fail("Persistence coordinator is unavailable");
+    persistence::PresetMetadata metadata;
+    const auto currentId = persistenceCoordinator->currentPresetId();
+    metadata.id = request.allowOverwrite && midi::isUuid(currentId)
+        ? currentId
+        : juce::Uuid().toDashedString();
+    metadata.name = request.name;
+    metadata.author = request.author;
+    metadata.tags = request.tags;
+    metadata.genre = request.genre;
+    metadata.emotion = request.emotion;
+    metadata.description = request.description;
+    metadata.favorite = request.favorite;
+    const auto capturedRevision = parameterRevision.load(std::memory_order_acquire);
+    const auto document = captureCurrentPreset(metadata);
+    if (const auto validation = persistence::validatePreset(document); validation.failed())
+        return validation;
+    const auto saved = persistenceCoordinator->savePreset(document, request.allowOverwrite);
+    if (saved.wasOk())
+        cleanParameterRevision.store(capturedRevision, std::memory_order_release);
+    return saved;
+}
+
+juce::Result PluginProcessor::applyPresetCandidate(
+    const persistence::PresetCandidateResult& candidate)
+{
+    if (!candidate.readyToApply())
+        return candidate.status.failed()
+            ? candidate.status
+            : juce::Result::fail("Preset has missing assets and cannot be applied yet");
+    if (persistenceCoordinator == nullptr)
+        return juce::Result::fail("Persistence coordinator is unavailable");
+
+    auto prepared = persistenceCoordinator->prepareWavetables(candidate.document);
+    if (!prepared.succeeded())
+        return prepared.status;
+    const auto routes = std::span{candidate.document.modulationRoutes};
+    if (!engine.publishPresetSnapshot(*prepared.banks[0], *prepared.banks[1], routes))
+        return juce::Result::fail(
+            "Live sound update is busy; retry after the next audio block");
+
+    undoManager.beginNewTransaction("Load folk park preset");
+    for (const auto& value : candidate.document.parameters)
+        if (auto* parameter = parameters.getParameter(value.id))
+            parameter->setValueNotifyingHost(value.normalized);
+    for (const auto& effect : candidate.document.effects)
+        for (const auto& value : effect.parameters)
+            if (auto* parameter = parameters.getParameter(value.id))
+                parameter->setValueNotifyingHost(value.normalized);
+
+    {
+        const std::lock_guard lock(modulationStateMutex);
+        configuredModulationRoutes = synth::ModulationRegistry::makeSnapshot(routes);
+    }
+    const auto previewA = makeWavetableUiSnapshot(*prepared.banks[0]);
+    const auto previewB = makeWavetableUiSnapshot(*prepared.banks[1]);
+    auto immutableA = std::shared_ptr<const synth::WavetableBank>(std::move(prepared.banks[0]));
+    auto immutableB = std::shared_ptr<const synth::WavetableBank>(std::move(prepared.banks[1]));
+    {
+        const std::lock_guard lock(wavetableUiMutex);
+        wavetableUiSnapshots[0] = previewA;
+        wavetableUiSnapshots[1] = previewB;
+        currentWavetables[0] = std::move(immutableA);
+        currentWavetables[1] = std::move(immutableB);
+        currentWavetableAssets[0].reset();
+        currentWavetableAssets[1].reset();
+        for (const auto& reference : candidate.document.assets)
+        {
+            const auto index = reference.slot == persistence::AssetSlot::oscillatorA ? 0U : 1U;
+            currentWavetableAssets[index] = reference;
+        }
+    }
+    requestPanic();
+    persistenceCoordinator->markPresetApplied(candidate.document);
+    cleanParameterRevision.store(parameterRevision.load(std::memory_order_acquire),
+                                 std::memory_order_release);
+    return juce::Result::ok();
+}
+
+void PluginProcessor::clearPendingProjectRestore()
+{
+    const std::lock_guard lock(projectStateMutex);
+    pendingProjectRestore.reset();
+}
+
+juce::Result PluginProcessor::completeProjectRestore(
+    const persistence::PresetDocument& document,
+    std::optional<midi::CompositionBundle> acceptedBundle,
+    bool dirty,
+    const juce::String& historyEntryId)
+{
+    if (const auto restored = compositionSession.restoreProjectState(acceptedBundle);
+        restored.failed())
+        return restored;
+    {
+        const std::lock_guard lock(historyLineageMutex);
+        lastHistoryEntryId = historyEntryId;
+        lastHistoryClipIds.clear();
+        if (acceptedBundle.has_value())
+        {
+            lastHistoryClipIds.reserve(acceptedBundle->clips.size());
+            for (const auto& clip : acceptedBundle->clips)
+                lastHistoryClipIds.push_back(clip.id);
+        }
+    }
+    cleanParameterRevision.store(parameterRevision.load(std::memory_order_acquire),
+                                 std::memory_order_release);
+    if (persistenceCoordinator != nullptr)
+        persistenceCoordinator->restoreSessionStatus(document, dirty);
+    clearPendingProjectRestore();
+    return juce::Result::ok();
+}
+
+juce::Result PluginProcessor::loadLibraryPreset(const juce::String& presetId)
+{
+    if (persistenceCoordinator == nullptr)
+        return juce::Result::fail("Persistence coordinator is unavailable");
+    clearPendingProjectRestore();
+    const auto candidate = persistenceCoordinator->loadLibraryPreset(presetId);
+    return applyPresetCandidate(candidate);
+}
+
+juce::Result PluginProcessor::importExternalPreset(const juce::File& file)
+{
+    if (persistenceCoordinator == nullptr)
+        return juce::Result::fail("Persistence coordinator is unavailable");
+    clearPendingProjectRestore();
+    const auto candidate = persistenceCoordinator->importExternalPreset(file);
+    return applyPresetCandidate(candidate);
+}
+
+juce::Result PluginProcessor::relinkPendingPresetAsset(persistence::AssetSlot slot,
+                                                       const juce::File& selectedFile)
+{
+    if (persistenceCoordinator == nullptr)
+        return juce::Result::fail("Persistence coordinator is unavailable");
+    const auto candidate = persistenceCoordinator->relinkPendingAsset(slot, selectedFile);
+    const auto applied = applyPresetCandidate(candidate);
+    if (applied.failed())
+        return applied;
+    std::optional<PendingProjectRestore> pending;
+    {
+        const std::lock_guard lock(projectStateMutex);
+        pending = pendingProjectRestore;
+    }
+    return pending.has_value()
+        ? completeProjectRestore(candidate.document, std::move(pending->acceptedBundle),
+                                 pending->dirty, pending->historyEntryId)
+        : juce::Result::ok();
+}
+
+juce::Result PluginProcessor::setPresetFavorite(const juce::String& presetId, bool favorite)
+{
+    return persistenceCoordinator != nullptr
+        ? persistenceCoordinator->setPresetFavorite(presetId, favorite)
+        : juce::Result::fail("Persistence coordinator is unavailable");
+}
+
+juce::Result PluginProcessor::acceptCompositionCandidate()
+{
+    const auto accepted = compositionSession.acceptCandidate();
+    if (accepted.failed())
+        return accepted;
+    if (const auto bundle = compositionSession.getAcceptedBundle(); bundle.has_value())
+        recordAcceptedComposition(*bundle);
+    return juce::Result::ok();
+}
+
+void PluginProcessor::recordAcceptedComposition(const midi::CompositionBundle& bundle)
+{
+    if (persistenceCoordinator == nullptr || !persistenceCoordinator->status().enabled)
+        return;
+    persistence::HistoryEntry entry;
+    entry.id = juce::Uuid().toDashedString();
+    entry.createdUnixMs = juce::Time::currentTimeMillis();
+    entry.updatedUnixMs = entry.createdUnixMs;
+    entry.generatorVersion = midi::compositionGeneratorVersion;
+    entry.storePromptSummary = false;
+    entry.macroSnapshot = bundle.intent;
+    entry.composition = bundle;
+    entry.presetId = persistenceCoordinator->currentPresetId();
+    entry.tags = {midi::stableId(bundle.intent.genreProfile),
+                  midi::stableId(bundle.intent.emotion)};
+    {
+        const std::lock_guard lock(historyLineageMutex);
+        const std::set<juce::String> parents(lastHistoryClipIds.begin(), lastHistoryClipIds.end());
+        const auto isVariation = std::any_of(bundle.clips.begin(), bundle.clips.end(),
+            [&parents](const auto& clip)
+            {
+                return !clip.parentClipId.isEmpty() && parents.contains(clip.parentClipId);
+            });
+        if (isVariation)
+            entry.parentId = lastHistoryEntryId;
+    }
+    if (persistenceCoordinator->storeHistory(entry).failed())
+        return;
+    const std::lock_guard lock(historyLineageMutex);
+    lastHistoryEntryId = entry.id;
+    lastHistoryClipIds.clear();
+    lastHistoryClipIds.reserve(bundle.clips.size());
+    for (const auto& clip : bundle.clips)
+        lastHistoryClipIds.push_back(clip.id);
+}
+
+persistence::HistorySearchResult PluginProcessor::searchHistory(
+    const persistence::HistorySearchQuery& query)
+{
+    return persistenceCoordinator != nullptr
+        ? persistenceCoordinator->searchHistory(query)
+        : persistence::HistorySearchResult{juce::Result::fail(
+              "Persistence coordinator is unavailable"), {}};
+}
+
+std::optional<HistoryEntryDetail> PluginProcessor::inspectHistory(
+    const juce::String& historyId)
+{
+    if (persistenceCoordinator == nullptr)
+        return std::nullopt;
+    const auto recalled = persistenceCoordinator->recallHistory(historyId);
+    if (!recalled.succeeded())
+        return std::nullopt;
+    return HistoryEntryDetail{historySummary(recalled.entry), recalled.entry.macroSnapshot,
+                              static_cast<int>(recalled.entry.composition.clips.size()),
+                              compositionNoteCount(recalled.entry.composition)};
+}
+
+juce::Result PluginProcessor::recallHistory(const juce::String& historyId)
+{
+    if (persistenceCoordinator == nullptr)
+        return juce::Result::fail("Persistence coordinator is unavailable");
+    const auto recalled = persistenceCoordinator->recallHistory(historyId);
+    if (!recalled.succeeded())
+        return recalled.status;
+    if (!recalled.entry.presetId.isEmpty())
+    {
+        if (const auto preset = loadLibraryPreset(recalled.entry.presetId); preset.failed())
+            return juce::Result::fail("History preset could not be restored: "
+                                      + preset.getErrorMessage());
+    }
+    if (const auto restored = compositionSession.restoreAccepted(recalled.entry.composition);
+        restored.failed())
+        return restored;
+    {
+        const std::lock_guard lock(historyLineageMutex);
+        lastHistoryEntryId = recalled.entry.id;
+        lastHistoryClipIds.clear();
+        for (const auto& clip : recalled.entry.composition.clips)
+            lastHistoryClipIds.push_back(clip.id);
+    }
+    persistenceCoordinator->report("History entry recalled exactly and explicitly accepted");
+    return juce::Result::ok();
+}
+
+juce::Result PluginProcessor::setHistoryFavorite(const juce::String& historyId,
+                                                 bool favorite)
+{
+    return persistenceCoordinator != nullptr
+        ? persistenceCoordinator->setHistoryFavorite(historyId, favorite)
+        : juce::Result::fail("Persistence coordinator is unavailable");
+}
+
+juce::Result PluginProcessor::setHistorySoftDeleted(const juce::String& historyId,
+                                                    bool deleted)
+{
+    return persistenceCoordinator != nullptr
+        ? persistenceCoordinator->setHistorySoftDeleted(historyId, deleted)
+        : juce::Result::fail("Persistence coordinator is unavailable");
+}
+
+juce::Result PluginProcessor::setHistoryRetentionDays(int days)
+{
+    return persistenceCoordinator != nullptr
+        ? persistenceCoordinator->setRetentionDays(days)
+        : juce::Result::fail("Persistence coordinator is unavailable");
+}
+
+persistence::HistoryCleanupResult PluginProcessor::cleanupHistory(bool keepFavorites)
+{
+    return persistenceCoordinator != nullptr
+        ? persistenceCoordinator->cleanupHistory(juce::Time::currentTimeMillis(), keepFavorites)
+        : persistence::HistoryCleanupResult{juce::Result::fail(
+              "Persistence coordinator is unavailable"), 0};
 }
 
 juce::AudioProcessorEditor* PluginProcessor::createEditor()
@@ -745,15 +1222,54 @@ void PluginProcessor::getStateInformation(juce::MemoryBlock& destination)
     auto snapshot = parameters.copyState();
     if (const auto existingRoutes = snapshot.getChildWithName(modulationRoutesType); existingRoutes.isValid())
         snapshot.removeChild(existingRoutes, nullptr);
+    if (const auto existingSession = snapshot.getChildWithName(projectSessionType);
+        existingSession.isValid())
+        snapshot.removeChild(existingSession, nullptr);
     snapshot.appendChild(serialiseModulationRoutes(getConfiguredModulationRoutes()), nullptr);
     snapshot.setProperty("schemaVersion", 1, nullptr);
     snapshot.setProperty("productVersion", FOLK_PARK_VERSION, nullptr);
+
+    const auto persistenceStatus = getPersistenceStatus();
+    persistence::PresetMetadata metadata;
+    metadata.id = midi::isUuid(persistenceStatus.currentPresetId)
+        ? persistenceStatus.currentPresetId
+        : projectSnapshotId;
+    metadata.name = persistenceStatus.currentPresetName.trim().substring(0, 96);
+    if (metadata.name.isEmpty())
+        metadata.name = "Project state";
+    const auto encodedPreset = persistence::PresetCodec::encode(captureCurrentPreset(metadata));
+    if (encodedPreset.succeeded())
+    {
+        juce::ValueTree session(projectSessionType);
+        session.setProperty("schemaVersion", projectSessionSchemaVersion, nullptr);
+        session.setProperty("presetPayload", binaryPayload(encodedPreset.canonicalJson), nullptr);
+        session.setProperty("currentPresetDirty", persistenceStatus.currentPresetDirty, nullptr);
+        if (const auto accepted = compositionSession.getAcceptedBundle(); accepted.has_value())
+        {
+            const auto encodedComposition = persistence::encodeCompositionJson(*accepted);
+            if (encodedComposition.succeeded())
+                session.setProperty("acceptedCompositionPayload",
+                                    binaryPayload(encodedComposition.json), nullptr);
+        }
+        {
+            const std::lock_guard lock(historyLineageMutex);
+            if (midi::isUuid(lastHistoryEntryId))
+                session.setProperty("historyEntryId", lastHistoryEntryId, nullptr);
+        }
+        snapshot.appendChild(session, nullptr);
+    }
     if (const auto xml = snapshot.createXml())
+    {
         copyXmlToBinary(*xml, destination);
+        if (destination.getSize() > static_cast<std::size_t>(maximumPluginStateBytes))
+            destination.reset();
+    }
 }
 
 void PluginProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
+    if (data == nullptr || sizeInBytes <= 0 || sizeInBytes > maximumPluginStateBytes)
+        return;
     const auto candidateXml = getXmlFromBinary(data, sizeInBytes);
     if (candidateXml == nullptr)
         return;
@@ -763,6 +1279,81 @@ void PluginProcessor::setStateInformation(const void* data, int sizeInBytes)
     const auto schemaVersion = static_cast<int>(candidate.getProperty("schemaVersion", 1));
     if (schemaVersion != 1)
         return;
+
+    juce::ValueTree projectSession;
+    auto sessionCount = 0;
+    for (int index = 0; index < candidate.getNumChildren(); ++index)
+    {
+        const auto child = candidate.getChild(index);
+        if (child.hasType(projectSessionType))
+        {
+            projectSession = child;
+            ++sessionCount;
+        }
+    }
+    if (sessionCount > 1)
+        return;
+    if (projectSession.isValid())
+    {
+        int sessionVersion = 0;
+        bool dirty = false;
+        if (!hasOnlyProjectSessionProperties(projectSession)
+            || !projectSession.hasProperty("schemaVersion")
+            || !projectSession.hasProperty("presetPayload")
+            || !projectSession.hasProperty("currentPresetDirty")
+            || !parseInteger(projectSession["schemaVersion"], sessionVersion)
+            || sessionVersion != projectSessionSchemaVersion
+            || !parseBoolean(projectSession["currentPresetDirty"], dirty)
+            || persistenceCoordinator == nullptr)
+            return;
+
+        juce::String presetJson;
+        if (!readBinaryPayload(projectSession["presetPayload"],
+                               persistence::maximumPresetBytes, presetJson))
+            return;
+
+        std::optional<midi::CompositionBundle> acceptedBundle;
+        if (projectSession.hasProperty("acceptedCompositionPayload"))
+        {
+            juce::String compositionJson;
+            if (!readBinaryPayload(projectSession["acceptedCompositionPayload"],
+                                   persistence::maximumHistoryPayloadBytes, compositionJson))
+                return;
+            auto decoded = persistence::decodeCompositionJson(compositionJson);
+            if (!decoded.succeeded())
+                return;
+            acceptedBundle = std::move(decoded.bundle);
+        }
+        juce::String historyEntryId;
+        if (projectSession.hasProperty("historyEntryId"))
+        {
+            const auto value = projectSession["historyEntryId"];
+            if (!value.isString() || !midi::isUuid(value.toString()))
+                return;
+            historyEntryId = value.toString();
+        }
+
+        const auto presetCandidate = persistenceCoordinator->prepareSessionPresetJson(presetJson);
+        if (presetCandidate.status.failed())
+        {
+            clearPendingProjectRestore();
+            return;
+        }
+
+        if (!presetCandidate.readyToApply())
+        {
+            const std::lock_guard lock(projectStateMutex);
+            pendingProjectRestore = PendingProjectRestore{
+                std::move(acceptedBundle), dirty, historyEntryId};
+            return;
+        }
+        clearPendingProjectRestore();
+        if (applyPresetCandidate(presetCandidate).failed())
+            return;
+        (void) completeProjectRestore(presetCandidate.document, std::move(acceptedBundle),
+                                      dirty, historyEntryId);
+        return;
+    }
 
     synth::ModulationSnapshot candidateRoutes;
     const auto routeParsing = parseModulationRoutes(candidate, candidateRoutes);
@@ -783,6 +1374,15 @@ void PluginProcessor::setStateInformation(const void* data, int sizeInBytes)
     if (const auto routes = parameterCandidate.getChildWithName(modulationRoutesType); routes.isValid())
         parameterCandidate.removeChild(routes, nullptr);
     parameters.replaceState(parameterCandidate);
+    (void) compositionSession.restoreProjectState(std::nullopt);
+    {
+        const std::lock_guard lock(historyLineageMutex);
+        lastHistoryEntryId.clear();
+        lastHistoryClipIds.clear();
+    }
+    cleanParameterRevision.store(parameterRevision.load(std::memory_order_acquire),
+                                 std::memory_order_release);
+    clearPendingProjectRestore();
 }
 }
 

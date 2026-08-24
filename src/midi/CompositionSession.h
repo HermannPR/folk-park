@@ -33,6 +33,9 @@ public:
                                                    std::int64_t durationDeltaTicks,
                                                    int velocityDelta);
     [[nodiscard]] juce::Result acceptCandidate();
+    [[nodiscard]] juce::Result restoreAccepted(CompositionBundle bundle);
+    [[nodiscard]] juce::Result restoreProjectState(
+        std::optional<CompositionBundle> acceptedBundle);
     void clearCandidate();
 
     [[nodiscard]] CompositionSessionSnapshot getSnapshot() const;

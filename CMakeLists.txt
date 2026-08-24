@@ -18,6 +18,7 @@ if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/JUCE/CMakeLists.txt")
 endif()
 
 add_subdirectory(third_party/JUCE EXCLUDE_FROM_ALL)
+find_package(SQLite3 REQUIRED)
 
 juce_add_binary_data(FolkParkAssets
     NAMESPACE FolkParkAssets
@@ -51,6 +52,15 @@ target_sources(FolkPark PRIVATE
     src/plugin/PluginProcessor.cpp
     src/plugin/PluginProcessor.h
     src/plugin/ParameterIds.h
+    src/common/ParameterIds.h
+    src/persistence/Preset.cpp
+    src/persistence/Preset.h
+    src/persistence/CompositionJson.cpp
+    src/persistence/CompositionJson.h
+    src/persistence/HistoryRepository.cpp
+    src/persistence/HistoryRepository.h
+    src/persistence/PersistenceCoordinator.cpp
+    src/persistence/PersistenceCoordinator.h
     src/render/OfflinePreviewRenderer.cpp
     src/render/OfflinePreviewRenderer.h
     src/midi/MidiProof.cpp
@@ -90,6 +100,7 @@ target_compile_definitions(FolkPark
 target_link_libraries(FolkPark
     PRIVATE
         FolkParkAssets
+        SQLite3::SQLite3
         juce::juce_audio_utils
         juce::juce_cryptography
         juce::juce_dsp
@@ -174,6 +185,49 @@ target_link_libraries(FolkParkOfflinePreviewTests PRIVATE
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags)
 add_test(NAME FolkParkOfflinePreviewIsolationTests COMMAND FolkParkOfflinePreviewTests)
+
+juce_add_console_app(FolkParkPresetTests PRODUCT_NAME "folk park preset tests")
+target_sources(FolkParkPresetTests PRIVATE
+    tests/PresetTests.cpp
+    src/persistence/Preset.cpp
+    src/persistence/Preset.h
+    src/common/ParameterIds.h
+    src/synth/Modulation.cpp
+    src/synth/Modulation.h
+    src/synth/WavetableBank.cpp
+    src/synth/WavetableBank.h
+    src/synth/WavetableConverter.cpp
+    src/synth/WavetableConverter.h)
+target_include_directories(FolkParkPresetTests PRIVATE src)
+target_compile_definitions(FolkParkPresetTests PRIVATE
+    JUCE_USE_CURL=0
+    FOLK_PARK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(FolkParkPresetTests PRIVATE
+    juce::juce_audio_formats
+    juce::juce_core
+    juce::juce_cryptography
+    juce::juce_dsp
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)
+add_test(NAME FolkParkPresetPersistenceTests COMMAND FolkParkPresetTests)
+
+juce_add_console_app(FolkParkHistoryTests PRODUCT_NAME "folk park history tests")
+target_sources(FolkParkHistoryTests PRIVATE
+    tests/HistoryTests.cpp
+    src/persistence/CompositionJson.cpp
+    src/persistence/CompositionJson.h
+    src/persistence/HistoryRepository.cpp
+    src/persistence/HistoryRepository.h
+    src/midi/Composition.cpp
+    src/midi/Composition.h)
+target_include_directories(FolkParkHistoryTests PRIVATE src)
+target_compile_definitions(FolkParkHistoryTests PRIVATE JUCE_USE_CURL=0)
+target_link_libraries(FolkParkHistoryTests PRIVATE
+    SQLite3::SQLite3
+    juce::juce_core
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)
+add_test(NAME FolkParkHistoryRepositoryTests COMMAND FolkParkHistoryTests)
 
 juce_add_console_app(FolkParkCompositionTests PRODUCT_NAME "folk park composition tests")
 target_sources(FolkParkCompositionTests PRIVATE
@@ -261,6 +315,15 @@ target_sources(FolkParkPluginTests PRIVATE
     src/plugin/PluginProcessor.cpp
     src/plugin/PluginProcessor.h
     src/plugin/ParameterIds.h
+    src/common/ParameterIds.h
+    src/persistence/Preset.cpp
+    src/persistence/Preset.h
+    src/persistence/CompositionJson.cpp
+    src/persistence/CompositionJson.h
+    src/persistence/HistoryRepository.cpp
+    src/persistence/HistoryRepository.h
+    src/persistence/PersistenceCoordinator.cpp
+    src/persistence/PersistenceCoordinator.h
     src/effects/EffectChain.cpp
     src/effects/EffectChain.h
     src/render/OfflinePreviewRenderer.cpp
@@ -296,6 +359,7 @@ target_compile_definitions(FolkParkPluginTests PRIVATE
     FOLK_PARK_JUCE_COMMIT="${FOLK_PARK_JUCE_COMMIT}")
 target_link_libraries(FolkParkPluginTests PRIVATE
     FolkParkAssets
+    SQLite3::SQLite3
     juce::juce_audio_utils
     juce::juce_cryptography
     juce::juce_dsp

@@ -35,7 +35,10 @@ public:
         std::array<float, WavetableConverter::previewSize> preview{};
     };
 
-    using Publisher = std::function<bool(int, const WavetableBank&)>;
+    using Publisher = std::function<juce::Result(int,
+                                                 const WavetableBank&,
+                                                 const WavetableConverter::Metadata&,
+                                                 const juce::File&)>;
 
     explicit WavetableImportService(Publisher publisher);
     ~WavetableImportService();
@@ -55,6 +58,7 @@ private:
     mutable std::mutex stateMutex;
     Snapshot state;
     std::unique_ptr<WavetableBank> pendingBank;
+    juce::File pendingSourceFile;
     std::atomic<std::uint64_t> generation{0};
     std::atomic<bool> shuttingDown{false};
 };

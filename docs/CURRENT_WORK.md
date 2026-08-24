@@ -1,124 +1,180 @@
-# Current work and agent handoff
+# Current work and mandatory agent handoff
 
-Last updated: 2026-08-21, America/Monterrey
+Last updated: 2026-08-23, America/Monterrey
 
-This is the first file a continuing coding agent must read. It records what is actually complete, what remains unverified, and how to resume without repeating or damaging previous work. Confirm every statement against the repository before acting.
+## Read this first
 
-## Product objective
+This is the canonical continuation file for `folk park`. Every coding agent, including Codex in a new session, must read this file completely before changing code. Then reconcile it with `git status`, `git log`, `docs/PROGRESS.md`, `plans/RELEASE_0_1.md`, and the master DOCX. Do not restart the project or repeat completed milestones.
 
-Build `folk park` Release 0.1 as an original Intel macOS `x86_64` wavetable instrument in both Standalone and VST3 formats. It combines a playable dual-wavetable synth, effects, deterministic MIDI composition, native presets/history, and an optional guided AI sound-design workflow. It must remain offline-capable and must not clone Serum, import proprietary Serum state, or ship unlicensed factory assets.
+The repository may contain valuable uncommitted work. Never discard, reset, clean, rebase, or overwrite it. Inspect it first.
 
-The release is not complete until M8 is complete, the Release Standalone and VST3 build as `x86_64`, automated tests and validation artifacts pass, and all FL Studio checks are explicitly reported as either human-passed or still required. Never silently convert a human-required check into a pass.
+## Product objective and non-negotiable boundaries
 
-## Authoritative source material
+Build `folk park` Release 0.1 as an original Intel macOS `x86_64` wavetable instrument in both Standalone and VST3 formats. It combines a playable dual-wavetable synth, ordered effects, deterministic MIDI composition, native presets/history, and an optional guided AI sound-design workflow.
 
-Read these in order before implementation:
+- It is not a Serum copy and must not import proprietary Serum state, bypass licensing, or ship unlicensed factory assets.
+- Standalone and VST3 are both release requirements.
+- FL Studio behavior is a human-verification boundary. Never report an FL check as passed unless the user actually ran it and confirmed it.
+- Offline/manual workflows must remain complete. Provider AI is opt-in and must not require embedded user keys.
+- No filesystem, JSON, SQLite, WebView, allocation, or new lock may enter the audio callback.
+- A failed preset/history/assistant operation must not alter valid live audio state.
+- The assistant may propose only typed, bounded intent/parameters and must require explicit producer acceptance before applying changes.
+
+## Authoritative sources, in reading order
 
 1. `AGENTS.md`
 2. this file
 3. `plans/RELEASE_0_1.md`
 4. `docs/PROGRESS.md`
-5. the document relevant to the milestone, such as `docs/PRESET_FORMAT.md`
+5. the milestone contract/ADR; M7 starts with `docs/PRODUCT_AMENDMENTS.md`, `docs/AI_PROVIDER_SECURITY.md`, `docs/PARAMETER_CATALOG.md`, and the assistant schemas/models
 6. `/Users/hermannpr/Downloads/folk_park_Codex_Master_Build_Prompt.docx`
 
-The DOCX is the master product and engineering contract. Read it without modifying it, for example with `textutil -convert txt -stdout`. If it is missing, stop and ask the user for its new location rather than inventing requirements.
+The DOCX is the master product and engineering contract. Read it without modifying it, for example with `textutil -convert txt -stdout`. A repository copy also exists at `docs/source/folk_park_Codex_Master_Build_Prompt.docx`; reconcile both before using the copy. If the authoritative download is missing, ask the user instead of inventing requirements.
 
-## Repository and Git rules
+## Repository and Git state
 
-- Private GitHub repository: `HermannPR/folk-park`.
-- Current checkpoint branch: `feat/m5-effects-preview`.
-- Current checkpoint commit when this handoff was written: `1c13e21 Verified and documented the M5 checkpoint`.
-- M5 draft pull request: <https://github.com/HermannPR/folk-park/pull/5>, based exactly on `feat/m4-silicon-dreams-ui`.
-- The next branch should be `feat/m6-presets-history`, based on the final M5 checkpoint.
-- Keep each stage buildable and commit meaningful stages separately. The user prefers a commit at every stage.
-- Use concise impersonal commit subjects such as `Established ...`, `Implemented ...`, `Hardened ...`, or `Verified ...`. Do not write subjects such as `I established ...`.
-- Review `git status` and the exact diff before every commit. Stage exact paths; do not use `git add .` or `git add -A`.
-- Preserve unrelated user changes. Never rewrite or force-push established history without explicit permission.
-- Keep the repository private. Do not publish releases, packages, assets, or source publicly.
+- Private repository: `HermannPR/folk-park`.
+- M6 branch: `feat/m6-presets-history`.
+- M6 is stacked on `feat/m5-effects-preview`; the M6 draft PR base must be exactly `feat/m5-effects-preview`.
+- M5 draft PR: <https://github.com/HermannPR/folk-park/pull/5>.
+- Resolve the M6 draft PR with `gh pr list --head feat/m6-presets-history --state all`; if it is absent after the final M6 checkpoint is pushed, create it as a private draft with the exact base above.
+- The final M6 documentation checkpoint subject is `Verified and documented the M6 checkpoint`; resolve its hash from `git log` rather than copying a stale hash.
+- Earlier M6 commits are:
+  - `735fb84 Established the M6 persistence and migration contracts`
+  - `a69a8bc Implemented versioned native presets and validated assets`
+  - `abb25f7 Implemented transactional searchable composition history`
+  - `ed2c1a7 Established the exact M6 integration handoff`
+  - `5a940aa Integrated preset and history workflows`
+  - `a67ec8a Hardened M6 project recovery boundaries`
+  - `9f7f684 Hardened M6 persistence and Save As boundaries`
 
-## Completed milestones
+Git rules:
+
+- Keep each meaningful stage buildable and commit it separately.
+- Use concise impersonal subjects such as `Established ...`, `Implemented ...`, `Hardened ...`, or `Verified ...`; never `I established ...`.
+- Review status and the exact diff before every commit.
+- Stage exact paths only; never use `git add .` or `git add -A`.
+- Never force-push, rewrite established history, expose the repository publicly, or add credentials/licensed assets.
+
+## Milestone status
 
 - M0: repository/toolchain/risk spikes; automated gate passed.
-- M1: playable vertical slice; automated gate passed, human host run pending.
-- M2: dual wavetable/modulation/import; automated gate passed, human host checks pending.
-- M3: deterministic composition and MIDI delivery; automated gate passed, FL drag/routing checks pending.
-- M4: Silicon Dreams UI; automated gate passed. It includes live OSC A/B waveform visualization, an optional frame/morph surface, spectrum feedback, and a four-octave C2-B5 piano. Held computer keys are idempotent so macOS key repeat does not retrigger/spam notes.
-- M5: ordered effects and isolated accepted-composition WAV rendering; automated gate passed, FL effects/render checks pending.
+- M1: playable vertical slice; automated gate passed; human host run pending.
+- M2: dual wavetable/modulation/import; automated gate passed; human host checks pending.
+- M3: deterministic composition and MIDI delivery; automated gate passed; FL drag/routing checks pending.
+- M4: Silicon Dreams UI, real A/B visuals, four-octave C2–B5 piano, octave shift, and held-key repeat suppression; automated gate passed; FL UI/input checks pending.
+- M5: ordered Distortion → Chorus → tempo-synced Delay → Reverb → Compressor → Parametric EQ and isolated accepted-composition WAV rendering; automated gate passed; FL effects/render checks pending.
+- M6: native presets/assets/migration, transactional composition history, and editor-independent project recovery; automated gate verified; every FL persistence case remains human-required.
+- M7: guided Jarvis sound workflow and optional secure provider; planned, not implemented.
+- M8: host/release hardening, packaging, legal/asset audit, and release documentation; planned.
 
-Do not reimplement these milestones. Read `docs/PROGRESS.md` and their evidence directories for exact test results and limitations.
+Do not reimplement M0–M6. Preserve the oscillator displays, C2–B5 keyboard, held-key repeat behavior, effects, candidate/accepted MIDI boundary, accepted-only WAV workflow, and transactional persistence while working on M7.
 
-## Exact M5 checkpoint
+## M6 implementation now established
 
-M5 added the fixed Distortion -> Chorus -> tempo-synced Delay -> Reverb -> Compressor -> Parametric EQ chain, with safe bypass defaults and bounded real-time behavior. It also added accepted-only isolated WAV rendering with overwrite confirmation and cancellation.
+### Native presets and assets
 
-Recorded verification:
+- `schemas/preset-v1.schema.json` freezes the oldest supported schema version 1; `schemas/preset.schema.json` defines production version 2.
+- `src/persistence/Preset.*` owns deterministic encoding, pure v1→v2 migration, strict bounded validation, duplicate-key rejection, atomic explicit-overwrite storage, content-addressed assets, SHA-256/size validation, exact missing-asset relink, and traversal/symlink rejection.
+- Presets capture all 102 normalized parameters, modulation routes, ordered effects, metadata, and up to two imported user-WAV asset references.
+- Save As creates a new stable UUID by default. Replacing the current library preset is a separate explicit action that retains its UUID.
+- External preset assets are localized into the application store and reload without their original directory.
 
-- UI tests: 8/8; npm audit: 0 vulnerabilities.
-- Debug CTest: 8/8.
-- Release CTest: 9/9, including built VST3 smoke.
-- pluginval 1.0.4 strictness 5: SUCCESS.
-- Release VST3 SHA-256: `5ff08476376a4d37e0224623741c3e42a5e15cb52118b6259f33705c965126ac`.
-- Release Standalone SHA-256: `c151eb0486992e6dd80f98dde2644b0281f44858481e3fa127a086a2fbd213e1`.
-- Evidence: `evidence/m5/verification.md`, `evidence/m5/pluginval/`, and M5 Standalone screenshots.
+### Transactional history
 
-Outstanding M5 human checks include FL Studio effect audibility/order, bypass transitions, tempo-synced delay, automation/state recall, CPU behavior, accepted WAV render/cancel/import/playback, tail/length parity, and live-voice isolation through the FL wrapper.
+- `src/persistence/HistoryRepository.*` provides rollback-safe SQLite migrations, prepared statements, bounded search, exact recall, lineage, favorites/tags, non-mutating comparison, recoverable soft deletion, retention preferences, and explicit cleanup.
+- Database availability is independent from presets and acceptance. A missing/unusable/symlink database cannot stop finite audio, native preset use, project state, or composition acceptance.
+- `src/persistence/PersistenceCoordinator.*` owns all filesystem/SQLite work on non-audio threads below one configurable validated root.
 
-## Explicit interface requirements to preserve
+### Host project recovery
 
-- Both oscillators must display their real waveform. Imported/generated wavetables must display the selected frame, respond to wavetable-position changes, and show OSC A and OSC B independently. Visualization reads bounded immutable UI snapshots, never mutable audio state.
-- Keep the optional Serum-like 3D frame/morph visualization original in design, with 2D low-graphics and reduced-motion fallbacks.
-- The playable piano spans more than one octave: the implemented visual keyboard is C2-B5. Computer-key audition has octave shift and must suppress macOS held-key repeat so a held key produces one sustained note, not repeated attacks.
-- The product must work as both Standalone and VST3. VST3 behavior in FL Studio remains a human verification boundary.
-- Add a guided sound-design walkthrough in M7: ask adaptive questions, translate answers into bounded explained parameter proposals, audition A/B reversibly, and require explicit acceptance before applying changes.
-- AI composition may propose chords, melodies, bass, arpeggios, MIDI, samples, and sound changes, but provider access is opt-in and offline/manual workflows remain complete.
-- Preserving or bypassing Serum 2 licensing is not a product feature. Folk Park uses its own format and legal assets.
+- Bounded versioned `FolkParkProjectSession` state records the complete deterministic native preset payload, imported asset references, dirty status, optional accepted composition, and history lineage without depending on an editor.
+- Malformed/oversized payloads are rejected before mutation.
+- Missing assets leave current parameters, wavetables, and composition unchanged while exposing an explicit recovery request.
+- Wrong hash/size is rejected; only an exact explicit relink completes the pending sound-and-composition transaction.
+- APVTS parameter listeners perform only an atomic revision increment for dirty tracking.
+- Complete preset publication prepares oscillator A, oscillator B, and modulation routes before one audio-block boundary exchange. Busy/invalid publication does not partially mutate audio.
+- Confirmed WAV import is retained for retry after a deliberately busy exchange.
 
-## Active next milestone: M6 presets and history
+### Native bridge and UI
 
-No M6 code had been started when this handoff was written. A read-only preflight confirmed the M5 branch was clean and macOS SDK provides `sqlite3.h` at `/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sqlite3.h`. Recheck the linkable SQLite library before choosing it and record the dependency decision in an ADR.
+- `PluginEditor` exposes bounded functions for persistence status, preset list/save/load/import/relink/favorite, history search/recall/favorite/soft-delete/compare, retention, and cleanup.
+- Native payloads expose safe metadata/filenames rather than unrestricted personal paths.
+- `ui/src/protocol.ts` rejects malformed/future/non-finite/duplicate/oversize snapshots before view replacement.
+- `ui/src/PersistenceView.tsx` implements the History workspace with availability/degraded state, explicit Save As/replace semantics, preset browser, recovery, history search/compare/recall/trash/retention, and confirmed cleanup.
+- The recruiter-facing `README.md` explains the full product/architecture/status and embeds actual M6 Release screenshots.
 
-M6 must deliver:
+## M6 verification actually completed
 
-- versioned deterministic `.folkparkpreset` JSON;
-- current and oldest-supported preset migrations;
-- author, tags, genre, emotion, description, parameter state, modulation routes, ordered effect state, asset hashes/recovery metadata, preview metadata, and migration provenance;
-- validated content-addressed wavetable/sample asset handling and missing-asset recovery;
-- atomic save through a sibling temporary file and rename/replace only after validation;
-- strict bounds for file size, decoded asset size, JSON nesting, strings, arrays, paths, and hash values;
-- rejection of executable content, absolute paths, `..`, traversal, malformed required data, oversized input, and unsupported future required state;
-- transactional recall so a failed parse/apply leaves the active sound unchanged;
-- a `HistoryRepository` interface backed by SQLite if the verified system boundary is acceptable;
-- stable UUIDs, parent/variation lineage, timestamps, generator/schema versions, privacy-controlled prompt summary, macro snapshot, clip payload, optional preset reference, favorites, tags, soft delete, retention preference, and cleanup command;
-- searchable history and correct versioned recall;
-- database migrations and transactions;
-- database failure isolation: history/database failure must never stop or alter active audio;
-- no filesystem, JSON, or database access from the audio callback.
+The following gate was recorded on 2026-08-23:
 
-Required M6 fixtures/tests include current preset, oldest-supported preset, malformed JSON, missing asset, oversized data, path traversal, unknown/future fields, migration correctness, database migration, database unavailable/failure isolation, retention, lineage, search, and exact recall. Keep native preset migrations pure and deterministic. Put SQLite behind an interface so DSP never depends on it.
+- Clean `npm ci --ignore-scripts` and `npm audit --omit=dev`: PASS, 0 vulnerabilities.
+- UI build/tests/lint: PASS, 10/10. `app.js` 806.08 kB (209.25 kB gzip), `app.css` 16.30 kB, local index 0.40 kB.
+- Complete Debug build and CTest: PASS, 10/10.
+- Complete Release build and CTest: PASS, 11/11, including packaged VST3 scanning/instantiation/finite-stereo MIDI rendering.
+- Standalone and VST3: thin Mach-O `x86_64`.
+- Release/installed VST3 ad-hoc signature: deeply/strictly verified.
+- pluginval 1.0.4 strictness 5: `SUCCESS` across editor lifecycle, state, automation, buses, and 44.1/48/96 kHz × 64/128/256/512/1024 samples.
+- Installed/build VST3 hash parity and independent installed-bundle MIDI smoke: PASS.
+- Release/installed VST3 SHA-256: `9b0fb548a4844b4384742e02248682fde8ffa479a19b9066c953dabc8c6572dc`.
+- Release Standalone SHA-256: `3e4cf0d884ad8a770100e7cc34ac6281959879acaf1495c9d03fefd79b1f810f`.
+- Source dev-origin, sensitive-token-pattern, JSON-schema, and `git diff --check` gates: PASS. JSON Schema IDs are the only scanned project-source HTTP URLs.
+- Actual Release Standalone visual inspection: PASS for bridge readiness, Synth, Compose, FX, History, and clean close. This is not an audible/physical-device/FL pass.
+- Evidence: `evidence/m6/verification.md`, the strictness-5 pluginval log, and four actual M6 screenshots.
 
-Suggested buildable commit sequence:
+Known verification observations:
 
-1. `Established the M6 persistence and migration contracts` — ADR, schemas, immutable models, bounds, and fixtures.
-2. `Implemented versioned native presets and validated assets` — deterministic codec, migrations, atomic storage, content-addressed assets, and focused tests.
-3. `Implemented transactional searchable composition history` — repository interface, SQLite migrations, lineage/search/retention/recall, and failure tests.
-4. `Integrated preset and history workflows` — processor/message-thread coordination and Preset/History UI without audio-thread persistence.
-5. `Hardened M6 persistence failure boundaries` — adversarial fixtures, transactional rollback, missing-asset recovery, UI bridge rejection, and failure isolation.
-6. `Verified and documented the M6 checkpoint` — full Debug/Release/UI/validator/artifact gate and evidence.
+- pluginval's optional separate Steinberg-validator subtest is skipped because no validator executable is installed.
+- Vite reports direct `eval` only in JUCE's pinned Android compatibility helper; Folk Park source does not call it and the macOS UI uses bundled local resources.
+- The private Standalone engineering artifact is unsigned. Distribution signing/notarization remains M8.
+- A concurrent first CMake/Vite attempt temporarily lost the generated embedded index; the required serial UI build → CMake reconfigure/build and complete gate passed. Keep these steps serial.
+- Every FL Studio test remains `HUMAN RUN REQUIRED`; see `docs/FL_STUDIO_TEST_MATRIX.md`.
 
-This ordering is guidance, not permission to claim a stage passed without its tests.
+## Next milestone: M7 guided sound assistant
 
-## Likely M6 design decisions requiring confirmation in code
+Do not treat the grey M7 UI hint or existing schema models as a working LLM. There is no conversational workflow/provider integration yet.
 
-- `schemas/preset.schema.json` currently describes schema version 1 but is incomplete and permissive. Do not silently reinterpret a shipped version. Establish the compatibility decision in the ADR and test a real migration path.
-- Use deterministic key insertion/serialization and verify it byte-for-byte. Pre-scan JSON nesting while respecting strings before using a recursive parser.
-- Asset references should be relative and content-addressed; validate exact syntax and SHA-256 before use. Never trust a filename from imported content.
-- The current imported wavetable lives only in bounded session memory. M6 must persist the legal source/converted asset explicitly; do not pretend parameter-only state restores it.
-- Capture immutable state outside the callback, validate the entire replacement, then publish it at a safe boundary. Do not partially mutate live state during validation.
-- SQLite schema versions/migrations are append-only. Repository operations run off the audio callback and failures return typed results rather than destabilizing synthesis.
+Before editing M7:
 
-## Commands and environment
+1. Confirm the final M6 checkpoint is committed/pushed and the private draft PR has the exact M5 base.
+2. Create the next milestone branch according to the established stacked-branch strategy; do not add M7 work to the M6 verification commit.
+3. Read `docs/PRODUCT_AMENDMENTS.md`, `docs/AI_PROVIDER_SECURITY.md`, `docs/PARAMETER_CATALOG.md`, `schemas/sound-intent.schema.json`, `schemas/parameter-proposal.schema.json`, `src/assistant/AssistantModels.*`, the M7 section of `plans/RELEASE_0_1.md`, and the corresponding master DOCX section completely.
+4. Freeze the exact offline conversation/session/proposal/A-B/acceptance contract before implementing provider code.
 
-The user-local CMake/CTest executables are under `/Users/hermannpr/Library/Python/3.9/bin` when not on `PATH`. Use the checked-in presets and scripts:
+M7 required producer workflow:
+
+- The producer can type a sound goal and receive adaptive focused questions about timbre, motion, envelope, range, effects, and musical use.
+- Offline deterministic logic must provide a useful walkthrough without any account or API key.
+- Answers become a bounded explained `ParameterProposal` validated against the stable parameter catalog.
+- The producer can audition original versus proposal as reversible A/B, refine it, and explicitly accept or reject it.
+- No proposal silently applies, changes the DAW, executes code, or bypasses schema/catalog limits.
+- Optional network/provider support is opt-in, cancellable, clearly offline when unavailable, and cannot receive secrets, unrestricted paths, full project state, raw personal files, or unbounded prompt/tool output.
+- Provider credentials use the documented Keychain abstraction; never store credentials in presets, project state, logs, commits, or frontend JavaScript.
+- Audio must continue if the UI, assistant, provider, network, database, or persistence root fails.
+
+M7 should add adversarial tests for malformed/oversized proposals, unknown/duplicate parameters, non-finite values, cancellation/timeout, stale session responses, provider failure, explicit acceptance, A/B restoration, project/editor reload, and zero callback allocations.
+
+## Exact continuation sequence
+
+Run first:
+
+```sh
+pwd
+git status --short --branch
+git log --oneline --decorate -12
+git diff --check
+git remote -v
+gh repo view HermannPR/folk-park --json visibility,nameWithOwner
+gh pr list --head feat/m6-presets-history --state all
+```
+
+Confirm the repository is still private, inspect every local change, and never discard work. If the final M6 evidence is uncommitted, review exact diffs and stage only the intended README/docs/evidence paths. The expected final subject is `Verified and documented the M6 checkpoint`.
+
+Once M6 is pushed and its private draft PR exists, update this handoff with the actual PR/next branch if necessary, then start the smallest buildable M7 contract checkpoint. Prefer meaningful impersonal commits at every passing stage.
+
+## Commands and local environment
+
+The user-local CMake tools may not be on `PATH`:
 
 ```sh
 ./scripts/bootstrap_macos.sh
@@ -128,25 +184,17 @@ The user-local CMake/CTest executables are under `/Users/hermannpr/Library/Pytho
 /Users/hermannpr/Library/Python/3.9/bin/cmake --preset macos-x86_64-release
 /Users/hermannpr/Library/Python/3.9/bin/cmake --build --preset macos-x86_64-release
 /Users/hermannpr/Library/Python/3.9/bin/ctest --preset macos-x86_64-release --output-on-failure
-cd ui && npm ci --ignore-scripts && npm run build && npm test && npm run lint
+cd ui && npm ci --ignore-scripts && npm audit --omit=dev && npm run build && npm test && npm run lint
 ./scripts/test.sh
 ./scripts/install_user_vst3.sh release
 ```
 
-Only report commands actually run. Full milestone verification must also inspect `file` architecture, code signature, installed artifact/hash parity, the built VST3 smoke test, pluginval, and retained evidence as specified by the progress/plan documents.
+Only claim commands actually run. Keep UI generation and CMake configure/build serial because Vite intentionally replaces `resources/ui` during its production build.
 
-## Safe resume checklist
+## Final safety and truthfulness checklist
 
-1. Run `pwd`, read the required documents completely, and check for a more local `AGENTS.md` before editing.
-2. Run `git status --short --branch`, `git log --oneline --decorate -12`, and `git remote -v`.
-3. Confirm the repository is private before the next push or PR action.
-4. Confirm M5 remains reproducible enough for the intended M6 change; do not rerun every expensive gate before the first documentation commit unless a dependency changed.
-5. Create `feat/m6-presets-history` from the final M5 head.
-6. Maintain a plan with one in-progress stage and update this handoff when reality changes.
-7. Implement one bounded stage, run its focused tests plus relevant regression tests, inspect the diff, commit exact paths, and push the checkpoint.
-8. At the M6 gate, update `docs/PROGRESS.md`, this file, README current/coming-soon language if necessary, and `evidence/m6/verification.md`.
-9. Open a private draft PR stacked exactly on `feat/m5-effects-preview` unless the branch topology has intentionally changed and is documented.
-
-## Safety and truthfulness
-
-Do not add credentials, provider keys, personal prompts, licensed plug-in binaries, Serum content/state, or third-party factory assets. Do not make network AI mandatory. Do not access unrelated personal files. Do not modify installed plug-ins or the user's FL Studio projects as part of repository development. Do not claim that a sound, plug-in, host workflow, or migration works merely because the UI exists; distinguish automated proof, local visual inspection, and the user's human listening/FL Studio result.
+- Never add credentials, private prompts, licensed plug-in binaries, Serum content/state, or third-party factory assets.
+- Never access or modify unrelated personal files, installed plug-ins, or the user's FL Studio projects while developing this repository.
+- Never silently overwrite a preset or permanently delete history without explicit bounded user action.
+- Never report FL Studio, audible quality, provider security, distribution signing, licensing, or release readiness as passed without its exact required evidence.
+- The repository must remain private until the user explicitly decides otherwise and all distribution gates are closed.

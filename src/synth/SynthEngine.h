@@ -110,6 +110,9 @@ public:
 
     [[nodiscard]] bool publishWavetable(int oscillatorIndex, const WavetableBank& bank) noexcept;
     [[nodiscard]] bool publishModulationRoutes(std::span<const ModulationRoute> routes) noexcept;
+    [[nodiscard]] bool publishPresetSnapshot(const WavetableBank& oscillatorA,
+                                             const WavetableBank& oscillatorB,
+                                             std::span<const ModulationRoute> routes) noexcept;
     [[nodiscard]] const ModulationSnapshot& getActiveModulationSnapshot() const noexcept;
     [[nodiscard]] int getActiveVoiceCount() const noexcept;
     [[nodiscard]] bool isNoteActive(int midiChannel, int midiNote) const noexcept;
@@ -256,6 +259,9 @@ private:
     WavetableExchange oscillatorABank;
     WavetableExchange oscillatorBBank;
     ModulationExchange modulationExchange;
+    std::atomic_flag publicationWriter = ATOMIC_FLAG_INIT;
+    std::atomic<bool> publicationProducerActive{false};
+    std::atomic<bool> publicationConsumerActive{false};
     std::atomic<int> activeVoiceCount{0};
     std::array<float, 4> globalLfoPhases{};
     double sampleRate = 44100.0;
