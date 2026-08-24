@@ -401,6 +401,14 @@
 - Confirmed the existing architecture counts non-finite output and MIDI queue overflows but has no explicit output-ceiling, over-unity, peak, voice-pressure, or deadline-headroom proof. The effect chain's `[-32, 32]` finite bound is not a 0 dBFS guarantee.
 - Ordered the work as deterministic reproduction/telemetry, source gain and feedback correction, profiled CPU optimization, bounded product diagnostics, then Release and producer listening gates. No limiter, global feature disable, or blind quality reduction is authorized as a substitute for diagnosis.
 
+## M9 audio-pressure telemetry checkpoint
+
+- Added cumulative lock-free peak, over-unity, maximum-active-voice, and voice-steal telemetry to the existing bounded diagnostics path. The callback performs only local arithmetic and relaxed atomic publication; no clock, string, log, allocation, filesystem access, or new lock was added.
+- Normal generated-composition fixture, seed 7007, defaults, 48 kHz/512: maximum output `0.428440`, zero over-unity samples, zero non-finite samples, 16 maximum voices, and 13 voice steals.
+- The same normal fixture in the optimized Release processor test rendered at `0.571528x` real time on this Intel Core i9. This is a local baseline with roughly 43% sequential render headroom, not proof against host/device deadline misses.
+- Deliberate supported extreme-gain fixture: pre-master peak `8.460820`, output peak `16.881600`, 17,456 over-unity samples, and zero non-finite samples. This reliably classifies a finite level overload and proves the current output is not ceiling-safe.
+- Focused diagnostics/plugin/allocation suites: PASS, 3/3. Complete Debug Standalone/VST3 build and CTest: PASS, 18/18. Focused Release processor test: PASS. A new Release artifact was not installed at this telemetry-only checkpoint; the verified keyboard build remains installed.
+
 ## Human-required status
 
 - Standalone physical keyboard/audio-device playability: PARTIAL. Automated real-window C3 hold/repeat/release passed; listening through the user's selected audio device remains human.
