@@ -409,6 +409,16 @@
 - Deliberate supported extreme-gain fixture: pre-master peak `8.460820`, output peak `16.881600`, 17,456 over-unity samples, and zero non-finite samples. This reliably classifies a finite level overload and proves the current output is not ceiling-safe.
 - Focused diagnostics/plugin/allocation suites: PASS, 3/3. Complete Debug Standalone/VST3 build and CTest: PASS, 18/18. Focused Release processor test: PASS. A new Release artifact was not installed at this telemetry-only checkpoint; the verified keyboard build remains installed.
 
+## M9 render-headroom checkpoint
+
+- Reproduced an actual Release deadline failure before optimization: every normal-composition 96 kHz case measured `1.14778x`–`1.16321x` real time while remaining finite and below unity. The 48 kHz cases used roughly 58% of their sequential audio budget.
+- Removed wasted oscillator work for exactly silent unison lanes and cached stable per-lane frequency/mip calculations with exact pitch invalidation. No product feature, oscillator quality setting, parameter ID, or state meaning changed.
+- Post-repair default matrix: 44.1 kHz `0.119538x`–`0.135525x`, 48 kHz `0.126384x`–`0.135008x`, and 96 kHz `0.252856x`–`0.262954x` across 32–1024 samples. The normal 48 kHz/512 four-part case fell from `0.566012x` to `0.127443x` with the same exact `0.428440` peak.
+- Heavy 96 kHz/64, two oscillators × eight unison plus driven filter and all effects: `0.669342x`, peak `0.262349`, zero over-unity/non-finite samples. The gate requires at least 15% sequential render headroom and observed roughly 33%.
+- Complete Debug CTest: PASS, 18/18. Complete Release CTest: PASS, 19/19. pluginval strictness 5: `SUCCESS`. Installed/build parity and independent finite-stereo MIDI rendering: PASS.
+- Installed optimized VST3 SHA-256: `5377f6dcb0af792cacf0733415b972469e09978b8faa1f2b786b733517b89250`; rollback bundle retained at `~/Library/Audio/Plug-Ins/VST3/folk park.vst3.backup-20260824T154551Z`. The Release Standalone was restarted and the current default built-in output is 48 kHz.
+- Automated evidence is retained in `evidence/m9/verification.md`. Audible Standalone and FL Studio confirmation remain human-required; the separate extreme-gain output-ceiling defect remains open.
+
 ## Human-required status
 
 - Standalone physical keyboard/audio-device playability: PARTIAL. Automated real-window C3 hold/repeat/release passed; listening through the user's selected audio device remains human.
