@@ -77,6 +77,14 @@ The bundled Jarvis workspace calls seven strict message-thread native functions.
 
 Sound A/B captures immutable current/proposed normalized values for every changed host parameter. The processor canonicalizes B through the real parameter's legal range, then message-thread host gestures may select either review side. Temporary switches do not dirty the preset; rejection restores A and only explicit acceptance commits B. External host edits invalidate the comparison without being overwritten. Version-2 host project state restores an active comparison on its audible side while version 1 remains supported. Composition retains the existing candidate/accepted boundary and accepted-only MIDI/WAV delivery.
 
+## M8 diagnostics and recovery boundary
+
+Diagnostics are a typed, opt-in, non-realtime projection rather than a log stream. The processor exposes only atomically read audio configuration/fault counters and fixed persistence/provider/UI status codes. The callback may contain a non-finite final sample and increment relaxed counters for containment or queue overflow; it never formats text, allocates, locks, logs, touches the clipboard, or stores an error message.
+
+The message thread combines those typed values with bounded build, wrapper, and host identifiers into a deterministic report below 4 KiB. Technical identifiers stop at line or path separators. File paths, filenames, project/preset identity, prompts, audio/MIDI content, database rows, provider payloads, and credentials are excluded by construction.
+
+Clipboard access requires two explicit operations. Preview creates an opaque ID and complete immutable text without writing external state. Copy succeeds only for the exact current preview ID and copies that exact text through the native message-thread clipboard API. React validates the complete two-field preview before displaying it and leaves Copy disabled until a fresh preview exists.
+
 ## ADRs
 
 - ADR-0001: JUCE pin and dependency acquisition.

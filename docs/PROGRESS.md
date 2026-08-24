@@ -3,7 +3,7 @@
 ## Current checkpoint
 
 - Milestone: M8 — release-candidate hardening and distribution audit
-- Status: M7 automated checkpoint and private draft PR #7 are complete; M8 checklist/diagnostics contract is in progress, and all FL Studio human runs remain required
+- Status: M7 automated checkpoint/private draft PR #7 are complete; M8 checklist plus bounded diagnostics implementation pass Debug gates, and all FL Studio human runs remain required
 - Date: 2026-08-23 (America/Monterrey)
 - Branch: `feat/m8-release-hardening`, stacked exactly on `feat/m7-guided-assistant`
 
@@ -14,6 +14,15 @@
 - Prohibited prompts, credentials, paths, filenames, project/preset identity, audio/MIDI content, database rows, clipboard contents, persistence, and provider transmission from diagnostics.
 - ADR-0009 requires native enforcement of exact preview-before-copy and preserves message-thread-only formatting/clipboard work.
 - No signing, licensing, provider, distribution, or FL Studio decision is inferred by this checkpoint.
+
+## M8 bounded diagnostics checkpoint
+
+- Added a deterministic native report below 4 KiB with build type/version, x86_64 architecture, wrapper/host when safely supplied, sample rate, block size, active voices, fixed subsystem codes, and typed fault counters.
+- Host/build text is length-bounded and stops before line/path separators. Reports exclude paths, filenames, project/preset identity, prompts, audio/MIDI content, persistence rows/messages, provider data, credentials, and arbitrary workflow errors.
+- Converted active audio setup to atomic publication and added callback-safe relaxed counters for final non-finite containment, direct/preview MIDI queue overflow, and rejected host project state. Callback work remains bounded and does not format diagnostics.
+- Added an opaque preview session: only the exact current preview ID can retrieve the exact previewed text for native clipboard copying. React rejects malformed/oversized previews and disables Copy until Preview succeeds.
+- UI contracts/build: PASS, 16/16. Complete Debug Standalone and VST3 build: PASS. Complete Debug CTest: PASS, 13/13. Focused diagnostics and processor integration: PASS. `git diff --check`: PASS.
+- This is a Debug implementation checkpoint, not a final M8 Release gate. The M7 Release/pluginval/install evidence remains current; every FL Studio row remains `HUMAN RUN REQUIRED`.
 
 ## M7 contract checkpoint
 

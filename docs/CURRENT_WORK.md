@@ -251,12 +251,16 @@ M8 starts from the verified M7 artifacts; it must not redesign or reimplement M0
 - Do not claim signing/notarization, audible quality, FL compatibility, physical MIDI/audio-device behavior, or distribution readiness without exact evidence.
 - Keep the recruiter README factual and update screenshots only with real Release artifacts.
 
-### M8 checklist checkpoint in progress
+### M8 diagnostics checkpoint established
 
 - `docs/M8_RELEASE_CHECKLIST.md` freezes defect severity, deliverables/evidence, diagnostics privacy, exact automated gates, and owner/human stop conditions.
 - ADR-0009 fixes a deterministic 4 KiB diagnostics preview, fixed sanitized codes/counters, callback-safe atomics, exact preview-before-copy enforcement, and the engineering-candidate label.
-- No runtime code, distribution setting, owner decision, or FL Studio status changed in this checklist stage.
-- Next implementation boundary: the typed native diagnostics model, processor fault counters, strict bridge/UI preview-copy workflow, and adversarial tests.
+- `src/diagnostics/Diagnostics.*` now formats only typed bounded configuration, fixed service codes, and counters; adversarial host text stops before newlines/path separators, and reports cannot reach 4 KiB.
+- The processor now publishes atomic sample-rate/block-size values, contains final non-finite output, and counts non-finite samples, direct/preview MIDI overflow, and rejected project state without callback formatting or allocation.
+- Settings implements a strict native Preview → exact-ID Copy workflow. Preview has no clipboard, filesystem, project, preference, database, provider, or network side effect.
+- UI tests/build: PASS, 16/16. Complete Debug Standalone/VST3 build and CTest: PASS, 13/13. Focused processor diagnostics and malformed-state integration: PASS. `git diff --check`: PASS.
+- No distribution setting, provider, owner decision, or FL Studio status changed. The prior M7 Release/pluginval evidence remains the latest complete Release gate.
+- Next implementation boundary: long-run/stuck-note/UI lifecycle/failure-recovery automation and reproducible performance evidence, followed by install/repair/uninstall/routing/privacy/licensing/troubleshooting documentation.
 
 ## Commands and local environment
 

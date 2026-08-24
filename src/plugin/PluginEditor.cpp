@@ -773,6 +773,38 @@ juce::WebBrowserComponent::Options PluginEditor::browserOptions()
             info->setProperty("architecture", "x86_64");
             complete(juce::var(info.get()));
         })
+        .withNativeFunction("previewDiagnostics", [this](const auto& arguments, auto complete)
+        {
+            if (!arguments.isEmpty())
+            {
+                complete("Diagnostics preview takes no arguments");
+                return;
+            }
+            const auto preview = diagnosticsPreviewSession.create(
+                ownerProcessor.getDiagnosticsSnapshot());
+            auto payload = juce::DynamicObject::Ptr(new juce::DynamicObject());
+            payload->setProperty("previewId", preview.id);
+            payload->setProperty("text", preview.text);
+            complete(juce::var(payload.get()));
+        })
+        .withNativeFunction("copyPreviewedDiagnostics", [this](const auto& arguments,
+                                                                 auto complete)
+        {
+            juce::String previewId;
+            if (arguments.size() != 1 || !boundedString(arguments[0], 64, previewId, false))
+            {
+                complete("Copy diagnostics requires one bounded preview ID");
+                return;
+            }
+            const auto exactText = diagnosticsPreviewSession.textForCopy(previewId);
+            if (!exactText.has_value())
+            {
+                complete("Diagnostics preview is stale; preview again before copying");
+                return;
+            }
+            juce::SystemClipboard::copyTextToClipboard(*exactText);
+            complete("Exact previewed diagnostics copied to the clipboard");
+        })
         .withNativeFunction("getAssistantProviderStatus", [](const auto& arguments,
                                                                auto complete)
         {

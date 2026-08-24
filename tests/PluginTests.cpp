@@ -978,6 +978,36 @@ void testHistoryDatabaseFailureIsolation()
     expect(audio.getMagnitude(0, 0, audio.getNumSamples()) > 1.0e-7f,
            "Unavailable history database must not stop finite active audio");
 }
+
+void testBoundedProcessorDiagnostics()
+{
+    using namespace folkpark;
+    PluginProcessor processor(disabledPersistence());
+    processor.prepareToPlay(48000.0, 512);
+
+    const auto live = processor.getDiagnosticsSnapshot();
+    expect(live.productVersion == FOLK_PARK_VERSION
+               && live.buildType == FOLK_PARK_BUILD_TYPE
+               && live.architecture == "x86_64"
+               && std::abs(live.sampleRate - 48000.0) < 1.0e-9
+               && live.maximumBlockSize == 512
+               && live.provider == diagnostics::ServiceCode::disabled,
+           "M8 diagnostics must report typed build, audio setup, architecture, and provider state");
+    expect(diagnostics::formatReport(live).getNumBytesAsUTF8()
+               < diagnostics::maximumReportBytes,
+           "M8 live processor diagnostics must remain below the fixed 4 KiB boundary");
+
+    const std::array<std::byte, 8> malformed{};
+    processor.setStateInformation(malformed.data(), static_cast<int>(malformed.size()));
+    expect(processor.getDiagnosticsSnapshot().rejectedProjectStates
+               == live.rejectedProjectStates + 1,
+           "A rejected host project state must increment only the typed diagnostics counter");
+
+    processor.releaseResources();
+    const auto released = processor.getDiagnosticsSnapshot();
+    expect(released.sampleRate == 0.0 && released.maximumBlockSize == 0,
+           "Released audio resources must be reported as unavailable without stale thread data");
+}
 }
 
 int main()
@@ -996,8 +1026,9 @@ int main()
     testConfirmedImportRetryAndExternalLocalization();
     testHistorySymlinkFailureIsolation();
     testHistoryDatabaseFailureIsolation();
+    testBoundedProcessorDiagnostics();
 
     if (failures == 0)
-        std::cout << "PASS: M1–M6 processor paths plus M7 reversible assistant A/B recovery\n";
+        std::cout << "PASS: M1–M7 processor paths plus M8 bounded diagnostics\n";
     return failures == 0 ? 0 : 1;
 }

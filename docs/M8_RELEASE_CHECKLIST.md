@@ -17,7 +17,7 @@ The M8 automated gate cannot close with a known Critical or High defect. Unrun h
 
 | Area | Required deliverable | Evidence required | Current status |
 | --- | --- | --- | --- |
-| Diagnostics | Bounded native snapshot, sanitized subsystem codes, lock-free fault counters, explicit preview-before-copy UI | Pure contract tests, processor integration tests, UI adversarial tests, real Release inspection | IN PROGRESS |
+| Diagnostics | Bounded native snapshot, sanitized subsystem codes, lock-free fault counters, explicit preview-before-copy UI | Pure contract tests, processor integration tests, UI adversarial tests, real Release inspection | DEBUG AUTOMATION PASS; RELEASE INSPECTION PENDING |
 | Runtime hardening | Long-run finite audio/MIDI, stop/panic/no-stuck-note, UI-independent state, corrupted-state rollback | Deterministic Debug and Release tests with measured duration/configuration | PENDING |
 | Performance | Current x86_64 synth/FX/modulation and UI-analysis baselines with machine/OS/build/method | Retained machine-readable or plain-text benchmark evidence; no invented budget | PENDING OWNER BUDGET |
 | Installation | Exact build, install, rescan, repair, version/hash verification, safe uninstall, and rollback notes | Script tests/read-only checks plus human-ready FL steps | PENDING |
