@@ -2,7 +2,7 @@
 
 **An original wavetable synthesizer and deterministic composition assistant for Intel macOS.**
 
-> **Implementation branch:** The complete current M8 engineering candidate is reviewed on [`feat/m8-release-hardening`](https://github.com/HermannPR/folk-park/tree/feat/m8-release-hardening). The default branch keeps this recruiter-facing overview while the private stacked release PRs and required FL Studio/owner gates remain open.
+> **Implementation branches:** The verified M8 engineering candidate is reviewed on [`feat/m8-release-hardening`](https://github.com/HermannPR/folk-park/tree/feat/m8-release-hardening). Active synthesized-drum development is reviewed on [`feat/rhythm-lab-r1`](https://github.com/HermannPR/folk-park/tree/feat/rhythm-lab-r1). The default branch keeps this recruiter-facing overview while private stacked PRs and required FL Studio/owner gates remain open.
 
 `folk park` combines a playable dual-wavetable instrument, MIDI idea generation, an ordered effects chain, offline audio rendering, and crash-aware local persistence in one Standalone/VST3 product. Release 0.1 targets FL Studio on Intel (`x86_64`) macOS.
 
@@ -17,8 +17,8 @@
 This repository is designed to be evaluated as a working audio product rather than a static interface exercise:
 
 1. Start with the real Release screenshots in the product tour below.
-2. Read [Architecture](https://github.com/HermannPR/folk-park/blob/feat/m8-release-hardening/docs/ARCHITECTURE.md) and [Real-time safety](https://github.com/HermannPR/folk-park/blob/feat/m8-release-hardening/docs/REALTIME_SAFETY.md) for the native ownership and callback model.
-3. Review [M8 verification](https://github.com/HermannPR/folk-park/blob/feat/m8-release-hardening/evidence/m8/verification.md) for exact commands/results, artifact hashes, environment, retained validator output, and limitations.
+2. Read [Architecture](https://github.com/HermannPR/folk-park/blob/feat/rhythm-lab-r1/docs/ARCHITECTURE.md) and [Real-time safety](https://github.com/HermannPR/folk-park/blob/feat/rhythm-lab-r1/docs/REALTIME_SAFETY.md) for the native ownership and callback model.
+3. Review [M8 verification](https://github.com/HermannPR/folk-park/blob/feat/rhythm-lab-r1/evidence/m8/verification.md) for exact commands/results, artifact hashes, environment, retained validator output, and limitations.
 4. Inspect `src/plugin`, `src/synth`, `src/midi`, `src/persistence`, `src/assistant`, and `ui/src` using the repository guide below.
 5. Build with the pinned commands in [Build and run](#build-and-run). No API account or key is required for the complete offline/manual workflow.
 
@@ -96,7 +96,7 @@ flowchart LR
 
 The processor is the host adapter and authority for state. The synth owns fixed-capacity voice/DSP memory. Composition, file conversion, persistence, rendering, and assistant work happen away from the callback. The assistant boundary is deliberately limited to validated intent and parameter proposals; it cannot execute arbitrary code or silently write into a DAW.
 
-More detail is available in [Architecture](https://github.com/HermannPR/folk-park/blob/feat/m8-release-hardening/docs/ARCHITECTURE.md), [Real-time safety](https://github.com/HermannPR/folk-park/blob/feat/m8-release-hardening/docs/REALTIME_SAFETY.md), and the accepted [architecture decisions](https://github.com/HermannPR/folk-park/tree/feat/m8-release-hardening/docs/adr/).
+More detail is available in [Architecture](https://github.com/HermannPR/folk-park/blob/feat/rhythm-lab-r1/docs/ARCHITECTURE.md), [Real-time safety](https://github.com/HermannPR/folk-park/blob/feat/rhythm-lab-r1/docs/REALTIME_SAFETY.md), and the accepted [architecture decisions](https://github.com/HermannPR/folk-park/tree/feat/rhythm-lab-r1/docs/adr/).
 
 ## Implemented product surface
 
@@ -171,7 +171,7 @@ Verified on 2026-08-23 in America/Monterrey:
 | Release/installed VST3 SHA-256 | `9b0fb548a4844b4384742e02248682fde8ffa479a19b9066c953dabc8c6572dc` |
 | Release Standalone SHA-256 | `3e4cf0d884ad8a770100e7cc34ac6281959879acaf1495c9d03fefd79b1f810f` |
 
-The complete evidence report and validator log are retained under [evidence/m6](https://github.com/HermannPR/folk-park/tree/feat/m8-release-hardening/evidence/m6/). Automated success is not an FL Studio pass: discovery, insertion, listening, physical input/focus behavior, automation, drag/routing, project reopen, preset/asset recovery, effects, and WAV import remain [HUMAN RUN REQUIRED](https://github.com/HermannPR/folk-park/blob/feat/m8-release-hardening/docs/FL_STUDIO_TEST_MATRIX.md).
+The complete evidence report and validator log are retained under [evidence/m6](https://github.com/HermannPR/folk-park/tree/feat/rhythm-lab-r1/evidence/m6/). Automated success is not an FL Studio pass: discovery, insertion, listening, physical input/focus behavior, automation, drag/routing, project reopen, preset/asset recovery, effects, and WAV import remain [HUMAN RUN REQUIRED](https://github.com/HermannPR/folk-park/blob/feat/rhythm-lab-r1/docs/FL_STUDIO_TEST_MATRIX.md).
 
 ## Verified M7 checkpoint
 
@@ -207,7 +207,7 @@ The final M7 gate was verified on 2026-08-23 in America/Monterrey:
 | Release/installed VST3 SHA-256 | `b17c88bab2c1356c7b01980b96f918a28acbdd337f7ee2e437f9c63a7d7119ca` |
 | Release Standalone SHA-256 | `4523ffa815cfcdd7fb4d666644f75dde82869f6ebf673f9707f31314c8d3b1da` |
 
-Actual Release interaction verifies native privacy status, explained proposal creation, original/proposal switching, rejection restoring A, and the guided two-question flow advancing to its next pair. The screenshots in this section are real M7 Release captures. Complete logs, hashes, observations, and additional captures are retained under [evidence/m7](https://github.com/HermannPR/folk-park/tree/feat/m8-release-hardening/evidence/m7/). Automated success is not an FL Studio or audible-quality pass.
+Actual Release interaction verifies native privacy status, explained proposal creation, original/proposal switching, rejection restoring A, and the guided two-question flow advancing to its next pair. The screenshots in this section are real M7 Release captures. Complete logs, hashes, observations, and additional captures are retained under [evidence/m7](https://github.com/HermannPR/folk-park/tree/feat/rhythm-lab-r1/evidence/m7/). Automated success is not an FL Studio or audible-quality pass.
 
 ## Verified M8 automated checkpoint
 
@@ -229,7 +229,7 @@ The final automated gate was verified on 2026-08-24 in America/Monterrey:
 | Release Standalone SHA-256 | `bb61054c5acf8f9fb3711acd49220dc6ddcf6508d4ea4bc5513d6e82c1778386` |
 | Release material/security/schema scans | PASS — seven schemas; private repository confirmed |
 
-The Release runtime probe exercised repeated notes, 2×2 unison, all six effects, panic/release, preview-overflow recovery, direct-MIDI Stop, and three editor reconstructions while checking every output sample for finiteness. It measured `0.153058×` realtime on the documented Intel i9 machine. That is reproducible one-machine evidence, not an owner-approved CPU budget or an audible-quality claim. The complete report and validator log are retained under [evidence/m8](https://github.com/HermannPR/folk-park/tree/feat/m8-release-hardening/evidence/m8/).
+The Release runtime probe exercised repeated notes, 2×2 unison, all six effects, panic/release, preview-overflow recovery, direct-MIDI Stop, and three editor reconstructions while checking every output sample for finiteness. It measured `0.153058×` realtime on the documented Intel i9 machine. That is reproducible one-machine evidence, not an owner-approved CPU budget or an audible-quality claim. The complete report and validator log are retained under [evidence/m8](https://github.com/HermannPR/folk-park/tree/feat/rhythm-lab-r1/evidence/m8/).
 
 ## Build and run
 
@@ -286,7 +286,7 @@ Release products are generated at:
 
 For local FL Studio testing, `./scripts/install_user_vst3.sh release` copies the validated bundle to `~/Library/Audio/Plug-Ins/VST3/folk park.vst3`. This is an engineering install, not a signed/notarized distribution package.
 
-The installer is conservative: `--dry-run` is read-only, replacing an existing bundle requires explicit `--replace`, the previous bundle is retained for rollback, and architecture/signature/hash parity are verified. `./scripts/uninstall_user_vst3.sh --execute` moves only the exact VST3 to Trash and never touches presets, imported wavetable assets, history, exports, or DAW projects. The full operational guide is [Support playbook](https://github.com/HermannPR/folk-park/blob/feat/m8-release-hardening/docs/SUPPORT_PLAYBOOK.md); privacy behavior is documented in [Privacy](https://github.com/HermannPR/folk-park/blob/feat/m8-release-hardening/docs/PRIVACY.md).
+The installer is conservative: `--dry-run` is read-only, replacing an existing bundle requires explicit `--replace`, the previous bundle is retained for rollback, and architecture/signature/hash parity are verified. `./scripts/uninstall_user_vst3.sh --execute` moves only the exact VST3 to Trash and never touches presets, imported wavetable assets, history, exports, or DAW projects. The full operational guide is [Support playbook](https://github.com/HermannPR/folk-park/blob/feat/rhythm-lab-r1/docs/SUPPORT_PLAYBOOK.md); privacy behavior is documented in [Privacy](https://github.com/HermannPR/folk-park/blob/feat/rhythm-lab-r1/docs/PRIVACY.md).
 
 ## Repository guide
 
@@ -307,7 +307,7 @@ The installer is conservative: `--dry-run` is read-only, replacing an existing b
 | `docs` | Architecture, safety, formats, parameter catalog, decisions, FL test matrix |
 | `evidence` | Per-milestone validator logs, screenshots, hashes, and verification reports |
 
-The canonical continuation point for another coding session is [docs/CURRENT_WORK.md](https://github.com/HermannPR/folk-park/blob/feat/m8-release-hardening/docs/CURRENT_WORK.md). It prevents completed work from being rebuilt or unverified host behavior from being claimed.
+The canonical continuation point for another coding session is [docs/CURRENT_WORK.md](https://github.com/HermannPR/folk-park/blob/feat/rhythm-lab-r1/docs/CURRENT_WORK.md). It prevents completed work from being rebuilt or unverified host behavior from being claimed.
 
 ## Roadmap
 
@@ -322,16 +322,16 @@ The canonical continuation point for another coding session is [docs/CURRENT_WOR
 | M7 | Offline Jarvis text workflow, adaptive sound questions, explained A/B proposals, optional secure provider | Automated gate verified; FL Jarvis/project checks pending |
 | M8 | FL Studio matrix, diagnostics/performance/recovery hardening, packaging, legal/asset audit, release docs | Automated gate verified; FL human matrix and owner distribution decisions pending |
 | Post-M8 visual checkpoint | Orbital Habitat theme, reusable physical controls, coherent responsive shell | Implemented and automated gates verified; FL visual/input confirmation pending |
-| Rhythm Lab | Audible hybrid drum engine, genre-aware generation, lane locking/editing, stems, and safe break slicing | Product plan established; implementation not started |
+| Rhythm Lab R1 | Synthesized drum engine plus indie/rock, Eurodance, techno, funk, and jazz generation | Native contracts/engine/generation/MIDI verified; product playback and UI integration next |
 
 The connected M7 workflow now asks focused sound-design questions, translates complete answers into bounded explanations, and exposes reversible A/B plus explicit accept/reject in the product interface. Offline/manual operation remains complete; an optional model provider cannot bypass the parameter catalog, embed user keys, or directly control the DAW.
 
 Next in M8: complete the human FL Studio matrix and resolve the owner decisions for CPU budget, signing/notarization, JUCE licensing, final identity, distribution, privacy notice, and asset approval. A diagnostics screenshot will be retained only from the real Release Standalone after the producer performs the intentional Preview action; no mockup will substitute for it.
 
-The next product-growth plan is [Rhythm Lab](https://github.com/HermannPR/folk-park/blob/feat/m8-release-hardening/plans/RHYTHM_LAB.md). It separates deterministic rhythm generation from an audible hybrid drum engine, adds per-lane lock/regenerate/edit controls, and treats Amen-style material as a licensed/original/user-import break-slicing workflow rather than silently bundling a copyrighted recording.
+The active product-growth plan is [Rhythm Lab](https://github.com/HermannPR/folk-park/blob/feat/rhythm-lab-r1/plans/RHYTHM_LAB.md). R1 now has strict versioned contracts, a sample-free synthesized kick/snare/closed-hat/open-hat/percussion engine, distinct deterministic indie/rock, Eurodance, techno, funk, and jazz profiles, explicit native candidate acceptance, channel-10 MIDI export/reopen parity, and zero measured callback allocations. Processor playback, project state, the visual workspace, and human listening remain next; the README does not present them as complete. Later Break Lab work treats Amen-style material as a licensed/original/user-import slicing workflow rather than silently bundling a copyrighted recording.
 
 ## Scope, originality, and release boundary
 
 `folk park` is an original product and does not copy Serum code, interface assets, presets, wavetables, private state formats, or license behavior. User audio is accepted only through the documented WAV conversion boundary.
 
-This repository currently produces private engineering artifacts. Public binary distribution remains blocked until JUCE distribution licensing, signing/notarization, final product identity, privacy/legal review, and asset-rights decisions are resolved. See [Compatibility and legal](https://github.com/HermannPR/folk-park/blob/feat/m8-release-hardening/docs/COMPATIBILITY_AND_LEGAL.md), [licenses](https://github.com/HermannPR/folk-park/blob/feat/m8-release-hardening/LICENSES.md), [third-party notices](https://github.com/HermannPR/folk-park/blob/feat/m8-release-hardening/THIRD_PARTY_NOTICES.md), [packaging notes](https://github.com/HermannPR/folk-park/blob/feat/m8-release-hardening/docs/PACKAGING.md), the detailed [owner release-decision worksheet](https://github.com/HermannPR/folk-park/blob/feat/m8-release-hardening/docs/OWNER_RELEASE_DECISIONS.md), and the concise [open-decision index](https://github.com/HermannPR/folk-park/blob/feat/m8-release-hardening/docs/OPEN_DECISIONS.md).
+This repository currently produces private engineering artifacts. Public binary distribution remains blocked until JUCE distribution licensing, signing/notarization, final product identity, privacy/legal review, and asset-rights decisions are resolved. See [Compatibility and legal](https://github.com/HermannPR/folk-park/blob/feat/rhythm-lab-r1/docs/COMPATIBILITY_AND_LEGAL.md), [licenses](https://github.com/HermannPR/folk-park/blob/feat/rhythm-lab-r1/LICENSES.md), [third-party notices](https://github.com/HermannPR/folk-park/blob/feat/rhythm-lab-r1/THIRD_PARTY_NOTICES.md), [packaging notes](https://github.com/HermannPR/folk-park/blob/feat/rhythm-lab-r1/docs/PACKAGING.md), the detailed [owner release-decision worksheet](https://github.com/HermannPR/folk-park/blob/feat/rhythm-lab-r1/docs/OWNER_RELEASE_DECISIONS.md), and the concise [open-decision index](https://github.com/HermannPR/folk-park/blob/feat/rhythm-lab-r1/docs/OPEN_DECISIONS.md).
