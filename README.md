@@ -28,35 +28,35 @@ The strongest engineering themes are real-time safety, transactional state, dete
 
 Both oscillators display the real bounded wavetable data, current frame position, and derived spectrum. A four-octave C2–B5 keyboard supports touch/mouse play plus an octave-shiftable computer-key zone. Held macOS keys sustain once instead of retriggering from keyboard repeat.
 
-![folk park Synth workspace with dual wavetable visualizers and four-octave keyboard](https://github.com/HermannPR/folk-park/blob/feat/m8-release-hardening/evidence/m6/standalone-m6-synth.png)
+![folk park Synth workspace with dual wavetable visualizers and four-octave keyboard](evidence/m6/standalone-m6-synth.png)
 
 ### Compose musical ideas
 
 The deterministic composition engine creates chords, melody, bass, and arpeggios from seed, key, scale, tempo, length, and musical macro controls. A candidate can be inspected and edited in the piano roll; export, drag, routing, and WAV rendering use only an explicitly accepted result.
 
-![folk park Compose workspace with musical controls and generated piano roll](https://github.com/HermannPR/folk-park/blob/feat/m8-release-hardening/evidence/m6/standalone-m6-compose.png)
+![folk park Compose workspace with musical controls and generated piano roll](evidence/m6/standalone-m6-compose.png)
 
 ### Shape and render
 
 The fixed serial chain is Distortion → Chorus → tempo-synced Delay → Reverb → Compressor → Parametric EQ. Every stage has an independent gain-safe bypass, stable host parameters, bounded DSP, and a 10 ms transition. Accepted compositions can be rendered to stereo 24-bit/48 kHz WAV in an isolated offline engine without seeking or resetting live voices.
 
-![folk park FX workspace with the ordered six-stage effects chain](https://github.com/HermannPR/folk-park/blob/feat/m8-release-hardening/evidence/m6/standalone-m6-fx.png)
+![folk park FX workspace with the ordered six-stage effects chain](evidence/m6/standalone-m6-fx.png)
 
 ### Save, search, and recover
 
 Versioned `.folkparkpreset` files store the complete sound, modulation, effects, metadata, and content-addressed user wavetable references. Searchable SQLite composition history keeps stable IDs, lineage, favorites, tags, recoverable deletion, comparison, and recall. Missing assets produce an explicit exact-hash relink flow instead of a partial project mutation.
 
-![folk park History workspace with native preset and recovery controls](https://github.com/HermannPR/folk-park/blob/feat/m8-release-hardening/evidence/m6/standalone-m6-history.png)
+![folk park History workspace with native preset and recovery controls](evidence/m6/standalone-m6-history.png)
 
 ### Ask Jarvis without surrendering control
 
 The M7 workspace accepts a typed sound goal or musical idea. For sound design, producers can describe the result directly or use a walkthrough that asks no more than two focused questions at a time. Jarvis then shows its interpretation, assumptions, confidence, and every proposed current→new parameter value. Original A remains audible until the producer chooses proposal B; acceptance or rejection is always explicit. For composition, text creates only a candidate that must still be reviewed in the existing piano roll before delivery.
 
-![folk park Jarvis workspace actively auditioning proposal B with explained parameter changes and explicit acceptance](https://github.com/HermannPR/folk-park/blob/feat/m8-release-hardening/evidence/m7/standalone-m7-jarvis-ab.png)
+![folk park Jarvis workspace actively auditioning proposal B with explained parameter changes and explicit acceptance](evidence/m7/standalone-m7-jarvis-ab.png)
 
 The current engine is intentionally honest: it is a deterministic offline production helper, not a general-purpose LLM. It requires no account, key, or network. A native settings panel reports that nothing leaves the Mac and no credential is configured. The typed provider and macOS Keychain boundaries exist for later opt-in integration, but no remote adapter has been selected or enabled; that still requires a product-owner choice, a provider-specific privacy disclosure, and per-request consent.
 
-![folk park Settings workspace showing offline mode, no selected remote provider, and native macOS Keychain support](https://github.com/HermannPR/folk-park/blob/feat/m8-release-hardening/evidence/m7/standalone-m7-settings.png)
+![folk park Settings workspace showing offline mode, no selected remote provider, and native macOS Keychain support](evidence/m7/standalone-m7-settings.png)
 
 ## Why this project is technically interesting
 
