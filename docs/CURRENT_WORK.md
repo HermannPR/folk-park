@@ -260,7 +260,11 @@ M8 starts from the verified M7 artifacts; it must not redesign or reimplement M0
 - Settings implements a strict native Preview → exact-ID Copy workflow. Preview has no clipboard, filesystem, project, preference, database, provider, or network side effect.
 - UI tests/build: PASS, 16/16. Complete Debug Standalone/VST3 build and CTest: PASS, 13/13. Focused processor diagnostics and malformed-state integration: PASS. `git diff --check`: PASS.
 - No distribution setting, provider, owner decision, or FL Studio status changed. The prior M7 Release/pluginval evidence remains the latest complete Release gate.
-- Next implementation boundary: long-run/stuck-note/UI lifecycle/failure-recovery automation and reproducible performance evidence, followed by install/repair/uninstall/routing/privacy/licensing/troubleshooting documentation.
+- `tests/RuntimeHardeningTests.cpp` now provides a practical 12-second default gate plus a bounded 120-second extended mode for finite synth/effects output, repeated note cycles, panic/release to zero voices, preview overflow recovery, and exact direct-MIDI Stop cleanup.
+- Final extended Debug observation on the documented Intel i9 Mac: 11,250 blocks / 120 simulated seconds at 48 kHz/512, four notes, 2×2 unison, all six effects, one panic; PASS in 87,280.9 ms (`0.727341×` realtime). This is evidence, not an owner-approved performance budget or FL result.
+- The processor integration suite reconstructs the editor three times while a host-held voice remains active. Complete Debug Standalone/VST3 build and CTest now pass 14/14; evidence is in `evidence/m8/runtime-hardening-debug.md`.
+- The legacy arbitrary `<4×` performance assertion is now a recorded finite positive measurement because M8 forbids inventing a product-owner CPU budget. Zero callback allocations and finite-output functional gates remain mandatory.
+- Next implementation boundary: install/repair/uninstall, routing/recovery/troubleshooting, privacy/licensing/asset, and private packaging documentation plus safe supporting scripts.
 
 ## Commands and local environment
 

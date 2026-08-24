@@ -85,6 +85,8 @@ The message thread combines those typed values with bounded build, wrapper, and 
 
 Clipboard access requires two explicit operations. Preview creates an opaque ID and complete immutable text without writing external state. Copy succeeds only for the exact current preview ID and copies that exact text through the native message-thread clipboard API. React validates the complete two-field preview before displaying it and leaves Copy disabled until a fresh preview exists.
 
+Runtime hardening has two durations over one deterministic native fixture: a practical routine CTest and an explicitly invoked bounded extended run. Both scan every sample for finiteness and exercise notes, effects, panic, release, preview overflow, and direct-MIDI Stop. Editor reconstruction is tested independently while host-owned audio continues. Timing is printed with the exact configuration as evidence, but is not a release threshold until the product owner approves a CPU budget.
+
 ## ADRs
 
 - ADR-0001: JUCE pin and dependency acquisition.

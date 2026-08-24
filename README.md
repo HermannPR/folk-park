@@ -4,7 +4,7 @@
 
 `folk park` combines a playable dual-wavetable instrument, MIDI idea generation, an ordered effects chain, offline audio rendering, and crash-aware local persistence in one Standalone/VST3 product. Release 0.1 targets FL Studio on Intel (`x86_64`) macOS.
 
-> **Current status — M8 release hardening in progress.** The latest complete Release gate remains the verified M7 Intel Standalone/VST3 checkpoint: 13 Release suites, pluginval 1.0.4 at strictness 5, and an independent installed-VST3 MIDI render. M8 now adds a passing Debug checkpoint for bounded privacy-safe diagnostics (16 UI tests and 13 native suites). FL Studio checks, signing/notarization, licensing, and distribution decisions remain explicitly unresolved.
+> **Current status — M8 release hardening in progress.** The latest complete Release gate remains the verified M7 Intel Standalone/VST3 checkpoint: 13 Release suites, pluginval 1.0.4 at strictness 5, and an independent installed-VST3 MIDI render. M8 now adds passing Debug checkpoints for bounded privacy-safe diagnostics and deterministic runtime recovery (16 UI tests and 14 native suites). FL Studio checks, signing/notarization, licensing, and distribution decisions remain explicitly unresolved.
 
 ## Product tour
 
@@ -187,7 +187,7 @@ Actual Release interaction verifies native privacy status, explained proposal cr
 
 M8 has established a native privacy-safe diagnostics surface and stronger fault containment without changing the sound/preset contracts. Audio configuration is atomically observable; final non-finite samples are replaced with silence; overflow and malformed-state events increment bounded counters. The Settings UI requires a complete preview before it can copy the exact report associated with that preview ID. Previewing performs no filesystem, preference, project, database, provider, network, or clipboard write.
 
-This checkpoint passes the production UI build and 16/16 interface tests, builds Debug Standalone/VST3, and passes all 13 Debug native/integration suites. A new real Release screenshot will be added only after the M8 Release artifact is built and inspected; the screenshots above remain real M6/M7 Release evidence rather than mockups.
+This checkpoint passes the production UI build and 16/16 interface tests, builds Debug Standalone/VST3, and passes all 14 Debug native/integration suites. Its finalized extended run rendered 120 simulated seconds at 48 kHz/512 with repeated notes, 2×2 unison, all six effects, panic, release, preview-overflow recovery, and direct-MIDI Stop while checking every output sample for finiteness. The measured `0.727341×` realtime ratio is retained as one-machine Debug evidence, not a promised budget. A new real Release screenshot will be added only after the M8 Release artifact is built and inspected; the screenshots above remain real M6/M7 Release evidence rather than mockups.
 
 ## Build and run
 
@@ -275,7 +275,7 @@ The canonical continuation point for another coding session is [docs/CURRENT_WOR
 | M5 | Six ordered effects and isolated accepted-composition WAV preview | Automated gate passed; FL effects/WAV checks pending |
 | M6 | Native presets, migrations, assets, searchable history, project recovery | Automated gate verified; FL persistence checks pending |
 | M7 | Offline Jarvis text workflow, adaptive sound questions, explained A/B proposals, optional secure provider | Automated gate verified; FL Jarvis/project checks pending |
-| M8 | FL Studio matrix, diagnostics/performance/recovery hardening, packaging, legal/asset audit, release docs | In progress — bounded diagnostics Debug checkpoint passes |
+| M8 | FL Studio matrix, diagnostics/performance/recovery hardening, packaging, legal/asset audit, release docs | In progress — diagnostics and runtime-recovery Debug checkpoints pass |
 
 The connected M7 workflow now asks focused sound-design questions, translates complete answers into bounded explanations, and exposes reversible A/B plus explicit accept/reject in the product interface. Offline/manual operation remains complete; an optional model provider cannot bypass the parameter catalog, embed user keys, or directly control the DAW.
 

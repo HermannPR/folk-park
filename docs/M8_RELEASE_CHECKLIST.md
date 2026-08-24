@@ -18,7 +18,7 @@ The M8 automated gate cannot close with a known Critical or High defect. Unrun h
 | Area | Required deliverable | Evidence required | Current status |
 | --- | --- | --- | --- |
 | Diagnostics | Bounded native snapshot, sanitized subsystem codes, lock-free fault counters, explicit preview-before-copy UI | Pure contract tests, processor integration tests, UI adversarial tests, real Release inspection | DEBUG AUTOMATION PASS; RELEASE INSPECTION PENDING |
-| Runtime hardening | Long-run finite audio/MIDI, stop/panic/no-stuck-note, UI-independent state, corrupted-state rollback | Deterministic Debug and Release tests with measured duration/configuration | PENDING |
+| Runtime hardening | Long-run finite audio/MIDI, stop/panic/no-stuck-note, UI-independent state, corrupted-state rollback | Deterministic Debug and Release tests with measured duration/configuration | DEBUG PASS; RELEASE PENDING |
 | Performance | Current x86_64 synth/FX/modulation and UI-analysis baselines with machine/OS/build/method | Retained machine-readable or plain-text benchmark evidence; no invented budget | PENDING OWNER BUDGET |
 | Installation | Exact build, install, rescan, repair, version/hash verification, safe uninstall, and rollback notes | Script tests/read-only checks plus human-ready FL steps | PENDING |
 | Routing/troubleshooting | MIDI drag/direct routing, WAV import/render, focus, WebView, preset/database/provider recovery | Exact expected/actual/evidence fields; FL rows remain HUMAN RUN REQUIRED | PENDING |
@@ -60,6 +60,15 @@ cd ..
 /Users/hermannpr/Library/Python/3.9/bin/cmake --build --preset macos-x86_64-release
 /Users/hermannpr/Library/Python/3.9/bin/ctest --preset macos-x86_64-release --output-on-failure
 ```
+
+The default runtime-hardening CTest simulates 12 seconds so routine gates remain practical. The retained M8 Release evidence must also run the bounded extended mode explicitly:
+
+```sh
+FOLK_PARK_RUNTIME_SECONDS=120 \
+  build/macos-x86_64-release/FolkParkRuntimeHardeningTests_artefacts/Release/FolkParkRuntimeHardeningTests
+```
+
+Performance tests must require finite output and a valid positive measurement, then record the result. They must not fail against the legacy arbitrary `<4×` realtime threshold or a newly invented number; only an owner-approved budget may become a release gate.
 
 Then run pluginval strictness 5 with GUI tests, inspect thin `x86_64` architecture and local signatures, install the exact validated VST3, compare installed/build hashes, run the independent installed-bundle MIDI smoke, parse all schemas, and scan tracked project/runtime material for credentials and development origins.
 

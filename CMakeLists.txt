@@ -359,6 +359,36 @@ target_link_libraries(FolkParkRealtimeTests PRIVATE
     juce::juce_recommended_warning_flags)
 add_test(NAME FolkParkRealtimeAllocationTests COMMAND FolkParkRealtimeTests)
 
+juce_add_console_app(FolkParkRuntimeHardeningTests PRODUCT_NAME "folk park runtime hardening tests")
+target_sources(FolkParkRuntimeHardeningTests PRIVATE
+    tests/RuntimeHardeningTests.cpp
+    src/midi/Composition.cpp
+    src/midi/Composition.h
+    src/midi/MidiDelivery.cpp
+    src/midi/MidiDelivery.h
+    src/midi/PreviewMidi.cpp
+    src/midi/PreviewMidi.h
+    src/effects/EffectChain.cpp
+    src/effects/EffectChain.h
+    src/synth/SynthEngine.cpp
+    src/synth/SynthEngine.h
+    src/synth/Modulation.cpp
+    src/synth/Modulation.h
+    src/synth/WavetableBank.cpp
+    src/synth/WavetableBank.h
+    src/synth/WavetableExchange.cpp
+    src/synth/WavetableExchange.h)
+target_include_directories(FolkParkRuntimeHardeningTests PRIVATE src)
+target_compile_definitions(FolkParkRuntimeHardeningTests PRIVATE JUCE_USE_CURL=0)
+target_link_libraries(FolkParkRuntimeHardeningTests PRIVATE
+    juce::juce_audio_basics
+    juce::juce_audio_formats
+    juce::juce_core
+    juce::juce_dsp
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)
+add_test(NAME FolkParkRuntimeHardeningRecoveryTests COMMAND FolkParkRuntimeHardeningTests)
+
 juce_add_console_app(FolkParkDiagnosticsTests PRODUCT_NAME "folk park diagnostics tests")
 target_sources(FolkParkDiagnosticsTests PRIVATE
     tests/DiagnosticsTests.cpp

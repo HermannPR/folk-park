@@ -24,6 +24,16 @@
 - UI contracts/build: PASS, 16/16. Complete Debug Standalone and VST3 build: PASS. Complete Debug CTest: PASS, 13/13. Focused diagnostics and processor integration: PASS. `git diff --check`: PASS.
 - This is a Debug implementation checkpoint, not a final M8 Release gate. The M7 Release/pluginval/install evidence remains current; every FL Studio row remains `HUMAN RUN REQUIRED`.
 
+## M8 runtime-hardening Debug checkpoint
+
+- Added a deterministic runtime suite with a 12-second routine mode and bounded `FOLK_PARK_RUNTIME_SECONDS=120` evidence mode.
+- The suite checks every output sample for finiteness across repeated note cycles and all six effects, executes panic, waits for zero active voices, proves preview held-key idempotence and full-queue recovery, and proves direct-MIDI Stop emits the tracked note-off and clears pending/playing state.
+- Reconstructed and destroyed the bundled editor three times while a host-held note continued through the processor callback; audio and voice ownership remained independent from WebView lifetime.
+- Final extended Debug run: PASS — 11,250 blocks, 120 simulated seconds, 48 kHz/512, four notes, 2×2 unison, all effects, one panic, 87,280.9 ms internal elapsed, `0.727341×` realtime.
+- Complete Debug Standalone/VST3 build: PASS. Complete Debug CTest: PASS, 14/14. Retained evidence: `evidence/m8/runtime-hardening-debug.md`.
+- Removed the legacy arbitrary `<4×` CPU failure threshold while retaining finite output, positive measurement, zero callback allocations, and printed performance evidence. An owner-approved CPU budget remains unresolved.
+- No FL Studio, listening, physical device, Release parity, distribution, provider, or legal status changed.
+
 ## M7 contract checkpoint
 
 - Added versioned typed `AssistantRequest`/`AssistantResponse` variants for composition versus sound and offline/mock/remote processing origins.

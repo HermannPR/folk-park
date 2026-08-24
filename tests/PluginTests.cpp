@@ -488,11 +488,21 @@ void testUiIndependenceAndPanic()
            "Opening the editor must not change deterministic audio rendering");
 
     editor.reset();
-    juce::MidiBuffer editorClosedMidi;
-    openEditorProcessor.processBlock(openAudio, editorClosedMidi);
-    expect(openEditorProcessor.getActiveVoiceCount() > 0
-               && openAudio.getMagnitude(0, 0, openAudio.getNumSamples()) > 1.0e-7f,
-           "Closing or losing the WebView must not stop an active synth voice or audio callback");
+    for (int lifecycle = 0; lifecycle < 3; ++lifecycle)
+    {
+        editor = std::unique_ptr<juce::AudioProcessorEditor>(
+            openEditorProcessor.createEditor());
+        expect(editor != nullptr, "Repeated M8 WebView editor reconstruction must succeed");
+        if (editor != nullptr)
+            editor->setSize(lifecycle % 2 == 0 ? 720 : 1180,
+                            lifecycle % 2 == 0 ? 560 : 900);
+        editor.reset();
+        juce::MidiBuffer editorClosedMidi;
+        openEditorProcessor.processBlock(openAudio, editorClosedMidi);
+        expect(openEditorProcessor.getActiveVoiceCount() > 0
+                   && openAudio.getMagnitude(0, 0, openAudio.getNumSamples()) > 1.0e-7f,
+               "Closing/reconstructing the WebView must not stop a host-held voice or callback");
+    }
 
     openEditorProcessor.requestPanic();
     juce::MidiBuffer noMidi;
