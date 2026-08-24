@@ -59,6 +59,7 @@ The DOCX is the master product and engineering contract. Read it without modifyi
 - Rhythm Lab R1 branch: `feat/rhythm-lab-r1`, created from verified Orbital Habitat checkpoint `50b36a4`. Contract checkpoint: `c43454c Established synthesized Rhythm Lab contracts`. Producer direction is synthesized-first with indie/rock, Eurodance, techno, funk, and jazz profiles and no current sample library. ADR-0010 and version-1 `RhythmIntent`, `DrumPattern`, and `SynthDrumKit` contracts pass focused native validation.
 - Rhythm Lab synthesized engine checkpoint: `499d09b Implemented the synthesized drum engine`. The preallocated engine and measured zero-allocation callback coverage are committed; application pattern playback and UI integration remain pending.
 - Rhythm generation checkpoint: `4b0810f Implemented deterministic rhythm generation`. Five distinct profiles, explicit candidate/accepted state, variations/lineage, and channel-10 MIDI reopen parity are committed.
+- Rhythm Lab native verification checkpoint: `306201b Verified the Rhythm Lab native foundation`. Private draft PR #9 is stacked with base exactly `feat/m8-release-hardening` and head `feat/rhythm-lab-r1`: <https://github.com/HermannPR/folk-park/pull/9>.
 - Earlier M6 commits are:
   - `735fb84 Established the M6 persistence and migration contracts`
   - `a69a8bc Implemented versioned native presets and validated assets`
