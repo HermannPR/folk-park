@@ -272,6 +272,10 @@ private:
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> masterGain;
     std::atomic<bool> panicRequested{false};
     std::atomic<std::uint64_t> nonFiniteOutputSamples{0};
+    std::atomic<std::uint64_t> overUnityOutputSamples{0};
+    std::atomic<std::uint64_t> maximumPreMasterPeakMicro{0};
+    std::atomic<std::uint64_t> maximumOutputPeakMicro{0};
+    std::atomic<int> maximumActiveVoices{0};
     std::atomic<std::uint64_t> directMidiOverflows{0};
     std::atomic<std::uint64_t> previewMidiOverflows{0};
     std::atomic<std::uint64_t> rejectedProjectStates{0};

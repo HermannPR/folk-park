@@ -23,6 +23,26 @@ constexpr int maximumPluginStateBytes = 8 * 1024 * 1024;
 constexpr auto projectSnapshotId = "00000000-0000-4000-8000-000000000001";
 thread_local bool assistantParameterWriteOnThisThread = false;
 
+template <typename Value>
+void publishMaximum(std::atomic<Value>& destination, Value candidate) noexcept
+{
+    auto current = destination.load(std::memory_order_relaxed);
+    while (candidate > current
+           && !destination.compare_exchange_weak(current, candidate,
+                                                 std::memory_order_relaxed,
+                                                 std::memory_order_relaxed))
+    {
+    }
+}
+
+std::uint64_t peakMicro(float peak) noexcept
+{
+    constexpr auto maximumTrackedPeak = 64.0f;
+    const auto boundedPeak = std::isfinite(peak)
+        ? juce::jlimit(0.0f, maximumTrackedPeak, peak) : maximumTrackedPeak;
+    return static_cast<std::uint64_t>(std::llround(static_cast<double>(boundedPeak) * 1'000'000.0));
+}
+
 bool hasOnlyProjectSessionProperties(const juce::ValueTree& state)
 {
     constexpr std::array allowed{
@@ -730,14 +750,24 @@ void PluginProcessor::processBlock(juce::AudioBuffer<float>& audio, juce::MidiBu
 
     const auto channelCount = juce::jmin(2, audio.getNumChannels());
     std::uint64_t containedSamples = 0;
+    std::uint64_t overUnitySamples = 0;
+    auto preMasterPeak = 0.0f;
+    auto outputPeak = 0.0f;
     for (int sample = 0; sample < audio.getNumSamples(); ++sample)
     {
         const auto gain = masterGain.getNextValue();
         for (int channel = 0; channel < channelCount; ++channel)
         {
-            const auto output = audio.getSample(channel, sample) * gain;
+            const auto preMaster = audio.getSample(channel, sample);
+            preMasterPeak = std::max(preMasterPeak, std::abs(preMaster));
+            const auto output = preMaster * gain;
             if (std::isfinite(output))
+            {
                 audio.setSample(channel, sample, output);
+                const auto magnitude = std::abs(output);
+                outputPeak = std::max(outputPeak, magnitude);
+                overUnitySamples += magnitude > 1.0f ? 1u : 0u;
+            }
             else
             {
                 audio.setSample(channel, sample, 0.0f);
@@ -745,6 +775,11 @@ void PluginProcessor::processBlock(juce::AudioBuffer<float>& audio, juce::MidiBu
             }
         }
     }
+    publishMaximum(maximumPreMasterPeakMicro, peakMicro(preMasterPeak));
+    publishMaximum(maximumOutputPeakMicro, peakMicro(outputPeak));
+    publishMaximum(maximumActiveVoices, engine.getActiveVoiceCount());
+    if (overUnitySamples != 0)
+        overUnityOutputSamples.fetch_add(overUnitySamples, std::memory_order_relaxed);
     if (containedSamples != 0)
         nonFiniteOutputSamples.fetch_add(containedSamples, std::memory_order_relaxed);
 }
@@ -777,6 +812,7 @@ diagnostics::Snapshot PluginProcessor::getDiagnosticsSnapshot() const
     snapshot.sampleRate = activeSampleRate.load(std::memory_order_acquire);
     snapshot.maximumBlockSize = activeBlockSize.load(std::memory_order_acquire);
     snapshot.activeVoices = getActiveVoiceCount();
+    snapshot.maximumActiveVoices = maximumActiveVoices.load(std::memory_order_relaxed);
 
     const auto persistence = getPersistenceStatus();
     if (!persistence.enabled)
@@ -796,6 +832,10 @@ diagnostics::Snapshot PluginProcessor::getDiagnosticsSnapshot() const
     snapshot.provider = diagnostics::ServiceCode::disabled;
     snapshot.uiBridge = diagnostics::ServiceCode::ready;
     snapshot.nonFiniteOutputSamples = nonFiniteOutputSamples.load(std::memory_order_relaxed);
+    snapshot.overUnityOutputSamples = overUnityOutputSamples.load(std::memory_order_relaxed);
+    snapshot.maximumPreMasterPeakMicro = maximumPreMasterPeakMicro.load(std::memory_order_relaxed);
+    snapshot.maximumOutputPeakMicro = maximumOutputPeakMicro.load(std::memory_order_relaxed);
+    snapshot.voiceSteals = engine.getVoiceStealCount();
     snapshot.directMidiOverflows = directMidiOverflows.load(std::memory_order_relaxed);
     snapshot.previewMidiOverflows = previewMidiOverflows.load(std::memory_order_relaxed);
     snapshot.rejectedProjectStates = rejectedProjectStates.load(std::memory_order_relaxed);

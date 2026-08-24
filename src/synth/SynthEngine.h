@@ -115,6 +115,10 @@ public:
                                              std::span<const ModulationRoute> routes) noexcept;
     [[nodiscard]] const ModulationSnapshot& getActiveModulationSnapshot() const noexcept;
     [[nodiscard]] int getActiveVoiceCount() const noexcept;
+    [[nodiscard]] std::uint64_t getVoiceStealCount() const noexcept
+    {
+        return voiceStealCount.load(std::memory_order_relaxed);
+    }
     [[nodiscard]] bool isNoteActive(int midiChannel, int midiNote) const noexcept;
 
 private:
@@ -263,6 +267,7 @@ private:
     std::atomic<bool> publicationProducerActive{false};
     std::atomic<bool> publicationConsumerActive{false};
     std::atomic<int> activeVoiceCount{0};
+    std::atomic<std::uint64_t> voiceStealCount{0};
     std::array<float, 4> globalLfoPhases{};
     double sampleRate = 44100.0;
     std::uint64_t voiceAgeCounter = 0;

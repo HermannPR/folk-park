@@ -35,6 +35,13 @@ juce::String boundedUnsigned(std::uint64_t value)
     return juce::String(static_cast<juce::int64>(juce::jmin(
         value, static_cast<std::uint64_t>(std::numeric_limits<juce::int64>::max()))));
 }
+
+juce::String boundedPeak(std::uint64_t micro)
+{
+    constexpr auto maximumReportedMicro = std::uint64_t{64'000'000};
+    return juce::String(static_cast<double>(juce::jmin(micro, maximumReportedMicro))
+                        / 1'000'000.0, 6);
+}
 }
 
 juce::String serviceCode(ServiceCode code)
@@ -69,11 +76,16 @@ juce::String formatReport(const Snapshot& snapshot)
            << "sample_rate_hz: " << sampleRate << "\n"
            << "maximum_block_size: " << blockSize << "\n"
            << "active_voices: " << juce::jlimit(0, 1024, snapshot.activeVoices) << "\n"
+           << "maximum_active_voices: " << juce::jlimit(0, 1024, snapshot.maximumActiveVoices) << "\n"
            << "preset_status: " << serviceCode(snapshot.preset) << "\n"
            << "database_status: " << serviceCode(snapshot.database) << "\n"
            << "provider_status: " << serviceCode(snapshot.provider) << "\n"
            << "ui_bridge_status: " << serviceCode(snapshot.uiBridge) << "\n"
+           << "maximum_pre_master_peak_linear: " << boundedPeak(snapshot.maximumPreMasterPeakMicro) << "\n"
+           << "maximum_output_peak_linear: " << boundedPeak(snapshot.maximumOutputPeakMicro) << "\n"
+           << "fault_over_unity_output_samples: " << boundedUnsigned(snapshot.overUnityOutputSamples) << "\n"
            << "fault_nonfinite_output_samples: " << boundedUnsigned(snapshot.nonFiniteOutputSamples) << "\n"
+           << "voice_steals: " << boundedUnsigned(snapshot.voiceSteals) << "\n"
            << "fault_direct_midi_overflows: " << boundedUnsigned(snapshot.directMidiOverflows) << "\n"
            << "fault_preview_midi_overflows: " << boundedUnsigned(snapshot.previewMidiOverflows) << "\n"
            << "fault_rejected_project_states: " << boundedUnsigned(snapshot.rejectedProjectStates) << "\n"

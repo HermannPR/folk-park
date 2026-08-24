@@ -25,9 +25,14 @@ int main()
     snapshot.sampleRate = 48000.0;
     snapshot.maximumBlockSize = 512;
     snapshot.activeVoices = 4;
+    snapshot.maximumActiveVoices = 16;
     snapshot.preset = ServiceCode::missingAssets;
     snapshot.database = ServiceCode::ready;
     snapshot.nonFiniteOutputSamples = 3;
+    snapshot.overUnityOutputSamples = 12;
+    snapshot.maximumPreMasterPeakMicro = 2'500'000;
+    snapshot.maximumOutputPeakMicro = 1'250'000;
+    snapshot.voiceSteals = 7;
     snapshot.rejectedProjectStates = 2;
 
     const auto first = formatReport(snapshot);
@@ -47,6 +52,11 @@ int main()
                      "subsystem states must use fixed codes");
     passed &= expect(first.contains("fault_nonfinite_output_samples: 3"),
                      "audio fault counters must be represented without messages");
+    passed &= expect(first.contains("maximum_output_peak_linear: 1.250000")
+                         && first.contains("fault_over_unity_output_samples: 12")
+                         && first.contains("voice_steals: 7")
+                         && first.contains("maximum_active_voices: 16"),
+                     "M9 level and voice-pressure telemetry must format deterministically");
 
     PreviewSession session;
     const auto preview = session.create(snapshot);

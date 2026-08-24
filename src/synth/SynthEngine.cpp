@@ -285,6 +285,8 @@ SynthEngine::Voice& SynthEngine::chooseVoiceToStart() noexcept
             return voice;
     }
 
+    voiceStealCount.fetch_add(1, std::memory_order_relaxed);
+
     Voice* bestReleased = nullptr;
     for (auto& voice : voices)
     {

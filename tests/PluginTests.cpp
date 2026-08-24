@@ -4,6 +4,7 @@
 #include <juce_events/juce_events.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <iostream>
 #include <memory>
@@ -1018,6 +1019,95 @@ void testBoundedProcessorDiagnostics()
     expect(released.sampleRate == 0.0 && released.maximumBlockSize == 0,
            "Released audio resources must be reported as unavailable without stale thread data");
 }
+
+void testAudioStabilityTelemetryClassifiesDenseLevelPressure()
+{
+    using namespace folkpark;
+    {
+        PluginProcessor generated(disabledPersistence());
+        midi::MusicIntent intent;
+        intent.seed = 7007;
+        intent.requestId = midi::deterministicUuid(intent.seed, "m9-default-composition-level-baseline");
+        expect(generated.generateCompositionCandidate(intent).wasOk()
+                   && generated.acceptCompositionCandidate().wasOk(),
+               "M9 must reproduce the normal four-part composition path");
+        generated.prepareToPlay(48000.0, 512);
+        expect(generated.routeAcceptedMidi().wasOk(),
+               "M9 normal composition baseline must publish its accepted schedule");
+        juce::AudioBuffer<float> generatedAudio(2, 512);
+        auto renderedBlocks = 0;
+        const auto renderStart = std::chrono::steady_clock::now();
+        for (; renderedBlocks < 2'000 && generated.isDirectMidiPlaying(); ++renderedBlocks)
+        {
+            juce::MidiBuffer generatedMidi;
+            generatedMidi.ensureSize(4096);
+            generated.processBlock(generatedAudio, generatedMidi);
+        }
+        const auto renderSeconds = std::chrono::duration<double>(
+            std::chrono::steady_clock::now() - renderStart).count();
+        const auto audioSeconds = static_cast<double>(renderedBlocks * 512) / 48000.0;
+        const auto generatedMetrics = generated.getDiagnosticsSnapshot();
+        expect(generatedMetrics.nonFiniteOutputSamples == 0
+                   && generatedMetrics.directMidiOverflows == 0,
+               "Normal generated composition must stay finite and within its MIDI delivery bound");
+        std::cout << "M9 default composition baseline: output="
+                  << static_cast<double>(generatedMetrics.maximumOutputPeakMicro) / 1'000'000.0
+                  << ", over-unity-samples=" << generatedMetrics.overUnityOutputSamples
+                  << ", maximum-voices=" << generatedMetrics.maximumActiveVoices
+                  << ", voice-steals=" << generatedMetrics.voiceSteals
+                  << ", render-ratio=" << renderSeconds / audioSeconds << 'x' << '\n';
+    }
+
+    PluginProcessor processor(disabledPersistence());
+    constexpr auto blockSize = 128;
+    processor.prepareToPlay(48000.0, blockSize);
+
+    auto* master = processor.state().getParameter(parameterIds::masterGain);
+    auto* oscillatorA = processor.state().getParameter(parameterIds::oscillatorLevel);
+    auto* oscillatorB = processor.state().getParameter(parameterIds::oscillatorBLevel);
+    expect(master != nullptr && oscillatorA != nullptr && oscillatorB != nullptr,
+           "M9 stress fixture requires the stable oscillator and master parameters");
+    if (master == nullptr || oscillatorA == nullptr || oscillatorB == nullptr)
+        return;
+
+    master->setValueNotifyingHost(1.0f);
+    oscillatorA->setValueNotifyingHost(1.0f);
+    oscillatorB->setValueNotifyingHost(1.0f);
+
+    juce::AudioBuffer<float> audio(2, blockSize);
+    juce::MidiBuffer dense;
+    for (int note = 48; note < 48 + synth::SynthEngine::maximumVoices; ++note)
+        dense.addEvent(juce::MidiMessage::noteOn(1, note, static_cast<juce::uint8>(127)), 0);
+    processor.processBlock(audio, dense);
+
+    for (int block = 0; block < 80; ++block)
+    {
+        juce::MidiBuffer continuing;
+        processor.processBlock(audio, continuing);
+    }
+
+    auto measured = processor.getDiagnosticsSnapshot();
+    expect(measured.maximumActiveVoices == synth::SynthEngine::maximumVoices,
+           "Dense M9 fixture must record the bounded maximum voice pressure");
+    expect(measured.maximumPreMasterPeakMicro > 0 && measured.maximumOutputPeakMicro > 0,
+           "Dense M9 fixture must record pre-master and output peaks");
+    expect(measured.overUnityOutputSamples > 0 && measured.maximumOutputPeakMicro > 1'000'000,
+           "Supported extreme gain settings must be classified as a reproducible level overload before repair");
+    expect(measured.nonFiniteOutputSamples == 0,
+           "The reproduced level overload must remain distinct from non-finite DSP failure");
+    std::cout << "M9 dense level baseline: pre-master="
+              << static_cast<double>(measured.maximumPreMasterPeakMicro) / 1'000'000.0
+              << ", output="
+              << static_cast<double>(measured.maximumOutputPeakMicro) / 1'000'000.0
+              << ", over-unity-samples=" << measured.overUnityOutputSamples << '\n';
+
+    juce::MidiBuffer stealing;
+    stealing.addEvent(juce::MidiMessage::noteOn(1, 84, static_cast<juce::uint8>(127)), 0);
+    processor.processBlock(audio, stealing);
+    measured = processor.getDiagnosticsSnapshot();
+    expect(measured.voiceSteals == 1,
+           "The seventeenth overlapping note must be classified separately as one voice steal");
+}
 }
 
 int main()
@@ -1037,8 +1127,9 @@ int main()
     testHistorySymlinkFailureIsolation();
     testHistoryDatabaseFailureIsolation();
     testBoundedProcessorDiagnostics();
+    testAudioStabilityTelemetryClassifiesDenseLevelPressure();
 
     if (failures == 0)
-        std::cout << "PASS: M1–M7 processor paths plus M8 bounded diagnostics\n";
+        std::cout << "PASS: M1–M8 processor paths plus M9 stability telemetry\n";
     return failures == 0 ? 0 : 1;
 }
