@@ -1,4 +1,5 @@
 #include "effects/EffectChain.h"
+#include "drums/DrumEngine.h"
 #include "midi/Composition.h"
 #include "midi/MidiDelivery.h"
 #include "midi/PreviewMidi.h"
@@ -163,12 +164,19 @@ int main()
     effectParameters.compressorBypass = false;
     effectParameters.eqBypass = false;
     effects.prepare(48000.0, blockSize);
+    folkpark::drums::DrumEngine drums;
+    drums.prepare(48000.0, blockSize);
+    drums.trigger(folkpark::drums::DrumLane::kick, 112,
+                  folkpark::drums::DrumArticulation::accent);
+    drums.trigger(folkpark::drums::DrumLane::snare, 104);
+    drums.trigger(folkpark::drums::DrumLane::closedHat, 96);
 
     allocationProbe::count.store(0, std::memory_order_relaxed);
     allocationProbe::tracking.store(true, std::memory_order_release);
     for (int block = 0; block < 32; ++block)
     {
         engine.process(audio, midi, parameters);
+        drums.process(audio);
         effects.process(audio, effectParameters);
         directOutput.clear();
         const auto previewEvents = previewQueue.renderBlock(directOutput);
@@ -205,6 +213,6 @@ int main()
         std::cerr << "FAIL: rejected preset publication changed the active modulation snapshot\n";
         return 1;
     }
-    std::cout << "PASS: 32 audio blocks, including atomic preset activation, six effects, direct MIDI, and preview keyboard, allocated 0 times\n";
+    std::cout << "PASS: 32 audio blocks, including synthesized drums, atomic preset activation, six effects, direct MIDI, and preview keyboard, allocated 0 times\n";
     return 0;
 }

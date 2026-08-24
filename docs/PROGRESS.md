@@ -360,6 +360,31 @@
 - Actual Release Standalone screenshots and visual/navigation inspection are retained for Synth, Compose, Jarvis, FX, and History under `evidence/m8/visual/`. This is not an audible or FL Studio pass.
 - Established `plans/RHYTHM_LAB.md` as the separate future drum-product plan. It requires audible hybrid drum voices, deterministic patterns, per-lane control, stems, and a licensed/original/user-import break slicer; implementation has not started.
 
+## Rhythm Lab R1 contract checkpoint
+
+- Recorded the producer direction: indie/rock, Eurodance, techno, funk, and jazz; synthesized-first because no reviewed sample library is available.
+- Added ADR-0010 and strict version-1 native/JSON contracts for `RhythmIntent`, `DrumPattern`, and the authored `synth_core_v1` kit while preserving every M3 composition contract.
+- Added stable kick, snare, closed/open hat, and percussion lane identities plus bounded synthesis parameters ready for an allocation-free engine.
+- Focused Debug configure/build and contract test: PASS, 1/1. Ten JSON schemas parse successfully and `git diff --check` passes.
+- This checkpoint contains no audible drum engine, generated pattern, sample asset, application UI, or FL Studio evidence yet.
+
+## Rhythm Lab synthesized engine checkpoint
+
+- Added a deterministic preallocated synthesized drum engine for kick, snare, closed/open hat, and percussion with no external sample dependency.
+- Added pitch/envelope shaping, deterministic noise, hat choking, bounded voice stealing/tails, soft drive, stereo placement, finite containment, and immediate reset.
+- Added tests across 44.1/48/96 kHz and 32–1024-sample blocks plus deterministic parity, finite/nonzero output, tail completion, reset silence, and invalid-kit isolation.
+- Extended the measured callback-allocation probe to render active synthesized drums; zero allocations remain measured across its complete 32-block workload.
+- Focused Debug engine and real-time tests: PASS, 2/2. Product pattern playback, UI, FL Studio behavior, and listening remain pending.
+
+## Rhythm Lab generation and acceptance checkpoint
+
+- Added deterministic bounded patterns for indie/rock, Eurodance, techno, funk, and jazz through data-driven probability, accent, ghost-note, swing, humanization, and fill behavior.
+- Added separate candidate/accepted rhythm session state plus explicit acceptance and lineage-preserving `More Like This` generation.
+- Added standards-compliant channel-10 drum MIDI serialization and reopen parity at 96, 480, 960, and 1920 PPQ.
+- Verified that all five genre profiles produce distinct stable timing fingerprints and long dense patterns respect their event cap.
+- Focused contract, engine, generator/MIDI, and real-time suites: PASS, 4/4 without project compiler warnings. Product UI/playback and FL Studio remain pending.
+- Complete Debug Standalone/VST3 build and CTest: PASS, 18/18 in 21.57 seconds after the contract, engine, and generation checkpoints.
+
 ## Human-required status
 
 - Standalone physical keyboard/audio-device playability: PARTIAL. Automated real-window C3 hold/repeat/release passed; listening through the user's selected audio device remains human.
