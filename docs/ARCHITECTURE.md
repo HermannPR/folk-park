@@ -86,5 +86,6 @@ Sound A/B captures immutable current/proposed normalized values for every change
 - ADR-0006: Ordered effects and isolated offline preview for M5 (accepted).
 - ADR-0007: Versioned native presets, content-addressed assets, transactional history, and project recovery for M6 (accepted).
 - ADR-0008: Offline-first assistant orchestration, proposal-version migration, provider consent, and A/B acceptance for M7 (accepted).
+- ADR-0009: Bounded opt-in diagnostics and evidence-gated release hardening for M8 (accepted).
 
-The real-provider selection remains open M7 product work; the native Keychain boundary, offline/manual behavior, and explicit assistant acceptance are fixed. Distribution licensing/signing and release packaging remain M8 boundaries.
+Real-provider selection remains an open owner decision; the native Keychain boundary, offline/manual behavior, and explicit assistant acceptance are fixed. Distribution licensing/signing and release packaging remain M8 boundaries.

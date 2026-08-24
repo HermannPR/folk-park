@@ -3,9 +3,17 @@
 ## Current checkpoint
 
 - Milestone: M8 — release-candidate hardening and distribution audit
-- Status: M7 automated checkpoint and private draft PR #7 are complete; M8 implementation has not started, and all FL Studio human runs remain required
+- Status: M7 automated checkpoint and private draft PR #7 are complete; M8 checklist/diagnostics contract is in progress, and all FL Studio human runs remain required
 - Date: 2026-08-23 (America/Monterrey)
-- Branch: `feat/m7-guided-assistant`, stacked exactly on `feat/m6-presets-history`
+- Branch: `feat/m8-release-hardening`, stacked exactly on `feat/m7-guided-assistant`
+
+## M8 checklist checkpoint
+
+- Froze the M8 release-candidate deliverables, evidence requirements, Critical/High defect gate, and the exact distinction between automated, owner-decision, and FL Studio human evidence.
+- Defined a deterministic 4 KiB opt-in diagnostic preview containing bounded configuration, sanitized subsystem codes, and lock-free fault counters only.
+- Prohibited prompts, credentials, paths, filenames, project/preset identity, audio/MIDI content, database rows, clipboard contents, persistence, and provider transmission from diagnostics.
+- ADR-0009 requires native enforcement of exact preview-before-copy and preserves message-thread-only formatting/clipboard work.
+- No signing, licensing, provider, distribution, or FL Studio decision is inferred by this checkpoint.
 
 ## M7 contract checkpoint
 

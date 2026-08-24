@@ -34,7 +34,8 @@ The DOCX is the master product and engineering contract. Read it without modifyi
 ## Repository and Git state
 
 - Private repository: `HermannPR/folk-park`.
-- Current branch: `feat/m7-guided-assistant`, stacked exactly on `feat/m6-presets-history`.
+- Current branch: `feat/m8-release-hardening`, created at M7 handoff `eee67cf` and stacked exactly on `feat/m7-guided-assistant`.
+- Any M8 draft PR must use base exactly `feat/m7-guided-assistant` unless the documented stacked topology intentionally changes.
 - Any M7 draft PR must use base exactly `feat/m6-presets-history` unless the documented stacked topology intentionally changes.
 - M5 draft PR: <https://github.com/HermannPR/folk-park/pull/5>.
 - M6 private draft PR: <https://github.com/HermannPR/folk-park/pull/6>, base exactly `feat/m5-effects-preview`, head `feat/m6-presets-history`.
@@ -249,6 +250,13 @@ M8 starts from the verified M7 artifacts; it must not redesign or reimplement M0
 - Do not add a remote provider because Keychain exists. Provider selection remains open decision 5 and requires a separate privacy/consent review.
 - Do not claim signing/notarization, audible quality, FL compatibility, physical MIDI/audio-device behavior, or distribution readiness without exact evidence.
 - Keep the recruiter README factual and update screenshots only with real Release artifacts.
+
+### M8 checklist checkpoint in progress
+
+- `docs/M8_RELEASE_CHECKLIST.md` freezes defect severity, deliverables/evidence, diagnostics privacy, exact automated gates, and owner/human stop conditions.
+- ADR-0009 fixes a deterministic 4 KiB diagnostics preview, fixed sanitized codes/counters, callback-safe atomics, exact preview-before-copy enforcement, and the engineering-candidate label.
+- No runtime code, distribution setting, owner decision, or FL Studio status changed in this checklist stage.
+- Next implementation boundary: the typed native diagnostics model, processor fault counters, strict bridge/UI preview-copy workflow, and adversarial tests.
 
 ## Commands and local environment
 
