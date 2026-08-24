@@ -102,9 +102,14 @@ void testFileLifecycle()
     if (!generated.succeeded())
         return;
     const auto file = writeMidiToTemporaryFile(generated.bundle, 480);
+    const auto secondFile = writeMidiToTemporaryFile(generated.bundle, 480);
     expect(file.existsAsFile() && file.getSize() > 0,
            "Accepted MIDI must be writable to a non-empty temporary drag file");
+    expect(secondFile.existsAsFile() && secondFile != file,
+           "Concurrent accepted MIDI drag files must use distinct temporary paths");
     expect(file.deleteFile(), "Test-owned temporary MIDI file must be removable after validation");
+    expect(secondFile.deleteFile(),
+           "Every uniquely generated temporary MIDI fixture must be removable");
 }
 
 void testDirectOffsetsAndStop()

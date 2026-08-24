@@ -147,3 +147,13 @@ test("M8 diagnostics require an exact privacy-safe preview before clipboard copy
   assert.match(panel, /Excludes file paths, project or preset names, prompts, audio, and credentials/);
   assert.doesNotMatch(panel, /https?:\/\//);
 });
+
+test("M8 editor owns and safely removes only its exact generated drag MIDI", async () => {
+  const editor = await readFile(resolve(sourceRoot, "../../src/plugin/PluginEditor.cpp"), "utf8");
+  const delivery = await readFile(resolve(sourceRoot, "../../src/midi/MidiDelivery.cpp"), "utf8");
+  assert.match(delivery, /getNonexistentChildFile\(prefix, "\.mid"/);
+  assert.match(editor, /~MidiDragButton\(\) override \{ cleanupTemporaryFile\(\); \}/);
+  assert.match(editor, /temporaryFile\.getParentDirectory\(\) == temporaryRoot/);
+  assert.match(editor, /temporaryFile\.getFileName\(\)\.startsWith\("folk-park-"\)/);
+  assert.match(editor, /!temporaryFile\.isSymbolicLink\(\)/);
+});

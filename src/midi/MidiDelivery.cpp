@@ -213,8 +213,9 @@ juce::File writeMidiToTemporaryFile(const CompositionBundle& bundle, int targetP
 {
     if (validateBundle(bundle).failed())
         return {};
-    const auto filename = "folk-park-" + bundle.intent.requestId + ".mid";
-    const auto file = juce::File::getSpecialLocation(juce::File::tempDirectory).getChildFile(filename);
+    const auto prefix = "folk-park-" + bundle.intent.requestId;
+    const auto file = juce::File::getSpecialLocation(juce::File::tempDirectory)
+        .getNonexistentChildFile(prefix, ".mid", false);
     return writeMidiFile(bundle, file, targetPpq).wasOk() ? file : juce::File{};
 }
 

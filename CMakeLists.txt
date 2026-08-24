@@ -402,6 +402,9 @@ target_link_libraries(FolkParkDiagnosticsTests PRIVATE
     juce::juce_recommended_warning_flags)
 add_test(NAME FolkParkBoundedDiagnosticsTests COMMAND FolkParkDiagnosticsTests)
 
+add_test(NAME FolkParkSupportScriptContractTests
+    COMMAND /bin/zsh "${CMAKE_CURRENT_SOURCE_DIR}/tests/SupportScriptTests.sh")
+
 juce_add_console_app(FolkParkPluginTests PRODUCT_NAME "folk park plug-in tests")
 target_sources(FolkParkPluginTests PRIVATE
     tests/PluginTests.cpp

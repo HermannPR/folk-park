@@ -48,3 +48,7 @@ Environment at M0 intake:
 | UI focus/fallback | Shortcuts, low graphics, and WebView failure are safe | HUMAN RUN REQUIRED | Pending |
 | Offline render | Matches real-time within documented tolerance | HUMAN RUN REQUIRED | Pending |
 | Failure modes | Invalid state/provider/database/UI failure does not stop audio | HUMAN RUN REQUIRED | Pending |
+| M8 diagnostics | Preview shows only bounded technical fields; clipboard stays unchanged until Copy; copied text exactly matches preview | HUMAN RUN REQUIRED | Native contract/UI tests pass; FL clipboard interaction pending |
+| M8 install/repair/rollback | Verify thin x86_64/hash, replace with retained backup, rescan, then restore the chosen prior bundle | HUMAN RUN REQUIRED | Script dry-run/contracts pass; no FL replacement performed |
+| M8 recoverable uninstall | Move only installed VST3 to Trash, confirm FL no longer discovers it, then reinstall without losing presets/assets/history | HUMAN RUN REQUIRED | Script contract passes; Application Support deletion is prohibited |
+| M8 extended stability | Run a representative FL project, cycle editor and notes/Stop/Panic, monitor finite audio/CPU, then save/reopen | HUMAN RUN REQUIRED | Native 120-second extended Debug run passes; not an FL/listening pass |

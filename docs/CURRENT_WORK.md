@@ -264,7 +264,13 @@ M8 starts from the verified M7 artifacts; it must not redesign or reimplement M0
 - Final extended Debug observation on the documented Intel i9 Mac: 11,250 blocks / 120 simulated seconds at 48 kHz/512, four notes, 2×2 unison, all six effects, one panic; PASS in 87,280.9 ms (`0.727341×` realtime). This is evidence, not an owner-approved performance budget or FL result.
 - The processor integration suite reconstructs the editor three times while a host-held voice remains active. Complete Debug Standalone/VST3 build and CTest now pass 14/14; evidence is in `evidence/m8/runtime-hardening-debug.md`.
 - The legacy arbitrary `<4×` performance assertion is now a recorded finite positive measurement because M8 forbids inventing a product-owner CPU budget. Zero callback allocations and finite-output functional gates remain mandatory.
-- Next implementation boundary: install/repair/uninstall, routing/recovery/troubleshooting, privacy/licensing/asset, and private packaging documentation plus safe supporting scripts.
+- `scripts/verify_user_vst3.sh` performs read-only exact bundle, thin `x86_64`, deep/strict signature, executable hash, and size checks. Install defaults to no overwrite; `--replace` retains a timestamped rollback and verifies hash parity. Uninstall defaults to dry-run and `--execute` moves only the exact VST3 to Trash.
+- Install/repair/uninstall never touches `~/Library/Application Support/folk park`; presets, imported assets, history, projects, and exports remain producer data. `docs/SUPPORT_PLAYBOOK.md` documents backup, rescan, rollback, symptom recovery, and exact evidence fields.
+- `docs/PRIVACY.md`, `docs/PACKAGING.md`, `LICENSES.md`, and `THIRD_PARTY_NOTICES.md` now document offline/local data, diagnostics, private artifact contents, notice obligations, and unresolved legal/distribution gates.
+- The read-only release-material audit pins JUCE/VST3 license-file hashes and bundled React/React DOM/Scheduler/Three versions/licenses, rejects unreviewed runtime media/fonts/external UI URLs, and confirms built-ins/UI assets are project-authored code rather than bundled factory media.
+- Drag MIDI now uses unique temporary paths and the editor removes only its exact guarded non-symlink temp file on replacement/destruction. Focused MIDI, support-script, processor, and UI contract tests pass; installer dry-run verified the retained M7 Release bundle without changing it.
+- UI lint/contracts: PASS, 17/17. Complete Debug Standalone/VST3 build and CTest: PASS, 15/15. Read-only release-material audit: PASS.
+- Next implementation boundary: clean M8 Release build/CTest, 120-second extended Release runtime, actual Release diagnostics screenshot, pluginval, installed parity/render, architecture/signature/hash, and source/security/schema evidence.
 
 ## Commands and local environment
 

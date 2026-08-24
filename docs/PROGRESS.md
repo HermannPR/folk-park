@@ -34,6 +34,19 @@
 - Removed the legacy arbitrary `<4×` CPU failure threshold while retaining finite output, positive measurement, zero callback allocations, and printed performance evidence. An owner-approved CPU budget remains unresolved.
 - No FL Studio, listening, physical device, Release parity, distribution, provider, or legal status changed.
 
+## M8 supportability and provenance checkpoint
+
+- Added read-only VST3 verification for exact bundle shape, thin `x86_64`, deep/strict signature, executable SHA-256, and size.
+- Made first install refuse an existing destination by default. Explicit `--replace` preserves a timestamped rollback, verifies copy hash parity, retains a failed candidate, and restores the previous bundle on verification failure.
+- Added dry-run-by-default uninstall that moves only the exact user VST3 to a unique Trash item on `--execute`; it never removes Application Support or producer work.
+- Added a full support playbook for backup, build, verify, install, FL rescan, repair, rollback, uninstall, diagnostics, no-sound/stuck-note/WebView/persistence/project-state recovery, and human evidence fields.
+- Added explicit privacy and private-packaging documents plus consolidated runtime notices and project asset inventory.
+- Added a read-only audit for the pinned JUCE/VST3 license files, exact bundled UI runtime versions/licenses, unexpected tracked runtime media/fonts, and external UI origins. Audit and shell contract tests: PASS.
+- Made concurrent drag MIDI paths unique and added guarded editor cleanup for only its exact app-generated temp file. UI contracts: PASS, 17/17. Focused MIDI/support/processor CTest: PASS, 3/3.
+- Installer dry-run verified the existing retained M7 Release VST3: thin `x86_64`, deep/strict signature verification, executable SHA-256 `b17c88bab2c1356c7b01980b96f918a28acbdd337f7ee2e437f9c63a7d7119ca`; no install or replacement was executed.
+- Complete Debug Standalone/VST3 build: PASS. Complete Debug CTest: PASS, 15/15 in 16.23 seconds. UI lint/contracts: PASS, 17/17.
+- JUCE license route, legal identity, public privacy notice, signing/notarization, installer/update channel, asset approval, provider, CPU budget, and every FL result remain unresolved owner/human gates.
+
 ## M7 contract checkpoint
 
 - Added versioned typed `AssistantRequest`/`AssistantResponse` variants for composition versus sound and offline/mock/remote processing origins.

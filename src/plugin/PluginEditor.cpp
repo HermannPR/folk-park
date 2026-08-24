@@ -536,6 +536,8 @@ public:
         setEnabled(false);
     }
 
+    ~MidiDragButton() override { cleanupTemporaryFile(); }
+
     void updateAvailability(bool available)
     {
         setEnabled(available);
@@ -553,6 +555,7 @@ public:
     {
         if (!dragStarted && event.getDistanceFromDragStart() > 4)
         {
+            cleanupTemporaryFile();
             temporaryFile = processor.writeAcceptedMidiToTemporaryFile();
             if (temporaryFile.existsAsFile())
             {
@@ -564,6 +567,17 @@ public:
     }
 
 private:
+    void cleanupTemporaryFile()
+    {
+        const auto temporaryRoot = juce::File::getSpecialLocation(juce::File::tempDirectory);
+        if (temporaryFile.existsAsFile() && !temporaryFile.isSymbolicLink()
+            && temporaryFile.getParentDirectory() == temporaryRoot
+            && temporaryFile.getFileName().startsWith("folk-park-")
+            && temporaryFile.hasFileExtension("mid"))
+            (void) temporaryFile.deleteFile();
+        temporaryFile = juce::File{};
+    }
+
     PluginProcessor& processor;
     juce::File temporaryFile;
     bool dragStarted = false;
