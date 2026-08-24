@@ -13,7 +13,10 @@
 - Captured each primitive range/checkbox value synchronously before scheduling state updates. Applied the same correction to all six Compose macros, all four part selectors, and both Settings presentation toggles that shared the unsafe pattern.
 - Added an interface regression contract that rejects `event.currentTarget` access inside the affected deferred updaters.
 - UI tests/lint/build: PASS, 18/18. Reconfigured and rebuilt the embedded Release UI, Standalone, and VST3; complete Release CTest: PASS, 16/16, including packaged VST3 scan/instantiate/finite-audio rendering.
-- This source/binary repair is automated evidence only. Producer interaction in the real Standalone and FL Studio remains human-required, and the previously installed M8 VST3 has not yet been replaced by this repaired build.
+- pluginval 1.0.4 strictness 5: `SUCCESS`, including editor lifecycle, state, automation, buses, and 44.1/48/96 kHz × 64/128/256/512/1024 samples. Retained log: `evidence/m8/pluginval/pluginval-compose-repair-strictness-5.txt`.
+- The exact repaired VST3 was installed with executable SHA-256 `823bf765a1744b7de6e8232ef17ad4d93d209628e01dfd6f716b2dff14b0131d`; architecture, deep/strict local signature, build/install parity, and an independent installed-bundle finite-stereo MIDI render pass.
+- The former installed bundle is preserved at `~/Library/Audio/Plug-Ins/VST3/folk park.vst3.backup-20260824T140808Z`. No presets, songs, history, user wavetables, exports, Application Support data, or other plug-ins were modified.
+- Producer interaction in the real Standalone and FL Studio remains human-required; automated validation does not convert either control-interaction row to PASS.
 
 ## M8 checklist checkpoint
 

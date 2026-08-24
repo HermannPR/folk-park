@@ -54,7 +54,7 @@ The DOCX is the master product and engineering contract. Read it without modifyi
 - M8 support/provenance checkpoint: `b92115b Established release support and provenance controls`.
 - M8 automated verification checkpoint: `e2df379 Verified and documented the M8 automated checkpoint`.
 - M8 private draft PR: <https://github.com/HermannPR/folk-park/pull/8>, base exactly `feat/m7-guided-assistant`, head `feat/m8-release-hardening`.
-- Post-M8 Compose repair: the reported black WebView was traced to deferred React state updater callbacks reading a cleared `event.currentTarget`. The repair captures range/checkbox primitives before scheduling updates for all six macros, four part selectors, and both Settings presentation toggles. UI tests/lint/build pass 18/18 and the rebuilt complete Release CTest passes 16/16. Real producer interaction and installed-VST3 replacement remain pending.
+- Post-M8 Compose repair checkpoint: `250c632 Hardened deferred Compose control updates`. The reported black WebView was traced to deferred React state updater callbacks reading a cleared `event.currentTarget`. The repair captures range/checkbox primitives before scheduling updates for all six macros, four part selectors, and both Settings presentation toggles. UI tests/lint/build pass 18/18, complete Release CTest passes 16/16, pluginval strictness 5 succeeds, and the repaired installed VST3 passes exact parity plus independent finite-audio MIDI rendering. Real Standalone/FL producer interaction remains pending.
 - Earlier M6 commits are:
   - `735fb84 Established the M6 persistence and migration contracts`
   - `a69a8bc Implemented versioned native presets and validated assets`
@@ -297,7 +297,9 @@ M8 starts from the verified M7 artifacts; it must not redesign or reimplement M0
 - The Compose macros were not native rotary controls; they were controlled React range inputs. Their handlers accessed `event.currentTarget.value` inside a functional `setMacros` updater. React may execute that updater after clearing `currentTarget`, which raised during state calculation and left only the WebView's black background.
 - Every affected handler now captures its primitive value synchronously. This covers Density, Rhythm, Tension, Human, Repeat, Variation, the four part checkboxes, and the two Settings presentation checkboxes.
 - `ui/src/interface-contract.test.ts` contains the regression boundary. UI tests/lint/build pass 18/18, and the serial embedded-UI Release rebuild plus complete CTest passes 16/16.
-- Do not claim a real interaction pass until Hermann moves the controls in the rebuilt Standalone and, separately, in FL Studio. Do not claim the installed VST3 contains the fix until the exact repaired bundle is installed and parity-verified.
+- pluginval 1.0.4 strictness 5 ends `SUCCESS`; the log is retained at `evidence/m8/pluginval/pluginval-compose-repair-strictness-5.txt`.
+- The repaired bundle is installed at `~/Library/Audio/Plug-Ins/VST3/folk park.vst3` with executable SHA-256 `823bf765a1744b7de6e8232ef17ad4d93d209628e01dfd6f716b2dff14b0131d`. Thin `x86_64`, deep/strict signature verification, exact build/install parity, and an independent installed-bundle finite-stereo MIDI render pass. The former bundle remains at `~/Library/Audio/Plug-Ins/VST3/folk park.vst3.backup-20260824T140808Z`.
+- Do not claim a real interaction pass until Hermann moves the controls in the rebuilt Standalone and, separately, in FL Studio.
 
 ## Commands and local environment
 

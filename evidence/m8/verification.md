@@ -74,3 +74,17 @@ The 16 Release CTest suites are native engine, effects chain, offline preview is
 - The current Jarvis engine is deterministic and offline. No remote provider is selected, configured, called, or claimed as tested.
 - The Standalone engineering artifact is unsigned. Distribution signing/notarization and packaging are not complete.
 - Public distribution remains blocked by the owner decisions in `docs/OPEN_DECISIONS.md`, including JUCE distribution licensing.
+
+## Post-checkpoint Compose control repair — 2026-08-24
+
+After the producer reported that moving Repeat and other Compose macro controls left the WebView black, the shared React handler pattern was traced to reading `event.currentTarget` inside deferred functional state updaters. All six macro values, four part-selection checkboxes, and two Settings presentation checkboxes now capture primitive input values synchronously before scheduling state updates. A source regression contract rejects reintroducing the unsafe pattern.
+
+- UI tests/lint/build: PASS, 18/18.
+- Rebuilt Release Standalone/VST3 and complete Release CTest: PASS, 16/16.
+- pluginval 1.0.4 strictness 5: `SUCCESS`; retained log `pluginval/pluginval-compose-repair-strictness-5.txt`, SHA-256 `ab8134b474676bbe79443575aa452dc1d03d5af887c67431c4433c33988ea01f`.
+- Repaired Release/installed VST3 executable SHA-256: `823bf765a1744b7de6e8232ef17ad4d93d209628e01dfd6f716b2dff14b0131d`; thin `x86_64`, deep/strict signature, and exact build/install parity pass.
+- Independent installed-bundle VST3 host render: PASS; the installed artifact instantiated and rendered finite stereo audio from MIDI.
+- Repaired Release Standalone executable SHA-256: `010a4c59c32da2cc323189be1f4b2ad9ff58047f00f87720628d8b14c6d23fda`.
+- Former installed bundle retained for rollback: `~/Library/Audio/Plug-Ins/VST3/folk park.vst3.backup-20260824T140808Z`.
+
+The rebuilt Standalone opened with a complete native snapshot and visible Synth workspace. Moving the affected controls remains producer-observed human evidence; neither Standalone interaction nor FL Studio status is promoted to PASS by the automated repair gate.

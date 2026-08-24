@@ -66,7 +66,7 @@ Replacement moves the previous exact bundle to a timestamped `.backup-*` sibling
 
 After installation, open FL Studio → Plugin Manager, rescan installed plug-ins, and record discovery as a real result in `docs/FL_STUDIO_TEST_MATRIX.md`. Do not mark it passed from the script alone.
 
-The M8 candidate currently installed for that human run has executable SHA-256 `9295e582e705837020f72f657105d5efd2213d5e8904dee628d7e55e52a82a84`. Its build/install parity, thin `x86_64` architecture, deep/strict local signature, and independent VST3 MIDI render pass. The previous M7 bundle remains as the timestamped rollback documented in the M8 verification report. These facts prove the installed artifact identity; they do not prove FL Studio discovery or audible behavior.
+The post-M8 Compose-control repair currently installed for that human run has executable SHA-256 `823bf765a1744b7de6e8232ef17ad4d93d209628e01dfd6f716b2dff14b0131d`. Its build/install parity, thin `x86_64` architecture, deep/strict local signature, pluginval strictness-5 result, and independent VST3 MIDI render pass. The former M8 bundle remains at `~/Library/Audio/Plug-Ins/VST3/folk park.vst3.backup-20260824T140808Z`. These facts prove the installed artifact identity; they do not prove FL Studio discovery, physical interaction, or audible behavior.
 
 ## Roll back
 
