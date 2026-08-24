@@ -368,6 +368,14 @@
 - Focused Debug configure/build and contract test: PASS, 1/1. Ten JSON schemas parse successfully and `git diff --check` passes.
 - This checkpoint contains no audible drum engine, generated pattern, sample asset, application UI, or FL Studio evidence yet.
 
+## Rhythm Lab synthesized engine checkpoint
+
+- Added a deterministic preallocated synthesized drum engine for kick, snare, closed/open hat, and percussion with no external sample dependency.
+- Added pitch/envelope shaping, deterministic noise, hat choking, bounded voice stealing/tails, soft drive, stereo placement, finite containment, and immediate reset.
+- Added tests across 44.1/48/96 kHz and 32–1024-sample blocks plus deterministic parity, finite/nonzero output, tail completion, reset silence, and invalid-kit isolation.
+- Extended the measured callback-allocation probe to render active synthesized drums; zero allocations remain measured across its complete 32-block workload.
+- Focused Debug engine and real-time tests: PASS, 2/2. Product pattern playback, UI, FL Studio behavior, and listening remain pending.
+
 ## Human-required status
 
 - Standalone physical keyboard/audio-device playability: PARTIAL. Automated real-window C3 hold/repeat/release passed; listening through the user's selected audio device remains human.

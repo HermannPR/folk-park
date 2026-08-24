@@ -59,6 +59,8 @@ target_sources(FolkPark PRIVATE
     src/effects/EffectChain.h
     src/drums/Rhythm.cpp
     src/drums/Rhythm.h
+    src/drums/DrumEngine.cpp
+    src/drums/DrumEngine.h
     src/plugin/PluginEditor.cpp
     src/plugin/PluginEditor.h
     src/plugin/PluginProcessor.cpp
@@ -273,6 +275,24 @@ target_link_libraries(FolkParkRhythmContractTests PRIVATE
     juce::juce_recommended_warning_flags)
 add_test(NAME FolkParkRhythmContractValidationTests COMMAND FolkParkRhythmContractTests)
 
+juce_add_console_app(FolkParkDrumEngineTests PRODUCT_NAME "folk park synthesized drum tests")
+target_sources(FolkParkDrumEngineTests PRIVATE
+    tests/DrumEngineTests.cpp
+    src/drums/DrumEngine.cpp
+    src/drums/DrumEngine.h
+    src/drums/Rhythm.cpp
+    src/drums/Rhythm.h
+    src/midi/Composition.cpp
+    src/midi/Composition.h)
+target_include_directories(FolkParkDrumEngineTests PRIVATE src)
+target_compile_definitions(FolkParkDrumEngineTests PRIVATE JUCE_USE_CURL=0)
+target_link_libraries(FolkParkDrumEngineTests PRIVATE
+    juce::juce_audio_basics
+    juce::juce_core
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)
+add_test(NAME FolkParkSynthesizedDrumEngineTests COMMAND FolkParkDrumEngineTests)
+
 juce_add_console_app(FolkParkMidiDeliveryTests PRODUCT_NAME "folk park MIDI delivery tests")
 target_sources(FolkParkMidiDeliveryTests PRIVATE
     tests/MidiDeliveryTests.cpp
@@ -349,6 +369,10 @@ add_test(NAME FolkParkMacKeychainCredentialTests COMMAND FolkParkCredentialStore
 juce_add_console_app(FolkParkRealtimeTests PRODUCT_NAME "folk park real-time allocation tests")
 target_sources(FolkParkRealtimeTests PRIVATE
     tests/RealtimeTests.cpp
+    src/drums/DrumEngine.cpp
+    src/drums/DrumEngine.h
+    src/drums/Rhythm.cpp
+    src/drums/Rhythm.h
     src/midi/Composition.cpp
     src/midi/Composition.h
     src/midi/MidiDelivery.cpp

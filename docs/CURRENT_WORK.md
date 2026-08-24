@@ -56,7 +56,7 @@ The DOCX is the master product and engineering contract. Read it without modifyi
 - M8 private draft PR: <https://github.com/HermannPR/folk-park/pull/8>, base exactly `feat/m7-guided-assistant`, head `feat/m8-release-hardening`.
 - Post-M8 Compose repair checkpoint: `250c632 Hardened deferred Compose control updates`. The reported black WebView was traced to deferred React state updater callbacks reading a cleared `event.currentTarget`. The repair captures range/checkbox primitives before scheduling updates for all six macros, four part selectors, and both Settings presentation toggles. UI tests/lint/build pass 18/18, complete Release CTest passes 16/16, pluginval strictness 5 succeeds, and the repaired installed VST3 passes exact parity plus independent finite-audio MIDI rendering. Real Standalone/FL producer interaction remains pending.
 - Post-M8 Orbital Habitat implementation checkpoint: `b121e0e Implemented the Orbital Habitat visual system`. `ui/src/design-system.tsx` owns the reusable Button, IconButton, Panel, Sidebar, Navbar, Tabs, Slider, Knob, Toggle, Dropdown, Modal, Tooltip, TextInput, NumericInput, TextArea, ProgressBar, Meter, ContextMenu, Notification, and StatusIndicator primitives. `ui/src/styles.css` owns the complete token/material/background/responsive system; host controls preserve native JUCE gesture semantics. UI tests/lint/build pass 19/19, Release CTest passes 16/16, pluginval strictness 5 ends `SUCCESS`, and installed/build VST3 hash parity plus independent finite-audio MIDI render pass. Five real Release screenshots are retained under `evidence/m8/visual/`. FL Studio visual/input/listening checks remain human-required.
-- Rhythm Lab R1 branch: `feat/rhythm-lab-r1`, created from verified Orbital Habitat checkpoint `50b36a4`. Producer direction is synthesized-first with indie/rock, Eurodance, techno, funk, and jazz profiles and no current sample library. ADR-0010 and version-1 `RhythmIntent`, `DrumPattern`, and `SynthDrumKit` contracts are implemented locally at this handoff update; the focused native contract test passes. This is a contract checkpoint, not yet an audible drum engine.
+- Rhythm Lab R1 branch: `feat/rhythm-lab-r1`, created from verified Orbital Habitat checkpoint `50b36a4`. Contract checkpoint: `c43454c Established synthesized Rhythm Lab contracts`. Producer direction is synthesized-first with indie/rock, Eurodance, techno, funk, and jazz profiles and no current sample library. ADR-0010 and version-1 `RhythmIntent`, `DrumPattern`, and `SynthDrumKit` contracts pass focused native validation.
 - Earlier M6 commits are:
   - `735fb84 Established the M6 persistence and migration contracts`
   - `a69a8bc Implemented versioned native presets and validated assets`
@@ -326,6 +326,14 @@ M8 starts from the verified M7 artifacts; it must not redesign or reimplement M0
 - Contract validation rejects unsupported schemas/genres/kits, duplicate lanes, invalid UUIDs/timing/order, event overflow, and non-finite/out-of-range values.
 - Focused Debug configure/build and `FolkParkRhythmContractValidationTests`: PASS, 1/1. All ten JSON schemas parse with `jq`; `git diff --check` passes.
 - The next exact implementation stage is an allocation-free synthesized drum engine. Do not claim audible app/FL behavior, deterministic pattern generation, acceptance, export, or sample support yet.
+
+### Rhythm Lab synthesized engine checkpoint
+
+- `src/drums/DrumEngine.*` implements preallocated kick, snare, closed/open hat, and percussion voices using authored oscillators, deterministic noise, pitch/envelope shaping, hat choking, soft drive, stereo placement, bounded voice stealing, finite containment, and immediate reset.
+- The engine renders additively into existing stereo buffers, has no sample/file dependency, and accepts only validated `synth_core_v1` settings.
+- The supported 44.1/48/96 kHz × 32/64/128/256/512/1024 matrix produces finite nonzero output; deterministic twin-engine rendering, bounded tails, reset silence, invalid-kit rejection, and closed-hat choking are covered.
+- The existing measured real-time probe now renders synthesized drums inside its 32-block callback loop and still records zero allocations.
+- Focused Debug synthesized-engine and real-time tests: PASS, 2/2. This engine is not yet connected to application pattern playback or the UI, so app/FL audition remains unclaimed.
 
 ## Commands and local environment
 
