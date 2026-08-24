@@ -8,7 +8,7 @@
 
 > **Current status — M8 automated checkpoint verified.** The private Intel Standalone/VST3 candidate passes 17/17 UI contracts, 16/16 Release suites, a 120-second deterministic recovery run, pluginval 1.0.4 at strictness 5, and an independent render through the exact installed VST3. FL Studio checks, listening, signing/notarization, JUCE distribution licensing, final identity, and public-distribution decisions remain explicitly unresolved; this is not yet a public binary release.
 
-> **Latest repair.** The Compose macros no longer retain React event objects inside deferred state updates, fixing the reported black interface when moving Repeat and the other musical controls. The focused UI gate now passes 18/18 and the rebuilt Release suite passes 16/16; real Standalone and FL Studio interaction confirmation remains producer-required.
+> **Latest repair.** The Compose macros no longer retain React event objects inside deferred state updates, fixing the reported black interface when moving Repeat and the other musical controls. The focused UI gate passes 18/18, the rebuilt Release suite passes 16/16, pluginval strictness 5 ends `SUCCESS`, and the exact repaired VST3 is installed with verified hash parity plus an independent finite-audio MIDI render. Real Standalone control interaction and FL Studio confirmation remain producer-required.
 
 ## Reviewer quick start
 
