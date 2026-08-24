@@ -3,7 +3,7 @@
 ## Current checkpoint
 
 - Milestone: M7 — offline Jarvis text, guided sound proposals, and secure provider boundary
-- Status: M7 contracts and deterministic offline composition/guided-sound engines pass the complete Debug gate; A/B integration, UI, Keychain implementation, full Release gates, and all FL Studio human runs remain required
+- Status: M7 contracts, deterministic offline workflows, processor-owned reversible A/B, and project recovery pass the complete Debug gate; UI, Keychain implementation, full Release gates, and all FL Studio human runs remain required
 - Date: 2026-08-23 (America/Monterrey)
 - Branch: `feat/m7-guided-assistant`, stacked exactly on `feat/m6-presets-history`
 
@@ -29,9 +29,21 @@
 - Complete Debug CTest: PASS, 11/11.
 - `git diff --check`: PASS.
 
+## M7 reversible A/B and project recovery checkpoint
+
+- Added an assistant audition state machine with immutable proposal data, original/proposal sides, exact relevant-live-value validation, explicit accept/reject outcomes, and safe invalidation when a host edit makes the comparison stale.
+- Canonicalized proposed normalized values through each real APVTS parameter's legal range/step before audition, covering logarithmic, integer, choice, and boolean host controls without false stale detection.
+- Temporary A/B switches notify the host but do not mark the native sound dirty. Rejection restores the exact captured A values and original dirty boundary; explicit acceptance finishes on B and marks the sound dirty once.
+- Native preset saving is blocked while an A/B decision is pending. A successful preset load/reset supersedes the comparison only after the new preset applies.
+- Migrated the bounded host project session from version 1 to version 2 while retaining version-1 restore. An active A/B proposal, status, audible side, assumptions, explanations, and exact values survive editor-independent project save/reopen.
+- Strict project parsing rejects unsupported status/side/schema, unknown properties/children, malformed text/flags, duplicate/unknown catalog IDs, non-finite/out-of-range values, no-op/stale proposals, and oversized collections before live mutation.
+- Focused offline-assistant and processor-state CTest: PASS, 2/2.
+- Complete Debug build: PASS for native tests, Standalone, and VST3.
+- Complete Debug CTest: PASS, 11/11, including the unchanged zero-allocation callback suite.
+- `git diff --check`: PASS.
+
 ## M7 work still required
 
-- Integrate immutable original/proposal A/B snapshots and explicit accept/reject with processor/project state without audio-thread work.
 - Add the native bridge and complete typed Jarvis conversation/settings UI.
 - Implement and test the macOS Keychain credential abstraction. Do not add a real adapter until the product-owner decision and privacy UX exist.
 - Run complete UI, Debug, Release, validator, artifact, visual, security, and evidence gates. Every FL Studio case remains HUMAN RUN REQUIRED.
@@ -246,7 +258,7 @@
 - Imported wavetable sources are retained in bounded content-addressed local storage and referenced by versioned project state. Automated missing-asset recovery is covered, but FL Studio save-close-reopen, chooser recovery, and audible parity remain human checks.
 - The M4 interface edits all 32 route slots, but host automation of route structure is not supported; route changes are reviewed native transactions stored in plug-in state.
 - Three.js is a presentation dependency only. The measured local analysis cost and frame caps do not replace FL Studio CPU/GPU profiling on the target machine.
-- User-drawn LFOs and oversampling are optional M2 items and were deliberately deferred. The M7 offline assistant engine is implemented, but processor A/B integration and the producer-facing interface are not yet complete.
+- User-drawn LFOs and oversampling are optional M2 items and were deliberately deferred. The M7 offline assistant engine and processor A/B state are implemented, but the producer-facing interface is not yet complete.
 - The CPU number is a reproducible local baseline, not a guarantee for every host/audio-device configuration. FL Studio profiling is still required.
 - pluginval's optional separate Steinberg-validator subtest was skipped because no validator executable path is installed.
 - Accepted compositions and their delivery state now round-trip in the bounded M6 project payload and remain searchable in local history. Actual FL Studio project reopen is not yet human-verified.
@@ -257,4 +269,4 @@
 
 ## Next smallest verifiable task
 
-Commit the passing deterministic offline workflow checkpoint, then integrate immutable original/proposal A/B snapshots with explicit accept/reject and project recovery before exposing the workflow through the native bridge/UI. Keep every unexecuted FL Studio case marked HUMAN RUN REQUIRED.
+Commit the passing reversible A/B and project-recovery checkpoint, then expose the typed offline composition/sound workflow through the bounded native bridge and producer-facing Jarvis UI. Keep every unexecuted FL Studio case marked HUMAN RUN REQUIRED.

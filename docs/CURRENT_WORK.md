@@ -41,6 +41,7 @@ The DOCX is the master product and engineering contract. Read it without modifyi
 - Final M6 checkpoint: `b3e9e78 Verified and documented the M6 checkpoint`.
 - M6 handoff checkpoint: `282c344 Established the M7 continuation handoff`.
 - First M7 checkpoint: `74d6e43 Established M7 assistant and provider contracts`.
+- Offline workflow checkpoint: `639a749 Implemented deterministic offline Jarvis workflows`.
 - No M7 PR exists yet.
 - Earlier M6 commits are:
   - `735fb84 Established the M6 persistence and migration contracts`
@@ -68,7 +69,7 @@ Git rules:
 - M4: Silicon Dreams UI, real A/B visuals, four-octave C2–B5 piano, octave shift, and held-key repeat suppression; automated gate passed; FL UI/input checks pending.
 - M5: ordered Distortion → Chorus → tempo-synced Delay → Reverb → Compressor → Parametric EQ and isolated accepted-composition WAV rendering; automated gate passed; FL effects/render checks pending.
 - M6: native presets/assets/migration, transactional composition history, and editor-independent project recovery; automated gate verified; every FL persistence case remains human-required.
-- M7: composition text, guided Jarvis sound workflow, reversible A/B, and optional secure provider boundary; contracts and deterministic offline workflow implemented, processor/UI integration in progress.
+- M7: composition text, guided Jarvis sound workflow, reversible A/B, and optional secure provider boundary; contracts, offline workflows, processor A/B, and recovery implemented, UI integration in progress.
 - M8: host/release hardening, packaging, legal/asset audit, and release documentation; planned.
 
 Do not reimplement M0–M6. Preserve the oscillator displays, C2–B5 keyboard, held-key repeat behavior, effects, candidate/accepted MIDI boundary, accepted-only WAV workflow, and transactional persistence while working on M7.
@@ -135,7 +136,7 @@ Known verification observations:
 
 ## Current milestone: M7 Jarvis text and guided sound assistant
 
-Do not treat the grey M7 UI hint or the passing non-UI engine as a working in-product assistant/LLM. The deterministic offline parser and question/proposal engine exist, but there is no A/B processor integration, conversation UI, credential implementation, or real provider yet.
+Do not treat the grey M7 UI hint or passing non-UI layers as a working in-product assistant/LLM. The deterministic offline parser, question/proposal engine, processor A/B, and project recovery exist, but there is no conversation UI, credential implementation, or real provider yet.
 
 ### Contracts and deterministic offline workflow now implemented
 
@@ -150,15 +151,18 @@ Do not treat the grey M7 UI hint or the passing non-UI engine as a working in-pr
 - Guided intensity is optional until the producer answers it, preventing the previous neutral default from falsely completing that question.
 - `tests/OfflineAssistantTests.cpp` covers determinism, natural-language bounds, real catalog mapping, current-value parity, describe/guided/manual modes, invalid snapshots, origin isolation, cancellation, collision, and at-most-once completion.
 - Complete Debug build and CTest: PASS, 11/11. Focused assistant suites: PASS, 2/2. `git diff --check`: PASS.
+- `src/assistant/AssistantAudition.*` owns immutable original/proposal comparison, strict stale/no-op rejection, reversible switching, and explicit accepted/rejected outcomes.
+- `PluginProcessor` canonicalizes proposal targets to real APVTS legal steps, suppresses temporary-preview dirty tracking, invalidates on external host edits, and exposes non-audio begin/switch/accept/reject APIs.
+- Host project session version 2 stores only an active bounded A/B comparison and restores it on its audible side without an editor; version 1 remains supported. Malformed assistant state rejects before live mutation.
+- Focused assistant/processor recovery CTest: PASS, 2/2. Complete Debug build and CTest: PASS, 11/11, including real-time allocation coverage.
 
 Next M7 sequence:
 
-1. Commit and push the passing deterministic offline workflow checkpoint with exact-path staging and an impersonal subject.
-2. Integrate immutable original/proposal A/B snapshots and explicit accept/reject into processor/project state without adding callback work.
-3. Add adversarial tests for stale/cancelled proposals, failure rollback, editor-independent recovery, and zero callback allocations.
-4. Then expose the typed composition/sound conversation through the native bridge and React UI.
-5. Add the Keychain credential abstraction and offline/provider settings, but no real remote adapter until the product owner resolves that open decision.
-6. Update this recruiter-facing README with real M7 screenshots only after the actual integrated interface passes visual inspection.
+1. Commit and push the passing reversible A/B/project-recovery checkpoint with exact-path staging and an impersonal subject.
+2. Expose typed composition requests, guided questions, proposal state, A/B switching, and explicit decisions through the bounded native bridge.
+3. Replace the grey hint with the complete React Jarvis conversation/settings UI and strict protocol validation.
+4. Add the Keychain credential abstraction and offline/provider settings, but no real remote adapter until the product owner resolves that open decision.
+5. Run UI/Debug/Release/validator/security/visual gates and update this recruiter-facing README with real M7 screenshots only after the actual integrated interface passes visual inspection.
 
 M7 required producer workflow:
 
@@ -188,9 +192,9 @@ gh pr list --head feat/m6-presets-history --state all
 gh pr list --head feat/m7-guided-assistant --state all
 ```
 
-Confirm the repository is still private, inspect every local change, and never discard work. If the offline workflow changes are uncommitted, run both focused assistant suites plus the full Debug suite, review exact diffs, and stage only the intended assistant/CMake/test/documentation paths. The expected subject is `Implemented deterministic offline Jarvis workflows`.
+Confirm the repository is still private, inspect every local change, and never discard work. If the A/B/recovery changes are uncommitted, run the focused assistant/processor suites plus the full Debug suite, review exact diffs, and stage only the intended assistant/processor/CMake/test/documentation paths. The expected subject is `Integrated reversible Jarvis proposal audition`.
 
-The M6 draft PR already exists and this branch is correctly stacked. Preserve meaningful impersonal commits at every passing M7 stage. After the offline workflow checkpoint, continue with processor-owned reversible A/B state before UI integration.
+The M6 draft PR already exists and this branch is correctly stacked. Preserve meaningful impersonal commits at every passing M7 stage. After the A/B checkpoint, continue with the bounded native bridge before React UI integration.
 
 ## Commands and local environment
 

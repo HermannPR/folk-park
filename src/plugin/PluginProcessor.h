@@ -1,5 +1,6 @@
 #pragma once
 
+#include "assistant/AssistantAudition.h"
 #include "effects/EffectChain.h"
 #include "midi/CompositionSession.h"
 #include "midi/MidiDelivery.h"
@@ -159,6 +160,14 @@ public:
     [[nodiscard]] WavetableUiSnapshot getWavetableUiSnapshot(int oscillatorIndex) const;
     [[nodiscard]] juce::Result setModulationRoutes(std::span<const synth::ModulationRoute> routes);
     [[nodiscard]] synth::ModulationSnapshot getConfiguredModulationRoutes() const;
+    [[nodiscard]] std::vector<assistant::CurrentParameterValue>
+        getAssistantParameterSnapshot() const;
+    [[nodiscard]] juce::Result beginAssistantProposal(
+        const assistant::ParameterProposal& proposal);
+    [[nodiscard]] juce::Result auditionAssistantSide(assistant::AuditionSide side);
+    [[nodiscard]] juce::Result acceptAssistantProposal();
+    [[nodiscard]] juce::Result rejectAssistantProposal();
+    [[nodiscard]] assistant::AssistantAuditionSnapshot getAssistantAuditionSnapshot() const;
     [[nodiscard]] juce::Result requestWavetableImport(const juce::File& file,
                                                       int oscillatorIndex,
                                                       int requestedCycleLength = 0)
@@ -195,10 +204,7 @@ public:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
 private:
-    void parameterChanged(const juce::String&, float) override
-    {
-        parameterRevision.fetch_add(1, std::memory_order_relaxed);
-    }
+    void parameterChanged(const juce::String&, float) override;
     [[nodiscard]] synth::ParameterSnapshot readSynthParameters() const noexcept;
     [[nodiscard]] effects::Parameters readEffectsParameters(double tempoBpm) const noexcept;
     [[nodiscard]] render::OfflinePreviewSnapshot makeOfflinePreviewSnapshot(double tempoBpm) const;
@@ -212,16 +218,21 @@ private:
         const synth::WavetableConverter::Metadata& metadata,
         const juce::File& source);
     void recordAcceptedComposition(const midi::CompositionBundle& bundle);
+    void applyAssistantParameterValues(
+        std::span<const assistant::CurrentParameterValue> values);
+    void resetAssistantAudition();
     void clearPendingProjectRestore();
     [[nodiscard]] juce::Result completeProjectRestore(
         const persistence::PresetDocument& document,
         std::optional<midi::CompositionBundle> acceptedBundle,
+        std::optional<assistant::AssistantAuditionSnapshot> assistantSnapshot,
         bool dirty,
         const juce::String& historyEntryId);
 
     struct PendingProjectRestore
     {
         std::optional<midi::CompositionBundle> acceptedBundle;
+        std::optional<assistant::AssistantAuditionSnapshot> assistantSnapshot;
         bool dirty = false;
         juce::String historyEntryId;
     };
@@ -240,6 +251,14 @@ private:
     std::optional<PendingProjectRestore> pendingProjectRestore;
     std::atomic<std::uint64_t> parameterRevision{0};
     std::atomic<std::uint64_t> cleanParameterRevision{0};
+    struct AssistantRevisionBoundary
+    {
+        std::uint64_t base = 0;
+        std::uint64_t expected = 0;
+    };
+    mutable std::mutex assistantAuditionMutex;
+    assistant::AssistantAuditionSession assistantAudition;
+    std::optional<AssistantRevisionBoundary> assistantRevisionBoundary;
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> masterGain;
     std::atomic<bool> panicRequested{false};
 

@@ -73,7 +73,7 @@ Offline composition text and guided sound design share one versioned `AssistantR
 
 The provider interface is non-audio and asynchronous with cancellation and at-most-once completion. Offline and mock implementations require no credential. A future remote origin requires per-request producer consent and a Keychain-backed native credential store; natural language, credentials, and provider output never enter the audio callback or host project state.
 
-Sound A/B will capture an immutable original host-parameter snapshot and a separate validated proposal. Message-thread host gestures may select either review state. Reject/cancel restores the original; Accept is the only transition that commits the proposal. Composition retains the existing candidate/accepted boundary and accepted-only MIDI/WAV delivery.
+Sound A/B captures immutable current/proposed normalized values for every changed host parameter. The processor canonicalizes B through the real parameter's legal range, then message-thread host gestures may select either review side. Temporary switches do not dirty the preset; rejection restores A and only explicit acceptance commits B. External host edits invalidate the comparison without being overwritten. Version-2 host project state restores an active comparison on its audible side while version 1 remains supported. Composition retains the existing candidate/accepted boundary and accepted-only MIDI/WAV delivery.
 
 ## ADRs
 

@@ -1,3 +1,4 @@
+#include "assistant/AssistantAudition.h"
 #include "assistant/OfflineAssistant.h"
 #include "common/ParameterIds.h"
 
@@ -210,6 +211,95 @@ int main()
                        && std::abs(source->normalized - change.currentNormalized) < 1.0e-6f,
                    "Every A value must equal the captured current host value");
         }
+
+        auto live = snapshot;
+        const auto applyToLive = [&live](std::span<const assistant::CurrentParameterValue> values)
+        {
+            for (const auto& target : values)
+                for (auto& current : live)
+                    if (current.parameterId == target.parameterId)
+                        current.normalized = target.normalized;
+        };
+        assistant::AssistantAuditionSession audition;
+        expect(audition.begin(proposal, live).wasOk()
+                   && audition.snapshot().status == assistant::AssistantSessionStatus::proposalReady
+                   && audition.snapshot().audibleSide == assistant::AuditionSide::original,
+               "A current proposal must begin on immutable original side A");
+        expect(audition.begin(proposal, live).failed(),
+               "A second proposal must not replace an active A/B session");
+        expect(audition.audition(assistant::AuditionSide::proposal, live, applyToLive).wasOk()
+                   && audition.snapshot().status == assistant::AssistantSessionStatus::previewing
+                   && audition.snapshot().audibleSide == assistant::AuditionSide::proposal,
+               "Audition B must apply only the proposal values and retain original A");
+        for (const auto& change : proposal.changes)
+        {
+            const auto found = std::find_if(live.begin(), live.end(), [&](const auto& value)
+            {
+                return value.parameterId == change.parameterId;
+            });
+            expect(found != live.end()
+                       && std::abs(found->normalized - change.proposedNormalized) < 1.0e-6f,
+                   "Audition B must apply the exact bounded proposed value");
+        }
+        const auto encodedAudition = assistant::serialiseAssistantAudition(audition.snapshot());
+        assistant::AssistantAuditionSnapshot decodedAudition;
+        const auto encodedXml = encodedAudition.createXml();
+        expect(encodedXml != nullptr,
+               "An active A/B session must serialize to bounded project state");
+        if (encodedXml != nullptr)
+        {
+            const auto roundTripped = juce::ValueTree::fromXml(*encodedXml);
+            expect(assistant::parseAssistantAudition(roundTripped, decodedAudition).wasOk(),
+                   "Serialized A/B state must survive the XML-backed host project boundary");
+            assistant::AssistantAuditionSession restoredAudition;
+            expect(restoredAudition.restore(decodedAudition, live).wasOk()
+                       && restoredAudition.snapshot().audibleSide
+                            == assistant::AuditionSide::proposal,
+                   "Decoded project A/B state must validate against its audible B values");
+            auto malformedAudition = roundTripped.createCopy();
+            malformedAudition.getChild(0).getChild(0).setProperty(
+                "proposedNormalized", "nan", nullptr);
+            expect(assistant::parseAssistantAudition(malformedAudition, decodedAudition).failed(),
+                   "Non-finite serialized proposal values must be rejected");
+        }
+        expect(audition.audition(assistant::AuditionSide::original, live, applyToLive).wasOk()
+                   && audition.snapshot().audibleSide == assistant::AuditionSide::original,
+               "Switching back to A must restore the exact captured original values");
+        expect(audition.accept(live, applyToLive).wasOk()
+                   && audition.snapshot().status == assistant::AssistantSessionStatus::accepted
+                   && audition.snapshot().audibleSide == assistant::AuditionSide::proposal,
+               "Accept must explicitly finish on proposal B");
+
+        audition.reset();
+        live = snapshot;
+        expect(audition.begin(proposal, live).wasOk()
+                   && audition.audition(assistant::AuditionSide::proposal, live, applyToLive).wasOk()
+                   && audition.reject(live, applyToLive).wasOk()
+                   && audition.snapshot().status == assistant::AssistantSessionStatus::rejected
+                   && audition.snapshot().audibleSide == assistant::AuditionSide::original,
+               "Reject must restore original A and finish the proposal");
+
+        audition.reset();
+        live = snapshot;
+        expect(audition.begin(proposal, live).wasOk(),
+               "A fresh matching A/B session must begin after reset");
+        live.front().normalized += 0.01f;
+        auto callbackRan = false;
+        expect(audition.audition(assistant::AuditionSide::proposal, live,
+                                [&callbackRan](auto) { callbackRan = true; }).failed()
+                   && audition.snapshot().status == assistant::AssistantSessionStatus::failed
+                   && !callbackRan,
+               "An external relevant parameter edit must invalidate A/B without overwriting it");
+
+        assistant::AssistantAuditionSession stale;
+        live = snapshot;
+        live.front().normalized += 0.02f;
+        expect(stale.begin(proposal, live).failed(),
+               "A proposal whose captured A value is stale must not begin audition");
+        auto noOp = proposal;
+        noOp.changes.front().proposedNormalized = noOp.changes.front().currentNormalized;
+        expect(stale.begin(noOp, snapshot).failed(),
+               "A no-op proposal change must not create a misleading A/B session");
     }
 
     auto reorderedSnapshot = snapshot;

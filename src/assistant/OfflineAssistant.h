@@ -43,15 +43,7 @@ struct GuidedProgress
     std::vector<GuidedQuestion> questions;
 };
 
-struct CurrentParameterValue
-{
-    juce::String parameterId;
-    float normalized = 0.0f;
-};
-
 [[nodiscard]] juce::String stableId(SoundQuestionTopic value);
-[[nodiscard]] juce::Result validateCurrentParameterValues(
-    std::span<const CurrentParameterValue> values);
 
 class OfflineAssistantEngine final
 {

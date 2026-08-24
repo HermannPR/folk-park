@@ -116,4 +116,20 @@ juce::Result validateParameterProposal(const ParameterProposal& proposal)
             return juce::Result::fail("ParameterProposal assumption is outside its length bound");
     return juce::Result::ok();
 }
+
+juce::Result validateCurrentParameterValues(std::span<const CurrentParameterValue> values)
+{
+    if (values.empty() || values.size() > ParameterProposal::maximumChanges)
+        return juce::Result::fail("Assistant current-parameter snapshot is empty or oversized");
+    std::set<juce::String> seen;
+    for (const auto& value : values)
+    {
+        if (!isKnownParameterId(value.parameterId) || !std::isfinite(value.normalized)
+            || value.normalized < 0.0f || value.normalized > 1.0f)
+            return juce::Result::fail("Assistant current-parameter snapshot contains an invalid value");
+        if (!seen.insert(value.parameterId).second)
+            return juce::Result::fail("Assistant current-parameter snapshot contains a duplicate ID");
+    }
+    return juce::Result::ok();
+}
 }

@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <span>
 #include <vector>
 
 namespace folkpark::assistant
@@ -66,9 +67,17 @@ struct ParameterProposal
     bool requiresExplicitAcceptance = true;
 };
 
+struct CurrentParameterValue
+{
+    juce::String parameterId;
+    float normalized = 0.0f;
+};
+
 [[nodiscard]] juce::String stableId(SoundEntryMode value);
 [[nodiscard]] bool isKnownParameterId(const juce::String& parameterId,
                                       int proposalSchemaVersion = ParameterProposal::currentSchemaVersion) noexcept;
 [[nodiscard]] juce::Result validateSoundIntent(const SoundIntent& intent);
 [[nodiscard]] juce::Result validateParameterProposal(const ParameterProposal& proposal);
+[[nodiscard]] juce::Result validateCurrentParameterValues(
+    std::span<const CurrentParameterValue> values);
 }

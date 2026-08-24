@@ -4,7 +4,7 @@
 
 `folk park` combines a playable dual-wavetable instrument, MIDI idea generation, an ordered effects chain, offline audio rendering, and crash-aware local persistence in one Standalone/VST3 product. Release 0.1 targets FL Studio on Intel (`x86_64`) macOS.
 
-> **Current status — M6 automated checkpoint verified; M7 in development.** The Standalone and VST3 Release artifacts build, all 11 Release suites pass, pluginval 1.0.4 succeeds at strictness 5, and the installed VST3 independently renders audio from MIDI. The first M7 checkpoints now provide typed assistant/provider contracts plus a tested deterministic offline composition and sound-proposal engine. That engine is not connected to the processor or interface yet, and is not presented as a usable in-product assistant. FL Studio checks remain explicitly human-required.
+> **Current status — M6 automated checkpoint verified; M7 in development.** The Standalone and VST3 Release artifacts build, all 11 Release suites pass, pluginval 1.0.4 succeeds at strictness 5, and the installed VST3 independently renders audio from MIDI. M7 now provides typed assistant/provider contracts, a deterministic offline composition and sound-proposal engine, and processor-owned reversible A/B state with project recovery. The conversation interface is not connected yet, so this is not presented as a usable in-product assistant. FL Studio checks remain explicitly human-required.
 
 ## Product tour
 
@@ -145,8 +145,10 @@ The current branch adds the non-UI foundation for Jarvis without requiring a net
 - Explained sound proposals using only the 102 real host parameter IDs and the exact captured current value for each proposed A/B change.
 - Explicit acceptance preserved in every proposal; manual mode never invokes the assistant.
 - A controllable mock provider with cancellation and at-most-once completion for failure-path testing.
+- Processor-owned A/B audition that canonicalizes proposals to each host parameter's legal step, keeps temporary preview out of preset dirty tracking, restores A on rejection, and marks B dirty only after explicit acceptance.
+- Version-2 host project state that reopens an active A/B comparison on the audible side while preserving backward compatibility with version 1.
 
-The complete Debug build and all 11 current Debug suites pass at this checkpoint. Processor-owned reversible A/B state, the Jarvis conversation UI, secure macOS Keychain integration, Release validation, and screenshots of the actual M7 interface still remain. The four screenshots above are real M6 Release captures, not M7 concept art.
+The complete Debug build and all 11 current Debug suites pass at this checkpoint. The Jarvis conversation UI/native bridge, secure macOS Keychain integration, Release validation, and screenshots of the actual M7 interface still remain. The four screenshots above are real M6 Release captures, not M7 concept art.
 
 ## Build and run
 
@@ -232,10 +234,10 @@ The canonical continuation point for another coding session is [docs/CURRENT_WOR
 | M4 | Silicon Dreams UI, real A/B wave/spectrum views, four-octave audition keyboard | Automated gate passed; FL UI/input checks pending |
 | M5 | Six ordered effects and isolated accepted-composition WAV preview | Automated gate passed; FL effects/WAV checks pending |
 | M6 | Native presets, migrations, assets, searchable history, project recovery | Automated gate verified; FL persistence checks pending |
-| M7 | Offline Jarvis text workflow, adaptive sound questions, explained A/B proposals, optional secure provider | In development — contracts and offline engine pass Debug tests; integration remains |
+| M7 | Offline Jarvis text workflow, adaptive sound questions, explained A/B proposals, optional secure provider | In development — contracts, offline engine, processor A/B, and recovery pass Debug tests; UI/provider boundary remains |
 | M8 | FL Studio matrix, performance/recovery hardening, packaging, legal/asset audit, release docs | Planned |
 
-The M7 foundation now asks focused sound-design questions and translates complete answers into bounded, explained parameter proposals. The remaining integration will provide reversible A/B audition and explicit accept/reject in the product interface. Offline/manual operation remains complete; an optional model provider cannot bypass the parameter catalog, embed user keys, or directly control the DAW.
+The M7 foundation now asks focused sound-design questions, translates complete answers into bounded explanations, and owns reversible A/B plus explicit accept/reject below the UI. The remaining integration exposes that workflow through the product interface. Offline/manual operation remains complete; an optional model provider cannot bypass the parameter catalog, embed user keys, or directly control the DAW.
 
 ## Scope, originality, and release boundary
 

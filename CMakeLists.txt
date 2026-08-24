@@ -45,6 +45,12 @@ juce_add_plugin(FolkPark
     VST3_CATEGORIES Instrument Synth)
 
 target_sources(FolkPark PRIVATE
+    src/assistant/AssistantAudition.cpp
+    src/assistant/AssistantAudition.h
+    src/assistant/AssistantContracts.cpp
+    src/assistant/AssistantContracts.h
+    src/assistant/AssistantModels.cpp
+    src/assistant/AssistantModels.h
     src/effects/EffectChain.cpp
     src/effects/EffectChain.h
     src/plugin/PluginEditor.cpp
@@ -282,6 +288,8 @@ add_test(NAME FolkParkAssistantSchemaModelTests COMMAND FolkParkAssistantModelTe
 juce_add_console_app(FolkParkOfflineAssistantTests PRODUCT_NAME "folk park offline assistant tests")
 target_sources(FolkParkOfflineAssistantTests PRIVATE
     tests/OfflineAssistantTests.cpp
+    src/assistant/AssistantAudition.cpp
+    src/assistant/AssistantAudition.h
     src/assistant/AssistantContracts.cpp
     src/assistant/AssistantContracts.h
     src/assistant/AssistantModels.cpp
@@ -294,6 +302,7 @@ target_include_directories(FolkParkOfflineAssistantTests PRIVATE src)
 target_compile_definitions(FolkParkOfflineAssistantTests PRIVATE JUCE_USE_CURL=0)
 target_link_libraries(FolkParkOfflineAssistantTests PRIVATE
     juce::juce_core
+    juce::juce_data_structures
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags)
 add_test(NAME FolkParkOfflineAssistantWorkflowTests COMMAND FolkParkOfflineAssistantTests)
@@ -331,6 +340,12 @@ add_test(NAME FolkParkRealtimeAllocationTests COMMAND FolkParkRealtimeTests)
 juce_add_console_app(FolkParkPluginTests PRODUCT_NAME "folk park plug-in tests")
 target_sources(FolkParkPluginTests PRIVATE
     tests/PluginTests.cpp
+    src/assistant/AssistantAudition.cpp
+    src/assistant/AssistantAudition.h
+    src/assistant/AssistantContracts.cpp
+    src/assistant/AssistantContracts.h
+    src/assistant/AssistantModels.cpp
+    src/assistant/AssistantModels.h
     src/plugin/PluginEditor.cpp
     src/plugin/PluginEditor.h
     src/plugin/PluginProcessor.cpp
