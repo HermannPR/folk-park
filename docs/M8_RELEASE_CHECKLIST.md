@@ -17,14 +17,14 @@ The M8 automated gate cannot close with a known Critical or High defect. Unrun h
 
 | Area | Required deliverable | Evidence required | Current status |
 | --- | --- | --- | --- |
-| Diagnostics | Bounded native snapshot, sanitized subsystem codes, lock-free fault counters, explicit preview-before-copy UI | Pure contract tests, processor integration tests, UI adversarial tests, real Release inspection | DEBUG AUTOMATION PASS; RELEASE INSPECTION PENDING |
-| Runtime hardening | Long-run finite audio/MIDI, stop/panic/no-stuck-note, UI-independent state, corrupted-state rollback | Deterministic Debug and Release tests with measured duration/configuration | DEBUG PASS; RELEASE PENDING |
-| Performance | Current x86_64 synth/FX/modulation and UI-analysis baselines with machine/OS/build/method | Retained machine-readable or plain-text benchmark evidence; no invented budget | PENDING OWNER BUDGET |
-| Installation | Exact build, install, rescan, repair, version/hash verification, safe uninstall, and rollback notes | Script tests/read-only checks plus human-ready FL steps | SCRIPT/DRY-RUN PASS; FL ACTIONS PENDING |
+| Diagnostics | Bounded native snapshot, sanitized subsystem codes, lock-free fault counters, explicit preview-before-copy UI | Pure contract tests, processor integration tests, UI adversarial tests, real Release inspection | AUTOMATION PASS; REAL RELEASE SCREENSHOT PENDING |
+| Runtime hardening | Long-run finite audio/MIDI, stop/panic/no-stuck-note, UI-independent state, corrupted-state rollback | Deterministic Debug and Release tests with measured duration/configuration | DEBUG + RELEASE PASS |
+| Performance | Current x86_64 synth/FX/modulation and UI-analysis baselines with machine/OS/build/method | Retained machine-readable or plain-text benchmark evidence; no invented budget | MEASURED; OWNER BUDGET PENDING |
+| Installation | Exact build, install, rescan, repair, version/hash verification, safe uninstall, and rollback notes | Script tests/read-only checks plus human-ready FL steps | INSTALLED PARITY/ROLLBACK PASS; FL ACTIONS PENDING |
 | Routing/troubleshooting | MIDI drag/direct routing, WAV import/render, focus, WebView, preset/database/provider recovery | Exact expected/actual/evidence fields; FL rows remain HUMAN RUN REQUIRED | PLAYBOOK COMPLETE; FL RUN PENDING |
 | Licensing/assets | Dependency pins/licenses/notices, system-library boundary, project-created asset inventory, prohibited assets | `LICENSES.md`, provenance scan, explicit unresolved owner decisions | AUTOMATED AUDIT PASS; OWNER DECISIONS PENDING |
 | Packaging | Private artifact layout and packaging notes without false signing/notarization claims | Architecture/signature/hash inspection; distribution actions gated | PRIVATE NOTES COMPLETE; OWNER DECISIONS PENDING |
-| Final gate | Clean UI, Debug, Release, VST3 smoke, pluginval, installed parity, source/security/schema scans | `evidence/m8/verification.md` and retained logs/hashes | PENDING |
+| Final gate | Clean UI, Debug, Release, VST3 smoke, pluginval, installed parity, source/security/schema scans | `evidence/m8/verification.md` and retained logs/hashes | AUTOMATED GATE PASS |
 | Host matrix | Complete or exact human-ready FL Studio matrix | Only Hermann may replace HUMAN RUN REQUIRED with a real result | HUMAN RUN REQUIRED |
 
 ## Diagnostics contract

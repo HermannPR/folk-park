@@ -4,7 +4,19 @@
 
 `folk park` combines a playable dual-wavetable instrument, MIDI idea generation, an ordered effects chain, offline audio rendering, and crash-aware local persistence in one Standalone/VST3 product. Release 0.1 targets FL Studio on Intel (`x86_64`) macOS.
 
-> **Current status — M8 release hardening in progress.** The latest complete Release gate remains the verified M7 Intel Standalone/VST3 checkpoint: 13 Release suites, pluginval 1.0.4 at strictness 5, and an independent installed-VST3 MIDI render. M8 now adds passing Debug checkpoints for bounded diagnostics, deterministic runtime recovery, conservative install/rollback tooling, privacy/support docs, and license/asset auditing (17 UI tests and 15 native suites). FL Studio checks, signing/notarization, licensing, and distribution decisions remain explicitly unresolved.
+> **Current status — M8 automated checkpoint verified.** The private Intel Standalone/VST3 candidate passes 17/17 UI contracts, 16/16 Release suites, a 120-second deterministic recovery run, pluginval 1.0.4 at strictness 5, and an independent render through the exact installed VST3. FL Studio checks, listening, signing/notarization, JUCE distribution licensing, final identity, and public-distribution decisions remain explicitly unresolved; this is not yet a public binary release.
+
+## Reviewer quick start
+
+This repository is designed to be evaluated as a working audio product rather than a static interface exercise:
+
+1. Start with the real Release screenshots in the product tour below.
+2. Read [Architecture](docs/ARCHITECTURE.md) and [Real-time safety](docs/REALTIME_SAFETY.md) for the native ownership and callback model.
+3. Review [M8 verification](evidence/m8/verification.md) for exact commands/results, artifact hashes, environment, retained validator output, and limitations.
+4. Inspect `src/plugin`, `src/synth`, `src/midi`, `src/persistence`, `src/assistant`, and `ui/src` using the repository guide below.
+5. Build with the pinned commands in [Build and run](#build-and-run). No API account or key is required for the complete offline/manual workflow.
+
+The strongest engineering themes are real-time safety, transactional state, deterministic generation, strict native/WebView contracts, failure isolation, evidence-based release claims, and producer-controlled AI assistance.
 
 ## Product tour
 
@@ -183,11 +195,27 @@ The final M7 gate was verified on 2026-08-23 in America/Monterrey:
 
 Actual Release interaction verifies native privacy status, explained proposal creation, original/proposal switching, rejection restoring A, and the guided two-question flow advancing to its next pair. The screenshots in this section are real M7 Release captures. Complete logs, hashes, observations, and additional captures are retained under [evidence/m7](evidence/m7/). Automated success is not an FL Studio or audible-quality pass.
 
-## Current M8 hardening checkpoint
+## Verified M8 automated checkpoint
 
 M8 has established a native privacy-safe diagnostics surface and stronger fault containment without changing the sound/preset contracts. Audio configuration is atomically observable; final non-finite samples are replaced with silence; overflow and malformed-state events increment bounded counters. The Settings UI requires a complete preview before it can copy the exact report associated with that preview ID. Previewing performs no filesystem, preference, project, database, provider, network, or clipboard write.
 
-This checkpoint passes the production UI build and 17/17 interface tests, builds Debug Standalone/VST3, and passes all 15 Debug native/integration suites. Its finalized extended run rendered 120 simulated seconds at 48 kHz/512 with repeated notes, 2×2 unison, all six effects, panic, release, preview-overflow recovery, and direct-MIDI Stop while checking every output sample for finiteness. The measured `0.727341×` realtime ratio is retained as one-machine Debug evidence, not a promised budget. A new real Release screenshot will be added only after the M8 Release artifact is built and inspected; the screenshots above remain real M6/M7 Release evidence rather than mockups.
+The final automated gate was verified on 2026-08-24 in America/Monterrey:
+
+| Gate | Result |
+| --- | --- |
+| Clean UI install/audit | PASS — 34 packages, 0 vulnerabilities |
+| UI contracts and strict TypeScript | PASS — 17/17 |
+| Debug native/integration suites | PASS — 15/15 |
+| Release native/integration + packaged VST3 smoke | PASS — 16/16 |
+| Extended Release recovery run | PASS — 120 simulated seconds, 11,250 blocks, finite output |
+| pluginval 1.0.4 strictness 5 | SUCCESS |
+| Release artifacts | Thin Mach-O `x86_64` Standalone and VST3 |
+| Installed VST3 parity | Exact hashes match; signature/architecture verify; independent MIDI render passes |
+| Release/installed VST3 SHA-256 | `9295e582e705837020f72f657105d5efd2213d5e8904dee628d7e55e52a82a84` |
+| Release Standalone SHA-256 | `bb61054c5acf8f9fb3711acd49220dc6ddcf6508d4ea4bc5513d6e82c1778386` |
+| Release material/security/schema scans | PASS — seven schemas; private repository confirmed |
+
+The Release runtime probe exercised repeated notes, 2×2 unison, all six effects, panic/release, preview-overflow recovery, direct-MIDI Stop, and three editor reconstructions while checking every output sample for finiteness. It measured `0.153058×` realtime on the documented Intel i9 machine. That is reproducible one-machine evidence, not an owner-approved CPU budget or an audible-quality claim. The complete report and validator log are retained under [evidence/m8](evidence/m8/).
 
 ## Build and run
 
@@ -278,11 +306,11 @@ The canonical continuation point for another coding session is [docs/CURRENT_WOR
 | M5 | Six ordered effects and isolated accepted-composition WAV preview | Automated gate passed; FL effects/WAV checks pending |
 | M6 | Native presets, migrations, assets, searchable history, project recovery | Automated gate verified; FL persistence checks pending |
 | M7 | Offline Jarvis text workflow, adaptive sound questions, explained A/B proposals, optional secure provider | Automated gate verified; FL Jarvis/project checks pending |
-| M8 | FL Studio matrix, diagnostics/performance/recovery hardening, packaging, legal/asset audit, release docs | In progress — Debug hardening/support/provenance checkpoints pass; final Release gate pending |
+| M8 | FL Studio matrix, diagnostics/performance/recovery hardening, packaging, legal/asset audit, release docs | Automated gate verified; FL human matrix and owner distribution decisions pending |
 
 The connected M7 workflow now asks focused sound-design questions, translates complete answers into bounded explanations, and exposes reversible A/B plus explicit accept/reject in the product interface. Offline/manual operation remains complete; an optional model provider cannot bypass the parameter catalog, embed user keys, or directly control the DAW.
 
-Next in M8: the clean Release/validator/install-parity evidence gate, real M8 Release screenshots, complete human FL Studio runs, and the unresolved owner decisions for signing/notarization, JUCE licensing, final identity, distribution, privacy notice, and asset approval.
+Next in M8: complete the human FL Studio matrix and resolve the owner decisions for CPU budget, signing/notarization, JUCE licensing, final identity, distribution, privacy notice, and asset approval. A diagnostics screenshot will be retained only from the real Release Standalone after the producer performs the intentional Preview action; no mockup will substitute for it.
 
 ## Scope, originality, and release boundary
 

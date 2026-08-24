@@ -1,6 +1,6 @@
 # Current work and mandatory agent handoff
 
-Last updated: 2026-08-23, America/Monterrey
+Last updated: 2026-08-24, America/Monterrey
 
 ## Read this first
 
@@ -75,7 +75,7 @@ Git rules:
 - M5: ordered Distortion → Chorus → tempo-synced Delay → Reverb → Compressor → Parametric EQ and isolated accepted-composition WAV rendering; automated gate passed; FL effects/render checks pending.
 - M6: native presets/assets/migration, transactional composition history, and editor-independent project recovery; automated gate verified; every FL persistence case remains human-required.
 - M7: composition text, guided Jarvis sound workflow, reversible A/B, optional secure provider boundary, and full automated/Release evidence; automated checkpoint verified, with every FL Studio case still human-required.
-- M8: host/release hardening, packaging, legal/asset audit, and release documentation; current continuation milestone, not yet implemented.
+- M8: host/release hardening, diagnostics, support/rollback tooling, legal/asset audit, and release documentation; complete automated checkpoint verified, with FL Studio and owner distribution decisions still pending.
 
 Do not reimplement M0–M7. Preserve the oscillator displays, C2–B5 keyboard, held-key repeat behavior, effects, candidate/accepted MIDI boundary, accepted-only WAV workflow, transactional persistence, and explicit Jarvis A/B boundary while working on M8.
 
@@ -270,7 +270,14 @@ M8 starts from the verified M7 artifacts; it must not redesign or reimplement M0
 - The read-only release-material audit pins JUCE/VST3 license-file hashes and bundled React/React DOM/Scheduler/Three versions/licenses, rejects unreviewed runtime media/fonts/external UI URLs, and confirms built-ins/UI assets are project-authored code rather than bundled factory media.
 - Drag MIDI now uses unique temporary paths and the editor removes only its exact guarded non-symlink temp file on replacement/destruction. Focused MIDI, support-script, processor, and UI contract tests pass; installer dry-run verified the retained M7 Release bundle without changing it.
 - UI lint/contracts: PASS, 17/17. Complete Debug Standalone/VST3 build and CTest: PASS, 15/15. Read-only release-material audit: PASS.
-- Next implementation boundary: clean M8 Release build/CTest, 120-second extended Release runtime, actual Release diagnostics screenshot, pluginval, installed parity/render, architecture/signature/hash, and source/security/schema evidence.
+- Clean M8 Release build/CTest: PASS, 16/16 in 7.83 seconds. The packaged VST3 smoke instantiated and rendered finite centred stereo audio from MIDI.
+- Extended Release runtime: PASS, 11,250 blocks / 120 simulated seconds at 48 kHz/512 in 18,367 ms (`0.153058×` realtime); every sample remained finite and all runtime-recovery cases passed. This is not an owner-approved CPU budget.
+- pluginval 1.0.4 strictness 5: `SUCCESS`. The optional separate Steinberg-validator subtest remains unavailable because no validator executable is installed.
+- Release/installed VST3 hash: `9295e582e705837020f72f657105d5efd2213d5e8904dee628d7e55e52a82a84`. Release Standalone hash: `bb61054c5acf8f9fb3711acd49220dc6ddcf6508d4ea4bc5513d6e82c1778386`.
+- The exact validated M8 VST3 is installed. Thin `x86_64`, deep/strict signature, build/install hash parity, and independent installed-bundle MIDI render all pass. The prior M7 bundle is retained at `~/Library/Audio/Plug-Ins/VST3/folk park.vst3.backup-20260824T133139Z` for rollback; no producer data was touched.
+- Release-material, development-origin, authored-source `eval`, sensitive-token-form, seven-schema, repository-private, and diff checks pass. The one bundled `eval` occurrence is JUCE's pinned Android compatibility branch and is not used on Intel macOS.
+- `evidence/m8/verification.md` and the fresh strictness-5 validator log retain the exact automated result/hashes. The only visual evidence still pending is the real Release diagnostics panel after the producer performs the intentional Preview action; macOS denied accessibility automation, and no mockup or clipboard bypass is permitted.
+- Every FL Studio row remains `HUMAN RUN REQUIRED`. Signing/notarization, JUCE distribution licensing, final identity, asset approval, public privacy notice, remote provider, and an owner-approved CPU budget remain explicit owner decisions.
 
 ## Commands and local environment
 

@@ -3,8 +3,8 @@
 ## Current checkpoint
 
 - Milestone: M8 — release-candidate hardening and distribution audit
-- Status: M7 automated checkpoint/private draft PR #7 are complete; M8 checklist plus bounded diagnostics implementation pass Debug gates, and all FL Studio human runs remain required
-- Date: 2026-08-23 (America/Monterrey)
+- Status: M8 complete automated checkpoint passes; real diagnostics screenshot, all FL Studio human runs, and owner distribution decisions remain required
+- Date: 2026-08-24 (America/Monterrey)
 - Branch: `feat/m8-release-hardening`, stacked exactly on `feat/m7-guided-assistant`
 
 ## M8 checklist checkpoint
@@ -46,6 +46,20 @@
 - Installer dry-run verified the existing retained M7 Release VST3: thin `x86_64`, deep/strict signature verification, executable SHA-256 `b17c88bab2c1356c7b01980b96f918a28acbdd337f7ee2e437f9c63a7d7119ca`; no install or replacement was executed.
 - Complete Debug Standalone/VST3 build: PASS. Complete Debug CTest: PASS, 15/15 in 16.23 seconds. UI lint/contracts: PASS, 17/17.
 - JUCE license route, legal identity, public privacy notice, signing/notarization, installer/update channel, asset approval, provider, CPU budget, and every FL result remain unresolved owner/human gates.
+
+## M8 final automated verification checkpoint
+
+- Clean pinned UI install and production audit: PASS, 34 packages and 0 vulnerabilities. UI tests/lint/build: PASS, 17/17.
+- Complete Release Standalone/VST3 build and CTest: PASS, 16/16 in 7.83 seconds, including the packaged VST3 scan/instantiate/finite-stereo MIDI render.
+- Extended Release recovery run: PASS, 11,250 blocks / 120 simulated seconds at 48 kHz/512 in 18,367 ms (`0.153058×` realtime) with repeated notes, 2×2 unison, all effects, panic/release, preview overflow recovery, direct-MIDI Stop, and editor reconstruction.
+- Release VST3 and Standalone are thin Mach-O `x86_64`; the VST3 local ad-hoc signature verifies deeply/strictly. The unsigned Standalone remains a private engineering artifact.
+- pluginval 1.0.4 strictness 5: `SUCCESS`; log retained at `evidence/m8/pluginval/pluginval-release-strictness-5.txt`.
+- Installed user VST3: PASS; installed/build hash parity, architecture/signature verification, and independent MIDI rendering pass. The previous bundle remains as timestamped rollback; no Application Support or producer data was touched.
+- Release/installed VST3 SHA-256: `9295e582e705837020f72f657105d5efd2213d5e8904dee628d7e55e52a82a84`.
+- Release Standalone SHA-256: `bb61054c5acf8f9fb3711acd49220dc6ddcf6508d4ea4bc5513d6e82c1778386`.
+- Release-material, development-origin, authored-source `eval`, sensitive-token-form, seven-schema, private-repository, and diff gates pass. The one embedded `eval` belongs to JUCE's pinned Android user-script compatibility branch and is not invoked by the Intel macOS target.
+- Full result, methods, limitations, and hashes: `evidence/m8/verification.md`. The real Release diagnostics screenshot awaits the producer-visible Preview action because macOS denied accessibility automation; no mock visual or clipboard bypass is accepted.
+- Every FL Studio row remains `HUMAN RUN REQUIRED`. Owner decisions for CPU budget, JUCE distribution licensing, signing/notarization, identity, distribution, privacy notice, asset approval, and remote provider remain unresolved.
 
 ## M7 contract checkpoint
 
