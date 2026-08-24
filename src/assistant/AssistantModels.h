@@ -50,8 +50,10 @@ struct ParameterChange
 
 struct ParameterProposal
 {
-    static constexpr int currentSchemaVersion = 1;
-    static constexpr std::size_t maximumChanges = 73;
+    static constexpr int oldestSupportedSchemaVersion = 1;
+    static constexpr int currentSchemaVersion = 2;
+    static constexpr std::size_t maximumV1Changes = 73;
+    static constexpr std::size_t maximumChanges = 102;
 
     int schemaVersion = currentSchemaVersion;
     juce::String proposalId;
@@ -64,6 +66,8 @@ struct ParameterProposal
 };
 
 [[nodiscard]] juce::String stableId(SoundEntryMode value);
+[[nodiscard]] bool isKnownParameterId(const juce::String& parameterId,
+                                      int proposalSchemaVersion = ParameterProposal::currentSchemaVersion) noexcept;
 [[nodiscard]] juce::Result validateSoundIntent(const SoundIntent& intent);
 [[nodiscard]] juce::Result validateParameterProposal(const ParameterProposal& proposal);
 }

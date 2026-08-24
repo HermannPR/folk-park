@@ -2,10 +2,31 @@
 
 ## Current checkpoint
 
-- Milestone: M6 — native presets, transactional history, and host project recovery
-- Status: M6 automated gate verified; every FL Studio human run remains required before Release 0.1 can claim host completion
+- Milestone: M7 — offline Jarvis text, guided sound proposals, and secure provider boundary
+- Status: M7 versioned request/response/catalog contract checkpoint passes focused tests; offline engines, A/B integration, UI, provider/Keychain implementation, full gates, and all FL Studio human runs remain required
 - Date: 2026-08-23 (America/Monterrey)
-- Branch: `feat/m6-presets-history`, stacked exactly on `feat/m5-effects-preview`
+- Branch: `feat/m7-guided-assistant`, stacked exactly on `feat/m6-presets-history`
+
+## M7 contract checkpoint
+
+- Added versioned typed `AssistantRequest`/`AssistantResponse` variants for composition versus sound and offline/mock/remote processing origins.
+- Bounded prompts at 1,024 characters, required matching UUID/target/origin/typed context, rejected mixed variants and stale responses, and made per-request consent mandatory for remote origin.
+- Added one asynchronous non-audio `AssistantProvider` interface with cancellation and at-most-once completion semantics; no real provider or network dependency is selected yet.
+- Preserved the original 73-ID proposal contract as `parameter-proposal-v1.schema.json` and migrated the current proposal schema/model to v2 for all 102 host parameters.
+- Resolved every proposed ID against `src/common/ParameterIds.h`; v1 rejects effect IDs, v2 accepts the complete catalog, and unknown/duplicate IDs, invalid values, missing reasons, and implicit acceptance are rejected.
+- Recorded ADR-0008 for offline-first composition text, guided sound A/B, provider consent, credential boundaries, and the open real-provider decision.
+- Focused assistant model/contract build and CTest: PASS, 1/1.
+
+## M7 work still required
+
+- Implement bounded deterministic offline composition text parsing and adaptive guided sound questions/proposals.
+- Implement a deterministic mock provider plus cancellation/timeout/retry state tests.
+- Integrate immutable original/proposal A/B snapshots and explicit accept/reject with processor/project state without audio-thread work.
+- Add the native bridge and complete typed Jarvis conversation/settings UI.
+- Implement and test the macOS Keychain credential abstraction. Do not add a real adapter until the product-owner decision and privacy UX exist.
+- Run complete UI, Debug, Release, validator, artifact, visual, security, and evidence gates. Every FL Studio case remains HUMAN RUN REQUIRED.
+
+## Previous M6 checkpoint
 
 ## Implemented M6 checkpoint
 
@@ -226,4 +247,4 @@
 
 ## Next smallest verifiable task
 
-Open the private M6 draft PR with base exactly `feat/m5-effects-preview`, then begin M7 from the recorded M6 gate. M7 must implement the offline guided sound workflow and optional secure-provider boundary without weakening manual operation, the parameter catalog, explicit A/B acceptance, or the audio-thread contract. Keep every unexecuted FL Studio case marked HUMAN RUN REQUIRED.
+Commit the passing M7 contract checkpoint, then implement the deterministic offline composition-text parser, adaptive guided-question engine, bounded catalog proposal mapper, and mock provider on the same typed boundary. Add adversarial fixtures before processor or UI integration, and keep every unexecuted FL Studio case marked HUMAN RUN REQUIRED.

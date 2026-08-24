@@ -34,11 +34,13 @@ The DOCX is the master product and engineering contract. Read it without modifyi
 ## Repository and Git state
 
 - Private repository: `HermannPR/folk-park`.
-- M6 branch: `feat/m6-presets-history`.
-- M6 is stacked on `feat/m5-effects-preview`; the M6 draft PR base must be exactly `feat/m5-effects-preview`.
+- Current branch: `feat/m7-guided-assistant`, stacked exactly on `feat/m6-presets-history`.
+- Any M7 draft PR must use base exactly `feat/m6-presets-history` unless the documented stacked topology intentionally changes.
 - M5 draft PR: <https://github.com/HermannPR/folk-park/pull/5>.
 - M6 private draft PR: <https://github.com/HermannPR/folk-park/pull/6>, base exactly `feat/m5-effects-preview`, head `feat/m6-presets-history`.
 - Final M6 checkpoint: `b3e9e78 Verified and documented the M6 checkpoint`.
+- M6 handoff checkpoint: `282c344 Established the M7 continuation handoff`.
+- No M7 PR exists at this contract checkpoint.
 - Earlier M6 commits are:
   - `735fb84 Established the M6 persistence and migration contracts`
   - `a69a8bc Implemented versioned native presets and validated assets`
@@ -65,7 +67,7 @@ Git rules:
 - M4: Silicon Dreams UI, real A/B visuals, four-octave C2–B5 piano, octave shift, and held-key repeat suppression; automated gate passed; FL UI/input checks pending.
 - M5: ordered Distortion → Chorus → tempo-synced Delay → Reverb → Compressor → Parametric EQ and isolated accepted-composition WAV rendering; automated gate passed; FL effects/render checks pending.
 - M6: native presets/assets/migration, transactional composition history, and editor-independent project recovery; automated gate verified; every FL persistence case remains human-required.
-- M7: guided Jarvis sound workflow and optional secure provider; planned, not implemented.
+- M7: composition text, guided Jarvis sound workflow, reversible A/B, and optional secure provider boundary; contract checkpoint in progress.
 - M8: host/release hardening, packaging, legal/asset audit, and release documentation; planned.
 
 Do not reimplement M0–M6. Preserve the oscillator displays, C2–B5 keyboard, held-key repeat behavior, effects, candidate/accepted MIDI boundary, accepted-only WAV workflow, and transactional persistence while working on M7.
@@ -130,16 +132,26 @@ Known verification observations:
 - A concurrent first CMake/Vite attempt temporarily lost the generated embedded index; the required serial UI build → CMake reconfigure/build and complete gate passed. Keep these steps serial.
 - Every FL Studio test remains `HUMAN RUN REQUIRED`; see `docs/FL_STUDIO_TEST_MATRIX.md`.
 
-## Next milestone: M7 guided sound assistant
+## Current milestone: M7 Jarvis text and guided sound assistant
 
-Do not treat the grey M7 UI hint or existing schema models as a working LLM. There is no conversational workflow/provider integration yet.
+Do not treat the grey M7 UI hint or the passing contract models as a working assistant/LLM. There is no offline parser, question/proposal engine, A/B processor integration, conversation UI, credential implementation, or real provider yet.
 
-Before editing M7:
+### Contract checkpoint now implemented in the worktree
 
-1. Confirm the final M6 checkpoint is committed/pushed and the private draft PR has the exact M5 base.
-2. Create the next milestone branch according to the established stacked-branch strategy; do not add M7 work to the M6 verification commit.
-3. Read `docs/PRODUCT_AMENDMENTS.md`, `docs/AI_PROVIDER_SECURITY.md`, `docs/PARAMETER_CATALOG.md`, `schemas/sound-intent.schema.json`, `schemas/parameter-proposal.schema.json`, `src/assistant/AssistantModels.*`, the M7 section of `plans/RELEASE_0_1.md`, and the corresponding master DOCX section completely.
-4. Freeze the exact offline conversation/session/proposal/A-B/acceptance contract before implementing provider code.
+- `src/assistant/AssistantContracts.*` defines tagged composition/sound requests and responses across offline/mock/remote origins plus a non-audio asynchronous provider interface.
+- Prompts are bounded at 1,024 characters; request/response UUID, target, origin, and typed payload must match; mixed variants and stale responses fail.
+- Remote origin requires explicit consent on the submitted request.
+- `schemas/parameter-proposal-v1.schema.json` preserves the M3 73-ID proposal format. The current `schemas/parameter-proposal.schema.json` and C++ model are v2 with a 102-change maximum.
+- All proposal IDs resolve against the authoritative C++ catalog. V1 cannot address effects; v2 can address all M5 effect IDs. Unknown/duplicate IDs, non-finite/out-of-range values, missing v2 reasons/assumptions, unsupported versions, and disabled explicit acceptance fail.
+- ADR-0008 freezes the offline composition, guided sound, A/B, provider-consent, credential, and no-real-adapter-yet decisions.
+- The focused assistant target builds and `FolkParkAssistantSchemaModelTests` passes 1/1 after these changes.
+
+Next M7 sequence:
+
+1. Preserve the current contract work and commit it with an impersonal subject after exact diff/test review.
+2. Implement the deterministic offline composition parser, adaptive guided-question/proposal engine, and a mock provider before processor/UI integration.
+3. Add adversarial tests for sanitization, ambiguity/follow-ups, prompt bounds, determinism, catalog mapping, stale/cancelled requests, provider failure, and explicit acceptance.
+4. Then integrate reversible A/B and explicit accept/reject into processor state without adding callback work.
 
 M7 required producer workflow:
 
@@ -166,11 +178,12 @@ git diff --check
 git remote -v
 gh repo view HermannPR/folk-park --json visibility,nameWithOwner
 gh pr list --head feat/m6-presets-history --state all
+gh pr list --head feat/m7-guided-assistant --state all
 ```
 
-Confirm the repository is still private, inspect every local change, and never discard work. If the final M6 evidence is uncommitted, review exact diffs and stage only the intended README/docs/evidence paths. The expected final subject is `Verified and documented the M6 checkpoint`.
+Confirm the repository is still private, inspect every local change, and never discard work. If the M7 contract changes are uncommitted, run the focused assistant test plus full Debug suite, review exact diffs, and stage only the intended contract/schema/test/documentation paths. The expected first M7 subject is `Established M7 assistant and provider contracts`.
 
-Once M6 is pushed and its private draft PR exists, update this handoff with the actual PR/next branch if necessary, then start the smallest buildable M7 contract checkpoint. Prefer meaningful impersonal commits at every passing stage.
+The M6 draft PR already exists and this branch is correctly stacked. Review/commit the M7 contract checkpoint if it is still uncommitted, then continue with the offline engine checkpoint. Prefer meaningful impersonal commits at every passing stage.
 
 ## Commands and local environment
 

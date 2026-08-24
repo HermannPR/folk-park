@@ -67,6 +67,14 @@ A preset load prepares both oscillator banks and the complete modulation snapsho
 
 Host project state contains one bounded, versioned preset payload plus optional accepted composition and history lineage. Restoration validates the complete payload without an editor. If a referenced imported asset is unavailable, the processor retains the current parameters, wavetables, and composition while exposing an exact SHA-256/size recovery request. Only a matching explicit relink completes the pending transaction.
 
+## M7 assistant orchestration boundary
+
+Offline composition text and guided sound design share one versioned `AssistantRequest`/`AssistantResponse` boundary but use distinct typed targets. Composition returns a validated candidate `MusicIntent`; sound design returns a catalog-validated `ParameterProposal`. Request UUID, target, processing origin, typed context, and result must match before a session can change.
+
+The provider interface is non-audio and asynchronous with cancellation and at-most-once completion. Offline and mock implementations require no credential. A future remote origin requires per-request producer consent and a Keychain-backed native credential store; natural language, credentials, and provider output never enter the audio callback or host project state.
+
+Sound A/B will capture an immutable original host-parameter snapshot and a separate validated proposal. Message-thread host gestures may select either review state. Reject/cancel restores the original; Accept is the only transition that commits the proposal. Composition retains the existing candidate/accepted boundary and accepted-only MIDI/WAV delivery.
+
 ## ADRs
 
 - ADR-0001: JUCE pin and dependency acquisition.
@@ -75,5 +83,6 @@ Host project state contains one bounded, versioned preset payload plus optional 
 - ADR-0005: Bundled React UI and bounded Three.js visualizer for M4 (accepted).
 - ADR-0006: Ordered effects and isolated offline preview for M5 (accepted).
 - ADR-0007: Versioned native presets, content-addressed assets, transactional history, and project recovery for M6 (accepted).
+- ADR-0008: Offline-first assistant orchestration, proposal-version migration, provider consent, and A/B acceptance for M7 (accepted).
 
-Provider-secret and assistant-acceptance decisions remain required for M7. Distribution licensing/signing and release packaging remain M8 boundaries.
+The real-provider selection and Keychain implementation remain open M7 work; offline/manual behavior and explicit assistant acceptance are fixed. Distribution licensing/signing and release packaging remain M8 boundaries.

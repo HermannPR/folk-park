@@ -265,6 +265,8 @@ add_test(NAME FolkParkMidiDeliveryParityTests COMMAND FolkParkMidiDeliveryTests)
 juce_add_console_app(FolkParkAssistantModelTests PRODUCT_NAME "folk park assistant model tests")
 target_sources(FolkParkAssistantModelTests PRIVATE
     tests/AssistantModelsTests.cpp
+    src/assistant/AssistantContracts.cpp
+    src/assistant/AssistantContracts.h
     src/assistant/AssistantModels.cpp
     src/assistant/AssistantModels.h
     src/midi/Composition.cpp
