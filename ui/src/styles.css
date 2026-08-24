@@ -239,7 +239,7 @@ button.primary {
 button.accept { color: #130728; border-color: rgba(255,255,255,.44); background: linear-gradient(135deg, #4dffd2, #bcff3f); box-shadow: inset 0 2px rgba(255,255,255,.56), 0 5px 0 #25795f, 0 11px 22px rgba(73,255,209,.16); }
 button:disabled { opacity: .38; filter: grayscale(.25); box-shadow: inset 0 1px rgba(255,255,255,.16), 0 2px 0 #130b40; }
 
-.app-shell { min-height: 100vh; padding: 18px 22px 78px; }
+.app-shell { min-height: 100vh; padding: 18px 22px 230px; }
 .atmosphere {
   background:
     linear-gradient(180deg, transparent 0 57%, rgba(7, 5, 43, .42) 72%),
@@ -575,6 +575,17 @@ input[type="checkbox"]:checked { background: radial-gradient(circle at 32% 24%, 
 .piano-key.black { height: 78px; color: #fff; border-color: rgba(255,255,255,.16); background: linear-gradient(105deg, #7e36bf, #25105e 58%, #09052f); box-shadow: inset 3px 2px rgba(255,255,255,.15), inset -5px -8px 12px rgba(0,0,0,.45), 0 8px 0 #080425, 0 12px 12px rgba(1,0,20,.46); }
 .piano-key.pressed { color: #18082d; background: var(--gradient-lime); box-shadow: inset 0 0 18px rgba(255,255,255,.64), 0 3px 0 #257258, 0 0 24px rgba(183,255,50,.55); transform: translateY(4px) !important; }
 .piano-key kbd { font-family: var(--mono); }
+.global-audition { position: fixed; z-index: 18; left: 28px; right: 28px; bottom: 67px; margin: 0; }
+.global-audition .keyboard-card { margin: 0; padding: 12px 16px 10px; border-color: rgba(94,246,217,.34); box-shadow: var(--shadow-plastic), 0 -8px 30px rgba(4,2,35,.72); }
+.keyboard-card.compact .section-heading { margin-bottom: 8px; }
+.keyboard-card.compact .section-heading h2 { font-size: 16px; }
+.keyboard-card.compact .piano-keyboard { height: 92px; padding-block: 5px 8px; }
+.keyboard-card.compact .piano-key { height: 76px; flex-basis: 30px; min-width: 30px; padding-bottom: 5px; }
+.keyboard-card.compact .piano-key.black { height: 51px; flex-basis: 20px; min-width: 20px; margin-inline: -10px; }
+.keyboard-card.compact .piano-key span { bottom: 5px; font-size: 8px; }
+.keyboard-card.compact .piano-key kbd { bottom: 18px; font-size: 8px; }
+.keyboard-card.compact .piano-key.black kbd { bottom: 5px; }
+.keyboard-card.compact > p { display: none; }
 
 .intent-grid { grid-template-columns: 1fr .85fr 1.5fr .85fr .75fr; }
 .intent-grid label { padding: 10px; }
@@ -671,4 +682,9 @@ footer { left: 18px; right: 18px; bottom: 12px; min-height: 43px; padding: 8px 1
   .control-grid, .intent-grid, .macro-grid, .effect-controls, .effect-controls-six, .preset-form, .comparison-grid, .history-tools, .jarvis-submit-row, .provider-rules { grid-template-columns: 1fr; }
   .piano-roll { min-height: 270px; }.jarvis-trust, .privacy-boundary { grid-template-columns: 1fr; }.jarvis-messages article { width: 94%; }
   footer > span:last-child, .footer-gems { display: none; }
+}
+
+@media (max-width: 900px) {
+  .global-audition { left: 12px; right: 12px; }
+  .keyboard-card.compact .section-heading h2 { font-size: 14px; }
 }

@@ -62,7 +62,6 @@ function SynthView({ snapshot, visible, preferences, announce, refresh, publishS
         position={oscillatorBPosition} routeActive={snapshot.modulationRouteCount > 0}
         visible={visible} {...preferences} />
     </div>
-    <PianoKeyboard announce={announce} />
     <section className="surface">
       <div className="section-heading"><div><span>01</span><h2>Oscillators</h2></div><small>Host-aware</small></div>
       <div className="control-grid">
@@ -310,6 +309,7 @@ export default function App() {
       </>}
     </main>
     </div>
+    <div className="global-audition"><PianoKeyboard announce={announce} compact /></div>
     <footer><Notification aria-live="polite">{announcement}</Notification><span className="footer-gems" aria-hidden="true"><i /><i /><i /></span><span>{snapshot?.version ?? "offline"} · {visible ? "visible" : "graphics paused"}</span></footer>
   </div>;
 }

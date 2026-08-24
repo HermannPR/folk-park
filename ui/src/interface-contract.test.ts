@@ -28,6 +28,7 @@ test("visualizer includes actual bounded Three scene and 2D fallback without ext
 });
 
 test("audition keyboard exposes touch, computer-key, accessibility, and release safety", async () => {
+  const app = await readFile(resolve(sourceRoot, "App.tsx"), "utf8");
   const keyboard = await readFile(resolve(sourceRoot, "PianoKeyboard.tsx"), "utf8");
   assert.match(keyboard, /previewNoteOn/);
   assert.match(keyboard, /previewNoteOff/);
@@ -39,10 +40,15 @@ test("audition keyboard exposes touch, computer-key, accessibility, and release 
   assert.match(keyboard, /document\.addEventListener\("visibilitychange"/);
   assert.match(keyboard, /aria-label=/);
   assert.match(keyboard, /isTypingTarget/);
+  assert.doesNotMatch(keyboard, /target instanceof HTMLButtonElement/,
+    "focused non-text controls must not disable musical letter keys or leak them to macOS");
+  assert.match(keyboard, /event\.stopPropagation\(\)/);
   assert.match(keyboard, /firstNote = 36/);
   assert.match(keyboard, /lastNote = 83/);
   assert.match(keyboard, /Four-octave playable piano keyboard/);
   assert.match(keyboard, /setComputerBase/);
+  assert.match(app, /className="global-audition"><PianoKeyboard announce=\{announce\} compact/,
+    "one persistent audition owner must remain mounted across every workspace");
   assert.doesNotMatch(keyboard, /https?:\/\//);
 });
 
