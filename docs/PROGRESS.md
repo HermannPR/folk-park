@@ -3,11 +3,11 @@
 ## Current checkpoint
 
 - Milestone: M6 — native presets, transactional history, and host project recovery
-- Status: M6 foundation/integration and the current Debug hardening gate pass; complete M6 Release/pluginval/artifact/visual gates and all FL Studio human runs remain required
+- Status: M6 automated gate verified; every FL Studio human run remains required before Release 0.1 can claim host completion
 - Date: 2026-08-23 (America/Monterrey)
 - Branch: `feat/m6-presets-history`, stacked exactly on `feat/m5-effects-preview`
 
-## Implemented M6 working checkpoint
+## Implemented M6 checkpoint
 
 - Added deterministic version-2 `.folkparkpreset` documents plus pure oldest-supported migration, complete 102-parameter/effect/route capture, bounded parsing, atomic explicit-overwrite saves, content-addressed WAV assets, traversal/symlink rejection, and exact missing-asset relink.
 - Added a SQLite repository behind `HistoryRepository` with transactional migrations, bounded search, exact recall, lineage, favorites/tags, soft deletion, retention, cleanup, and database-failure isolation.
@@ -18,20 +18,32 @@
 - Added atomic-only parameter revision tracking for reliable dirty state without locking the audio callback.
 - Corrected Save As so non-overwrite creates a new UUID while updates require explicit overwrite and retain the active UUID.
 
-## M6 commands and exact results so far
+## M6 commands and exact results
 
-- Current UI production build: PASS; `app.js` 806.08 kB (209.25 kB gzip), `app.css` 16.30 kB; UI tests 10/10; lint PASS. The known direct-eval warning remains confined to JUCE's pinned Android compatibility helper.
-- Current complete Debug build: PASS for native tests, Standalone, and VST3.
+- Clean `npm ci --ignore-scripts` and `npm audit --omit=dev`: PASS; 0 vulnerabilities.
+- UI production build: PASS; `app.js` 806.08 kB (209.25 kB gzip), `app.css` 16.30 kB; UI tests 10/10; lint PASS. The known direct-eval warning remains confined to JUCE's pinned Android compatibility helper.
+- Complete Debug build: PASS for native tests, Standalone, and VST3.
 - `ctest --preset macos-x86_64-debug --output-on-failure`: PASS, 10/10.
+- Complete Release build: PASS for native tests, Standalone, and VST3.
+- `ctest --preset macos-x86_64-release --output-on-failure`: PASS, 11/11, including the packaged VST3 scan/instantiate/finite-stereo MIDI render.
+- Release Standalone and VST3 are thin `x86_64` Mach-O artifacts. The VST3 local ad-hoc signature verifies deeply/strictly; the private Standalone engineering artifact remains unsigned.
+- pluginval 1.0.4 strictness 5: `SUCCESS` across editor lifecycle, processing, state, automation, buses, and 44.1/48/96 kHz × 64/128/256/512/1024 samples.
+- Installed user VST3: PASS; installed/build hashes match, installed architecture/signature verify, and an independent smoke invocation renders finite stereo MIDI audio.
+- Release/installed VST3 SHA-256: `9b0fb548a4844b4384742e02248682fde8ffa479a19b9066c953dabc8c6572dc`.
+- Release Standalone SHA-256: `3e4cf0d884ad8a770100e7cc34ac6281959879acaf1495c9d03fefd79b1f810f`.
+- Source development-origin, sensitive-token-pattern, JSON-schema, and `git diff --check` gates: PASS; only JSON Schema identifier URLs are present in scanned project source.
+- Release Standalone visual gate: PASS for ready native bridge, Synth A/B displays and four-octave keyboard, accepted Compose piano roll, ordered FX workspace, preset/history availability, and clean close. Four screenshots are retained.
 - Focused processor recovery covers real user-WAV conversion/retention, retry after busy audio publication, external preset asset localization/independent reload, editor-independent host-state restore, accepted-composition restore, malformed/oversized payload rejection, missing-asset rollback, wrong-hash rejection, exact relink, Save As identity, explicit overwrite, dirty tracking, SQLite symlink rejection, database isolation, and persistence restart.
 - `git diff --check`: PASS at the working checkpoint review.
 
-## M6 evidence still required before milestone completion
+## M6 evidence
 
-- Complete clean UI install/build/test/lint and audit record after final M6 changes.
-- Complete Release configure/build/CTest, built VST3 smoke, thin `x86_64` inspection, code-signature inspection, pluginval strictness 5, installed artifact/hash parity, and development-server/secret scan.
-- Standalone visual/interaction evidence for preset browser, history, Save As, compare/trash/retention, and missing-asset/degraded states.
-- `evidence/m6/verification.md` and bounded supporting artifacts.
+- `evidence/m6/verification.md`
+- `evidence/m6/pluginval/pluginval-release-strictness-5.txt`
+- `evidence/m6/standalone-m6-synth.png`
+- `evidence/m6/standalone-m6-compose.png`
+- `evidence/m6/standalone-m6-fx.png`
+- `evidence/m6/standalone-m6-history.png`
 - Every M6 FL Studio case remains HUMAN RUN REQUIRED.
 
 ## Previous M5 checkpoint
@@ -214,4 +226,4 @@
 
 ## Next smallest verifiable task
 
-Complete the remaining M6 adversarial bridge/UI and persistence-root review, then run the full clean UI and Release x86_64/CTest/VST3-smoke/pluginval/artifact gate. Record `evidence/m6/verification.md`, update this document with exact hashes/results, and keep every unexecuted FL Studio case marked HUMAN RUN REQUIRED.
+Open the private M6 draft PR with base exactly `feat/m5-effects-preview`, then begin M7 from the recorded M6 gate. M7 must implement the offline guided sound workflow and optional secure-provider boundary without weakening manual operation, the parameter catalog, explicit A/B acceptance, or the audio-thread contract. Keep every unexecuted FL Studio case marked HUMAN RUN REQUIRED.

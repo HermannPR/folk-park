@@ -1,91 +1,230 @@
 # folk park
 
-`folk park` is an original wavetable synthesizer and deterministic composition assistant for producers. Release 0.1 targets FL Studio on Intel macOS as a 64-bit VST3 instrument and as a Standalone application.
+**An original wavetable synthesizer and deterministic composition assistant for Intel macOS.**
 
-## Final 0.1 product
+`folk park` combines a playable dual-wavetable instrument, MIDI idea generation, an ordered effects chain, offline audio rendering, and crash-aware local persistence in one Standalone/VST3 product. Release 0.1 targets FL Studio on Intel (`x86_64`) macOS.
 
-The finished 0.1 product combines a playable dual-wavetable instrument with composition help for chords, melodies, bass, arpeggios, MIDI, presets, and sound exploration. Producers can work manually or use an optional guided assistant: describe the sound, answer focused questions, audition an explained parameter proposal, refine it conversationally, and explicitly accept or reject it. The assistant never silently changes a project.
+> **Current status — M6 automated checkpoint verified.** The Standalone and VST3 Release artifacts build, all 11 Release suites pass, pluginval 1.0.4 succeeds at strictness 5, and the installed VST3 independently renders audio from MIDI. FL Studio checks remain explicitly human-required. The guided Jarvis sound assistant is planned for M7 and is not presented as working yet.
 
-The visual direction is the original **Silicon Dreams** interface: a fast, bundled, offline-capable synth/compose workspace rather than a copy of Serum or another proprietary product.
+## Product tour
 
-The intended final workflow is one connected instrument:
+### Design and audition
 
-1. Build and play a sound manually with the complete synth, modulation, effects, preset controls, and a four-octave C2–B5 touch/mouse piano with an octave-shiftable computer-key zone, with live original 2D/3D wavetable and spectrum feedback for both oscillators.
-2. Generate seeded chords, melody, bass, or arpeggios; inspect them in a piano roll; request a related or surprising variation; then explicitly accept the result.
-3. Drag or export standards-compliant MIDI to FL Studio, or route accepted MIDI to another instrument.
-4. Optionally ask the guided assistant for help. It asks focused sound-design questions, returns bounded parameter changes with reasons and uncertainty, supports reversible A/B audition, and waits for explicit acceptance.
-5. Save projects with searchable presets, history, migrations, and missing-asset recovery before the signed Release 0.1 package is called complete.
+Both oscillators display the real bounded wavetable data, current frame position, and derived spectrum. A four-octave C2–B5 keyboard supports touch/mouse play plus an octave-shiftable computer-key zone. Held macOS keys sustain once instead of retriggering from keyboard repeat.
 
-## What works now — M6 hardening checkpoint
+![folk park Synth workspace with dual wavetable visualizers and four-octave keyboard](evidence/m6/standalone-m6-synth.png)
 
-- A bundled React/TypeScript Silicon Dreams interface with responsive Synth, Compose, FX, History, and Settings navigation. History now contains the native preset and composition-history workspace; M7 assistant/provider controls remain clearly unfinished.
-- Two live OSC A/B views render the actual bounded wavetable frames, current morph position, and derived spectrum. Three.js is capped at 30 FPS; Low Graphics uses a 12 FPS 2D waveform/spectrum fallback, Reduced Motion renders on state changes, and hidden views stop animation.
-- A four-octave C2–B5 touch/mouse piano plus an octave-shiftable A–P computer-key zone. Preview notes cross a fixed native queue, release on pointer cancel/blur/hide/editor close/panic, and held macOS keys sustain once without repeat retriggering.
-- Complete host-aware control surfaces for both oscillators, mixer, filter, three envelopes, four LFOs, and a reviewed 32-route modulation matrix. Header Undo/Redo synchronize pending APVTS state before acting.
-- Interactive candidate-note selection and bounded pitch, timing, duration, and velocity editing. Editing never mutates the previously accepted bundle and requires a fresh explicit Accept before delivery.
-- A strict complete native UI snapshot restores parameters, actual wavetable tables, route state, composition state, version/status, and active voices after UI reload. Malformed, future, non-finite, duplicate, or oversize payloads cannot replace the last valid view.
+### Compose musical ideas
 
-- Intel `x86_64` Debug and Release builds for Standalone and VST3.
-- A deterministic 16-voice engine with released/quietest-then-oldest voice stealing.
-- Two independent legal project-generated wavetable oscillators with position, coarse/fine tuning, phase/random/reset behavior, level/pan, and up to eight unison lanes with detune/spread/blend.
-- Eleven band-limited mip levels per wavetable frame, a sine/triangle sub, deterministic white/pink noise, three envelopes, four free/synced/retriggerable LFOs, and a stable low/high/band-pass filter with resonance, drive, key tracking, and envelope depth.
-- A central modulation registry with ten sources, thirteen destinations, three curves, and at most 32 validated routes. The M4 matrix edits, reviews, and transactionally publishes all 32 bounded slots.
-- Deterministic user-WAV conversion away from audio with strict bounds, SHA-256 metadata, a preview state, explicit confirmation, content-addressed source retention, atomic publication, and a 128-sample table crossfade. Project state records validated asset references and exposes exact hash-and-size recovery if the local source is missing.
-- Ten-millisecond smoothing and fixed per-lane fades for live wavetable position, pitch, level, pan, detune/spread/blend, and unison-count changes.
-- Stable automatable host parameters and versioned state round trips.
-- Bundled WebView controls using host-aware parameter attachments, safe WAV review/confirm actions, modulation actions, preview MIDI, panic, and live native status; audio behavior is tested with the editor open and closed.
-- Native synth/processor/import/state tests, zero-allocation audio instrumentation, spectral and CPU evidence, plus a Release smoke test that loads the built VST3 as an external host and renders finite stereo audio from MIDI.
-- pluginval strictness 5 validation across editor, state, automation, buses, and the required sample-rate/block-size matrix.
-- Strict version 1 `MusicIntent` and `GeneratedClip` schemas and typed models with key, scale, tempo, meter, bars, requested parts, genre/emotion, six composition macros, arpeggiator settings, note range, polyphony, event caps, seed, generator version, and parent lineage.
-- Deterministic offline chord progressions with triads/sevenths, functional movement, V-I cadence, inversions, and bounded voice leading; chord-aware melodies with contour, motifs, rests, passing tones, and leap limits; bounded bass; and five seeded arpeggio orders.
-- `More Like This` preserves musical context and parent IDs while producing a controlled difference. `Surprise Me` produces a separate bounded candidate. Neither replaces accepted material.
-- A Compose UI with seed/key/scale/BPM/bars, density/rhythm/tension/humanization/repetition/variation, part selection, an editable colored piano roll, candidate status, and an explicit Accept action.
-- One accepted `GeneratedClip` bundle feeds all MIDI delivery paths: multitrack SMF with tempo/time-signature metadata and explicit note-offs, reopen verification at multiple PPQ resolutions, temporary-file drag, save chooser export, and fixed-schedule direct MIDI with correct block offsets and tracked Stop note-offs.
-- Direct accepted MIDI also drives the internal synth. Publication is atomic at an audio-block boundary, and measured composition scheduling adds zero allocations to the callback with a pre-sized host MIDI buffer.
-- Strict `SoundIntent` and `ParameterProposal` schemas plus typed validators are present as the foundation for the requested guided sound walkthrough. The conversational assistant, provider integration, A/B audition, and parameter application are not implemented yet.
-- A fixed, independently bypassable serial chain: Distortion → Chorus → tempo-synced Delay → Reverb → Compressor → Parametric EQ. All 29 effect parameters are stable host automation/state surfaces, new instances default to gain-safe bypass, and each transition uses a 10 ms crossfade.
-- A complete host-aware FX workspace exposes every implemented effect control. Values are bounded at both the parameter and DSP boundaries, and malformed/non-finite samples cannot escape the chain.
-- Accepted compositions can be rendered to stereo 24-bit/48 kHz WAV on a worker thread. Rendering copies immutable synth, effect, modulation, and A/B wavetable snapshots into a separate engine, writes transactionally, validates the result before replacement, supports cancellation, and never resets or seeks live voices.
-- Versioned deterministic `.folkparkpreset` files capture all 102 normalized parameters, modulation routes, ordered effects, metadata, and up to two content-addressed user WAVs. The native workspace supports explicit Save As/overwrite, import, favorites, missing-asset relink, and transactional recall.
-- Accepted compositions are stored in a searchable transactional SQLite history with stable IDs, lineage, tags, favorites, recoverable soft deletion, comparison, retention, and exact recall. Database failure is isolated from acceptance and audio.
-- Versioned bounded host project state now restores the complete native sound snapshot, imported wavetable references, dirty status, accepted composition, and history lineage without requiring the editor. Missing or malformed assets/payloads leave the complete live state unchanged until explicit recovery succeeds.
+The deterministic composition engine creates chords, melody, bass, and arpeggios from seed, key, scale, tempo, length, and musical macro controls. A candidate can be inspected and edited in the piano roll; export, drag, routing, and WAV rendering use only an explicitly accepted result.
 
-The current build is an M6 hardening checkpoint, not the complete 0.1 instrument. The integrated UI build/tests/lint passed 10/10 at the preceding checkpoint, and the current complete Debug build and 10/10 native suites pass with project-state/asset recovery coverage. The last fully gated Release/pluginval artifact remains M5; the complete M6 Release, pluginval, artifact, visual, and FL Studio gates have not yet run. FL Studio insertion, piano focus/repeat behavior, project/preset reopen, missing-asset recovery, effect automation/tempo sync, MIDI drag/routing, and WAV import/playback remain human tests.
+![folk park Compose workspace with musical controls and generated piano roll](evidence/m6/standalone-m6-compose.png)
 
-Direct MIDI starts on the next audio block at the accepted clip tempo; transport-synchronized start/reposition behavior remains a host-level limitation to verify and refine. M5 WAV rendering requires the explicitly accepted bundle and writes only to the producer-selected destination. Native state tests prove project recovery, but actual FL Studio save-close-reopen and listening remain required.
+### Shape and render
 
-## Coming soon and later
+The fixed serial chain is Distortion → Chorus → tempo-synced Delay → Reverb → Compressor → Parametric EQ. Every stage has an independent gain-safe bypass, stable host parameters, bounded DSP, and a 10 ms transition. Accepted compositions can be rendered to stereo 24-bit/48 kHz WAV in an isolated offline engine without seeking or resetting live voices.
+
+![folk park FX workspace with the ordered six-stage effects chain](evidence/m6/standalone-m6-fx.png)
+
+### Save, search, and recover
+
+Versioned `.folkparkpreset` files store the complete sound, modulation, effects, metadata, and content-addressed user wavetable references. Searchable SQLite composition history keeps stable IDs, lineage, favorites, tags, recoverable deletion, comparison, and recall. Missing assets produce an explicit exact-hash relink flow instead of a partial project mutation.
+
+![folk park History workspace with native preset and recovery controls](evidence/m6/standalone-m6-history.png)
+
+## Why this project is technically interesting
+
+This is not only a UI prototype. The repository contains the instrument DSP, host integration, persistence formats, deterministic music engine, production interface, validation suites, and retained release evidence.
+
+- **Real-time ownership is explicit.** The audio callback does not parse JSON, touch files or SQLite, wait on locks, call the UI/network, or allocate. Wavetables, modulation routes, composition schedules, and other complex state cross into audio only through bounded queues or complete validated snapshots.
+- **State changes are transactional.** Invalid presets, malformed project payloads, missing/wrong assets, failed database work, and busy publication slots leave the last valid live sound unchanged.
+- **The UI is disposable presentation.** React/TypeScript consumes a strict complete C++ snapshot. Closing or reloading the WebView does not own or interrupt audio state.
+- **Composition is deterministic and testable.** One normalized intent and seed produce bounded host-independent events. Candidate and accepted bundles are separate so generation or editing cannot silently replace deliverable material.
+- **Offline rendering is isolated.** WAV preview uses separate synth/effect instances built from immutable snapshots, then validates the temporary output before replacing a user-approved destination.
+- **Evidence is retained.** Each milestone records tests, validator logs, artifact hashes, visual checks, known limitations, and the exact boundary between automation and human host verification.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    Host[FL Studio or Standalone host] -->|MIDI, transport, automation| Processor[JUCE processor and state coordinator]
+    Processor --> Audio[Preallocated synth and FX engine]
+    Processor <--> Bridge[Bounded native UI bridge]
+    Bridge <--> UI[Bundled React interface]
+    Compose[Deterministic composition] -->|validated accepted schedule| Processor
+    Persistence[Presets, assets, SQLite history] <-->|snapshots outside audio| Processor
+    Assistant[Planned M7 guided assistant] -.->|validated proposals only| Processor
+```
+
+The processor is the host adapter and authority for state. The synth owns fixed-capacity voice/DSP memory. Composition, file conversion, persistence, rendering, and future assistant work happen away from the callback. The assistant boundary is deliberately limited to validated intent and parameter proposals; it will not execute arbitrary code or silently write into a DAW.
+
+More detail is available in [Architecture](docs/ARCHITECTURE.md), [Real-time safety](docs/REALTIME_SAFETY.md), and the accepted [architecture decisions](docs/adr/).
+
+## Implemented product surface
+
+### Synth engine
+
+- 16 deterministic polyphonic voices with released/quietest-then-oldest stealing and panic/no-stuck-note handling.
+- Two independent project-generated wavetable oscillators: up to 16 × 2,048-sample frames, 11 FFT-built band-limited mip levels, frame morphing, phase/random/reset behavior, coarse/fine tune, level, and pan.
+- Up to eight unison lanes per oscillator with detune, spread, blend, fixed fades, and smoothed live changes.
+- Sine/triangle sub oscillator, deterministic white/pink noise, three envelopes, and four free/synced/retriggerable LFOs.
+- Stable low/high/band-pass filter with resonance, drive, key tracking, and envelope depth.
+- Ten modulation sources, thirteen destinations, three curves, and up to 32 transactionally published routes.
+- Strict user-WAV decoding/conversion, preview and explicit confirmation, SHA-256 identity, content-addressed retention, atomic publication, and click-safe table crossfade.
+
+### Composition and delivery
+
+- Typed/versioned `MusicIntent` and `GeneratedClip` contracts with seed/version metadata, musical context, part selection, macro controls, ranges, polyphony, event limits, and parent lineage.
+- Functional chord movement with triads/sevenths, inversions, bounded voice leading, and cadence handling.
+- Chord-aware melody with contours, motifs, rests, passing tones, humanization, and leap limits; bounded bass and five arpeggio orders.
+- `More Like This` keeps context and lineage while producing a controlled difference; `Surprise Me` creates a separate bounded candidate.
+- Candidate note editing for pitch, timing, duration, and velocity, followed by a fresh explicit acceptance boundary.
+- One accepted bundle feeds multitrack Standard MIDI export, verified temporary drag files, direct MIDI routing with tracked note-offs, internal playback, and offline WAV preview.
+
+### Effects and rendering
+
+- Six independently bypassable effects in one documented order, exposed as stable host automation/state parameters.
+- Tempo-aware delay, deterministic reset, non-finite containment, bounded feedback/output, and safe sample-rate/block-size transitions.
+- Transactional stereo 24-bit/48 kHz WAV output with cancellation cleanup, reopen validation, and a documented maximum render bound.
+- Live/offline isolation proof: preview rendering cannot mutate active live voices or their DSP state.
+
+### Presets, projects, and history
+
+- Deterministic schema-v2 `.folkparkpreset` documents with a pure v1→v2 migration and strict duplicate/size/path validation.
+- All 102 normalized host parameters, modulation routes, effects, metadata, and up to two imported wavetable assets captured by a native preset.
+- Explicit Save As semantics: a normal save creates a new stable UUID; replacement is a separate intentional action.
+- Bounded versioned host project state restores the complete native sound, imported asset references, accepted composition, dirty state, and history lineage without an editor.
+- Searchable transactional SQLite history with recoverable soft deletion and database-failure isolation.
+- Traversal/symlink rejection, SHA-256 and size checks, exact missing-asset recovery, and no partial mutation on failure.
+
+## Real-time and reliability guarantees
+
+The callback contract forbids allocation/deallocation, filesystem/database/network/WebView access, JSON/XML parsing, formatted logging, waits, and new locks. The automated real-time suite instruments global allocation and currently measures zero callback allocations while exercising synth publication, direct MIDI, preview keyboard work, and all six enabled effects.
+
+Reliability tests cover malformed and oversized project state, future/duplicate/non-finite UI snapshots, wrong asset hashes, exact relink, busy publication exchanges, SQLite failure/symlink isolation, preset collision behavior, migration, history rollback/restart, deterministic MIDI properties, and external-host VST3 rendering.
+
+## Technology
+
+| Area | Implementation |
+| --- | --- |
+| Audio/host | C++20, JUCE 8.0.13 pinned by commit, VST3 + Standalone |
+| DSP | Fixed-capacity custom wavetable, modulation, voice, filter, effects, and render engines |
+| UI | React 19, TypeScript, Vite, Three.js, bundled through JUCE WebView resources |
+| Persistence | Versioned JSON schemas, atomic native files, SHA-256 asset store, system SQLite |
+| Build | CMake presets, Ninja, Apple clang, Intel `x86_64` only for 0.1 |
+| Quality | CTest/native property and integration suites, Node interface tests, pluginval, binary/signature/hash inspection |
+
+## Verified M6 checkpoint
+
+Verified on 2026-08-23 in America/Monterrey:
+
+| Gate | Result |
+| --- | --- |
+| Clean UI install/audit | PASS — 0 npm vulnerabilities |
+| UI contracts and strict TypeScript | PASS — 10/10 |
+| Debug native/integration suites | PASS — 10/10 |
+| Release native/integration + packaged VST3 smoke | PASS — 11/11 |
+| pluginval 1.0.4 strictness 5 | SUCCESS |
+| Audio matrix | 44.1/48/96 kHz × 64/128/256/512/1024 samples |
+| Release artifacts | Thin Mach-O `x86_64` Standalone and VST3 |
+| Local VST3 signature | Ad-hoc signature verifies deeply and strictly |
+| Installed VST3 parity | Installed/build binary hashes match; independent MIDI render passes |
+| Release/installed VST3 SHA-256 | `9b0fb548a4844b4384742e02248682fde8ffa479a19b9066c953dabc8c6572dc` |
+| Release Standalone SHA-256 | `3e4cf0d884ad8a770100e7cc34ac6281959879acaf1495c9d03fefd79b1f810f` |
+
+The complete evidence report and validator log are retained under [evidence/m6](evidence/m6/). Automated success is not an FL Studio pass: discovery, insertion, listening, physical input/focus behavior, automation, drag/routing, project reopen, preset/asset recovery, effects, and WAV import remain [HUMAN RUN REQUIRED](docs/FL_STUDIO_TEST_MATRIX.md).
+
+## Build and run
+
+### Requirements
+
+- Intel Mac (`x86_64`) running macOS 12 or later.
+- Xcode Command Line Tools / Apple clang.
+- Git, CMake 3.25+, Ninja, Node.js, and npm.
+- The pinned JUCE submodule and system SQLite development library available to CMake.
+
+Clone with submodules, then verify the local toolchain:
+
+```bash
+git clone --recurse-submodules <private-repository-url>
+cd folk-park
+./scripts/bootstrap_macos.sh
+```
+
+Build Debug and Release:
+
+```bash
+./scripts/build_x86_64.sh
+```
+
+Run the main Debug test gate:
+
+```bash
+./scripts/test.sh
+```
+
+Run the complete Release gate:
+
+```bash
+cmake --preset macos-x86_64-release
+cmake --build --preset macos-x86_64-release
+ctest --preset macos-x86_64-release --output-on-failure
+```
+
+Build the embedded production UI after a pinned clean install:
+
+```bash
+cd ui
+npm ci --ignore-scripts
+npm audit --omit=dev
+npm run build
+npm test
+npm run lint
+```
+
+Release products are generated at:
+
+- `build/macos-x86_64-release/FolkPark_artefacts/Release/Standalone/folk park.app`
+- `build/macos-x86_64-release/FolkPark_artefacts/Release/VST3/folk park.vst3`
+
+For local FL Studio testing, `./scripts/install_user_vst3.sh release` copies the validated bundle to `~/Library/Audio/Plug-Ins/VST3/folk park.vst3`. This is an engineering install, not a signed/notarized distribution package.
+
+## Repository guide
+
+| Path | Purpose |
+| --- | --- |
+| `src/synth` | Voices, wavetable rendering/import, modulation, filters, and fixed exchanges |
+| `src/effects` | Ordered real-time effects chain |
+| `src/midi` | Composition, accepted-session state, MIDI proof/export/drag/direct delivery |
+| `src/render` | Isolated accepted-composition WAV renderer |
+| `src/persistence` | Preset codec/store, content-addressed assets, SQLite history, coordination |
+| `src/plugin` | JUCE host adapter, project state, native bridge, editor lifecycle |
+| `src/assistant` | Strict intent/proposal models; M7 conversational workflow not yet implemented |
+| `ui/src` | React workspaces, host controls, piano, visualizers, bridge validation |
+| `schemas` | Versioned public JSON compatibility contracts |
+| `tests` | DSP, property, persistence, bridge, real-time, and packaged VST3 coverage |
+| `docs` | Architecture, safety, formats, parameter catalog, decisions, FL test matrix |
+| `evidence` | Per-milestone validator logs, screenshots, hashes, and verification reports |
+
+The canonical continuation point for another coding session is [docs/CURRENT_WORK.md](docs/CURRENT_WORK.md). It prevents completed work from being rebuilt or unverified host behavior from being claimed.
+
+## Roadmap
 
 | Milestone | Producer-facing result | Status |
 | --- | --- | --- |
-| M2 | Dual wavetable oscillators, safe user-WAV import, envelopes/LFOs, modulation matrix, multimode filter | Implemented foundation; FL Studio human run pending |
-| M3 | Deterministic chord, melody, bass, and arpeggio generation with candidate preview, acceptance, MIDI export/drag/direct route | Implemented foundation; FL Studio human drag/route run pending |
-| M4 | Full responsive Silicon Dreams React interface, actual live 2D/3D wavetable and spectrum views, safe four-octave touch/computer piano audition, interactive composition editing, accessible low-graphics mode | Implemented foundation; FL Studio human UI run pending |
-| M5 | Distortion, chorus, synced delay, reverb, compressor, EQ, and isolated WAV preview | Automated gates passed; FL Studio human effects/WAV run pending |
-| M6 | Searchable native presets, reversible history, migrations, content-addressed assets, and crash-safe project recovery | Current hardening checkpoint; Debug passes, full Release/pluginval/FL gate pending |
-| M7 | Offline Jarvis text workflow and guided AI sound walkthrough; optional secure provider | Planned |
-| M8 | FL Studio matrix, performance hardening, packaging, legal/asset audit, and release documentation | Planned |
+| M0–M1 | Build shell and playable instrument slice | Automated gates passed; FL human checks pending |
+| M2 | Dual wavetable synthesis, safe import, envelopes/LFOs, filter, modulation | Automated gate passed; FL human checks pending |
+| M3 | Deterministic composition, editing, accepted MIDI export/drag/routing | Automated gate passed; FL drag/routing pending |
+| M4 | Silicon Dreams UI, real A/B wave/spectrum views, four-octave audition keyboard | Automated gate passed; FL UI/input checks pending |
+| M5 | Six ordered effects and isolated accepted-composition WAV preview | Automated gate passed; FL effects/WAV checks pending |
+| M6 | Native presets, migrations, assets, searchable history, project recovery | Automated gate verified; FL persistence checks pending |
+| M7 | Offline Jarvis text workflow, adaptive sound questions, explained A/B proposals, optional secure provider | Planned |
+| M8 | FL Studio matrix, performance/recovery hardening, packaging, legal/asset audit, release docs | Planned |
 
-The guided sound workflow is specified in [docs/PRODUCT_AMENDMENTS.md](docs/PRODUCT_AMENDMENTS.md). M3 now provides its strict intent/proposal schema foundation; M4/M6 add the production interaction and reversible preview/history foundations; M7 adds the offline conversation and optional secure provider.
+The planned M7 assistant will ask focused sound-design questions, translate the answers into bounded parameter proposals, explain confidence and tradeoffs, provide reversible A/B audition, and wait for explicit acceptance. Offline/manual operation remains complete; an optional model provider cannot bypass the parameter catalog, embed user keys, or directly control the DAW.
 
-## Product principles
+## Scope, originality, and release boundary
 
-- Playable synth first, deterministic composition second, explicit producer acceptance always.
-- Offline operation is the default; optional model providers may only produce validated musical intent.
-- The optional sound walkthrough asks focused production questions, previews a bounded parameter proposal, explains it, and requires explicit acceptance before applying it.
-- Audio continuity does not depend on the UI, network, database, or filesystem.
-- No proprietary Serum code, UI, presets, wavetables, or private state format is copied or claimed compatible.
+`folk park` is an original product and does not copy Serum code, interface assets, presets, wavetables, private state formats, or license behavior. User audio is accepted only through the documented WAV conversion boundary.
 
-## Build and evidence
-
-Run `./scripts/bootstrap_macos.sh` once, then `./scripts/build_x86_64.sh`. Tests use the Debug and Release CMake presets documented in [plans/RELEASE_0_1.md](plans/RELEASE_0_1.md). Verified checkpoint details, exact limitations, and evidence paths live in [docs/PROGRESS.md](docs/PROGRESS.md).
-
-## Target
-
-- Product: folk park 0.1.0
-- Architecture: x86_64
-- Host under test: FL Studio 26.1.4.5356 on macOS 15.7.9
-- Formats: Standalone and VST3 instrument
-- Toolchain observed: Apple clang 17.0.0, macOS SDK 15.5, Node 24.18.1, npm 11.16.0
-
-Private engineering can continue, but distributing binaries remains blocked until the JUCE license, signing/notarization, product identity, and asset-rights decisions in [docs/OPEN_DECISIONS.md](docs/OPEN_DECISIONS.md) are resolved.
+This repository currently produces private engineering artifacts. Public binary distribution remains blocked until JUCE distribution licensing, signing/notarization, final product identity, privacy/legal review, and asset-rights decisions are resolved. See [Compatibility and legal](docs/COMPATIBILITY_AND_LEGAL.md), [licenses](LICENSES.md), and [open decisions](docs/OPEN_DECISIONS.md).

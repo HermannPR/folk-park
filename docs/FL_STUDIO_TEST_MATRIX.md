@@ -8,7 +8,7 @@ Environment at M0 intake:
 - macOS: 15.7.9 (24G830)
 - Architecture: x86_64-capable Intel host
 - Tester: Hermann Pauwells
-- M5 VST3 binary SHA-256: `5ff08476376a4d37e0224623741c3e42a5e15cb52118b6259f33705c965126ac`
+- Installed M6 VST3 binary SHA-256: `9b0fb548a4844b4384742e02248682fde8ffa479a19b9066c953dabc8c6572dc`
 
 | Case | Expected result | Actual | Evidence |
 | --- | --- | --- | --- |
