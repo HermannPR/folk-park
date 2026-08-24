@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getNativeFunction } from "@juce/index.js";
 import { AssistantProviderSettings } from "./AssistantProviderSettings.tsx";
+import { DiagnosticsPanel } from "./DiagnosticsPanel.tsx";
 import { HostCombo, HostSlider, HostToggle, useHostNormalized } from "./host-controls.tsx";
 import { JarvisView } from "./JarvisView.tsx";
 import { PianoKeyboard } from "./PianoKeyboard.tsx";
@@ -284,7 +285,7 @@ export default function App() {
           reviewComposition={() => setTab("COMPOSE")} />}
         {tab === "FX" && <FxView snapshot={snapshot} announce={announce} />}
         {tab === "HISTORY" && <PersistenceView announce={announce} refreshSoundSnapshot={refresh} />}
-        {tab === "SETTINGS" && <div className="settings-layout"><section className="surface settings"><div className="section-heading"><div><span>UI</span><h2>Performance + accessibility</h2></div><small>Local presentation only</small></div><label><input type="checkbox" checked={preferences.lowGraphics} onChange={(event) => setPreferences((value) => ({ ...value, lowGraphics: event.currentTarget.checked }))} />Low Graphics · 2D canvas at 12 FPS</label><label><input type="checkbox" checked={preferences.reducedMotion} onChange={(event) => setPreferences((value) => ({ ...value, reducedMotion: event.currentTarget.checked }))} />Reduced Motion · render only on state changes</label><button onClick={() => void refresh()}>Request complete native snapshot</button><p>No remote fonts, trackers, CDNs, providers, or runtime assets are loaded.</p></section><AssistantProviderSettings announce={announce} /></div>}
+        {tab === "SETTINGS" && <div className="settings-layout"><section className="surface settings"><div className="section-heading"><div><span>UI</span><h2>Performance + accessibility</h2></div><small>Local presentation only</small></div><label><input type="checkbox" checked={preferences.lowGraphics} onChange={(event) => setPreferences((value) => ({ ...value, lowGraphics: event.currentTarget.checked }))} />Low Graphics · 2D canvas at 12 FPS</label><label><input type="checkbox" checked={preferences.reducedMotion} onChange={(event) => setPreferences((value) => ({ ...value, reducedMotion: event.currentTarget.checked }))} />Reduced Motion · render only on state changes</label><button onClick={() => void refresh()}>Request complete native snapshot</button><p>No remote fonts, trackers, CDNs, providers, or runtime assets are loaded.</p></section><AssistantProviderSettings announce={announce} /><DiagnosticsPanel announce={announce} /></div>}
       </>}
     </main>
     <footer><span aria-live="polite">{announcement}</span><span>{snapshot?.version ?? "offline"} · {visible ? "visible" : "graphics paused"}</span></footer>

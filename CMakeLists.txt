@@ -45,6 +45,8 @@ juce_add_plugin(FolkPark
     VST3_CATEGORIES Instrument Synth)
 
 target_sources(FolkPark PRIVATE
+    src/diagnostics/Diagnostics.cpp
+    src/diagnostics/Diagnostics.h
     src/assistant/AssistantAudition.cpp
     src/assistant/AssistantAudition.h
     src/assistant/AssistantContracts.cpp
@@ -105,6 +107,7 @@ target_compile_definitions(FolkPark
         JUCE_VST3_CAN_REPLACE_VST2=0
     PRIVATE
         FOLK_PARK_VERSION="${PROJECT_VERSION}"
+        FOLK_PARK_BUILD_TYPE="${CMAKE_BUILD_TYPE}"
         FOLK_PARK_JUCE_COMMIT="${FOLK_PARK_JUCE_COMMIT}")
 
 target_link_libraries(FolkPark
@@ -356,9 +359,57 @@ target_link_libraries(FolkParkRealtimeTests PRIVATE
     juce::juce_recommended_warning_flags)
 add_test(NAME FolkParkRealtimeAllocationTests COMMAND FolkParkRealtimeTests)
 
+juce_add_console_app(FolkParkRuntimeHardeningTests PRODUCT_NAME "folk park runtime hardening tests")
+target_sources(FolkParkRuntimeHardeningTests PRIVATE
+    tests/RuntimeHardeningTests.cpp
+    src/midi/Composition.cpp
+    src/midi/Composition.h
+    src/midi/MidiDelivery.cpp
+    src/midi/MidiDelivery.h
+    src/midi/PreviewMidi.cpp
+    src/midi/PreviewMidi.h
+    src/effects/EffectChain.cpp
+    src/effects/EffectChain.h
+    src/synth/SynthEngine.cpp
+    src/synth/SynthEngine.h
+    src/synth/Modulation.cpp
+    src/synth/Modulation.h
+    src/synth/WavetableBank.cpp
+    src/synth/WavetableBank.h
+    src/synth/WavetableExchange.cpp
+    src/synth/WavetableExchange.h)
+target_include_directories(FolkParkRuntimeHardeningTests PRIVATE src)
+target_compile_definitions(FolkParkRuntimeHardeningTests PRIVATE JUCE_USE_CURL=0)
+target_link_libraries(FolkParkRuntimeHardeningTests PRIVATE
+    juce::juce_audio_basics
+    juce::juce_audio_formats
+    juce::juce_core
+    juce::juce_dsp
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)
+add_test(NAME FolkParkRuntimeHardeningRecoveryTests COMMAND FolkParkRuntimeHardeningTests)
+
+juce_add_console_app(FolkParkDiagnosticsTests PRODUCT_NAME "folk park diagnostics tests")
+target_sources(FolkParkDiagnosticsTests PRIVATE
+    tests/DiagnosticsTests.cpp
+    src/diagnostics/Diagnostics.cpp
+    src/diagnostics/Diagnostics.h)
+target_include_directories(FolkParkDiagnosticsTests PRIVATE src)
+target_compile_definitions(FolkParkDiagnosticsTests PRIVATE JUCE_USE_CURL=0)
+target_link_libraries(FolkParkDiagnosticsTests PRIVATE
+    juce::juce_core
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)
+add_test(NAME FolkParkBoundedDiagnosticsTests COMMAND FolkParkDiagnosticsTests)
+
+add_test(NAME FolkParkSupportScriptContractTests
+    COMMAND /bin/zsh "${CMAKE_CURRENT_SOURCE_DIR}/tests/SupportScriptTests.sh")
+
 juce_add_console_app(FolkParkPluginTests PRODUCT_NAME "folk park plug-in tests")
 target_sources(FolkParkPluginTests PRIVATE
     tests/PluginTests.cpp
+    src/diagnostics/Diagnostics.cpp
+    src/diagnostics/Diagnostics.h
     src/assistant/AssistantAudition.cpp
     src/assistant/AssistantAudition.h
     src/assistant/AssistantContracts.cpp
@@ -415,6 +466,7 @@ target_compile_definitions(FolkParkPluginTests PRIVATE
     JUCE_USE_CURL=0
     JUCE_VST3_CAN_REPLACE_VST2=0
     FOLK_PARK_VERSION="${PROJECT_VERSION}"
+    FOLK_PARK_BUILD_TYPE="${CMAKE_BUILD_TYPE}"
     FOLK_PARK_JUCE_COMMIT="${FOLK_PARK_JUCE_COMMIT}")
 target_link_libraries(FolkParkPluginTests PRIVATE
     FolkParkAssets

@@ -4,7 +4,19 @@
 
 `folk park` combines a playable dual-wavetable instrument, MIDI idea generation, an ordered effects chain, offline audio rendering, and crash-aware local persistence in one Standalone/VST3 product. Release 0.1 targets FL Studio on Intel (`x86_64`) macOS.
 
-> **Current status — M7 automated checkpoint verified.** The Intel Standalone/VST3 Release artifacts build, all 13 Release suites pass, pluginval 1.0.4 succeeds at strictness 5, and the installed VST3 independently renders audio from MIDI. M7 adds the connected offline Jarvis workspace, guided sound questions, explained reversible A/B proposals, text-to-composition candidates, and a native macOS Keychain boundary for a future opt-in provider. FL Studio checks remain explicitly human-required; distribution hardening remains M8.
+> **Current status — M8 automated checkpoint verified.** The private Intel Standalone/VST3 candidate passes 17/17 UI contracts, 16/16 Release suites, a 120-second deterministic recovery run, pluginval 1.0.4 at strictness 5, and an independent render through the exact installed VST3. FL Studio checks, listening, signing/notarization, JUCE distribution licensing, final identity, and public-distribution decisions remain explicitly unresolved; this is not yet a public binary release.
+
+## Reviewer quick start
+
+This repository is designed to be evaluated as a working audio product rather than a static interface exercise:
+
+1. Start with the real Release screenshots in the product tour below.
+2. Read [Architecture](docs/ARCHITECTURE.md) and [Real-time safety](docs/REALTIME_SAFETY.md) for the native ownership and callback model.
+3. Review [M8 verification](evidence/m8/verification.md) for exact commands/results, artifact hashes, environment, retained validator output, and limitations.
+4. Inspect `src/plugin`, `src/synth`, `src/midi`, `src/persistence`, `src/assistant`, and `ui/src` using the repository guide below.
+5. Build with the pinned commands in [Build and run](#build-and-run). No API account or key is required for the complete offline/manual workflow.
+
+The strongest engineering themes are real-time safety, transactional state, deterministic generation, strict native/WebView contracts, failure isolation, evidence-based release claims, and producer-controlled AI assistance.
 
 ## Product tour
 
@@ -52,6 +64,7 @@ This is not only a UI prototype. The repository contains the instrument DSP, hos
 - **Composition is deterministic and testable.** One normalized intent and seed produce bounded host-independent events. Candidate and accepted bundles are separate so generation or editing cannot silently replace deliverable material.
 - **Offline rendering is isolated.** WAV preview uses separate synth/effect instances built from immutable snapshots, then validates the temporary output before replacing a user-approved destination.
 - **Credentials stay behind a native boundary.** The future-provider store accepts only bounded opaque bytes under exact identifiers, uses macOS Keychain with a device-only accessibility class, and never exposes credential values to React, presets, DAW state, logs, or Git.
+- **Diagnostics are inspectable before disclosure.** A producer can preview a deterministic sub-4-KiB technical report before copying it. It contains fixed build/host/audio/status fields and counters—not paths, project or preset names, prompts, audio, database content, or credentials.
 - **Evidence is retained.** Each milestone records tests, validator logs, artifact hashes, visual checks, known limitations, and the exact boundary between automation and human host verification.
 
 ## Architecture
@@ -182,6 +195,28 @@ The final M7 gate was verified on 2026-08-23 in America/Monterrey:
 
 Actual Release interaction verifies native privacy status, explained proposal creation, original/proposal switching, rejection restoring A, and the guided two-question flow advancing to its next pair. The screenshots in this section are real M7 Release captures. Complete logs, hashes, observations, and additional captures are retained under [evidence/m7](evidence/m7/). Automated success is not an FL Studio or audible-quality pass.
 
+## Verified M8 automated checkpoint
+
+M8 has established a native privacy-safe diagnostics surface and stronger fault containment without changing the sound/preset contracts. Audio configuration is atomically observable; final non-finite samples are replaced with silence; overflow and malformed-state events increment bounded counters. The Settings UI requires a complete preview before it can copy the exact report associated with that preview ID. Previewing performs no filesystem, preference, project, database, provider, network, or clipboard write.
+
+The final automated gate was verified on 2026-08-24 in America/Monterrey:
+
+| Gate | Result |
+| --- | --- |
+| Clean UI install/audit | PASS — 34 packages, 0 vulnerabilities |
+| UI contracts and strict TypeScript | PASS — 17/17 |
+| Debug native/integration suites | PASS — 15/15 |
+| Release native/integration + packaged VST3 smoke | PASS — 16/16 |
+| Extended Release recovery run | PASS — 120 simulated seconds, 11,250 blocks, finite output |
+| pluginval 1.0.4 strictness 5 | SUCCESS |
+| Release artifacts | Thin Mach-O `x86_64` Standalone and VST3 |
+| Installed VST3 parity | Exact hashes match; signature/architecture verify; independent MIDI render passes |
+| Release/installed VST3 SHA-256 | `9295e582e705837020f72f657105d5efd2213d5e8904dee628d7e55e52a82a84` |
+| Release Standalone SHA-256 | `bb61054c5acf8f9fb3711acd49220dc6ddcf6508d4ea4bc5513d6e82c1778386` |
+| Release material/security/schema scans | PASS — seven schemas; private repository confirmed |
+
+The Release runtime probe exercised repeated notes, 2×2 unison, all six effects, panic/release, preview-overflow recovery, direct-MIDI Stop, and three editor reconstructions while checking every output sample for finiteness. It measured `0.153058×` realtime on the documented Intel i9 machine. That is reproducible one-machine evidence, not an owner-approved CPU budget or an audible-quality claim. The complete report and validator log are retained under [evidence/m8](evidence/m8/).
+
 ## Build and run
 
 ### Requirements
@@ -237,6 +272,8 @@ Release products are generated at:
 
 For local FL Studio testing, `./scripts/install_user_vst3.sh release` copies the validated bundle to `~/Library/Audio/Plug-Ins/VST3/folk park.vst3`. This is an engineering install, not a signed/notarized distribution package.
 
+The installer is conservative: `--dry-run` is read-only, replacing an existing bundle requires explicit `--replace`, the previous bundle is retained for rollback, and architecture/signature/hash parity are verified. `./scripts/uninstall_user_vst3.sh --execute` moves only the exact VST3 to Trash and never touches presets, imported wavetable assets, history, exports, or DAW projects. The full operational guide is [Support playbook](docs/SUPPORT_PLAYBOOK.md); privacy behavior is documented in [Privacy](docs/PRIVACY.md).
+
 ## Repository guide
 
 | Path | Purpose |
@@ -249,6 +286,7 @@ For local FL Studio testing, `./scripts/install_user_vst3.sh release` copies the
 | `src/plugin` | JUCE host adapter, project state, native bridge, editor lifecycle |
 | `src/assistant` | Typed contracts, deterministic offline intent/proposal engine, and provider boundary |
 | `src/platform` | Native platform services, including the bounded macOS Keychain credential store |
+| `src/diagnostics` | Typed sub-4-KiB reports and exact preview-before-copy ownership |
 | `ui/src` | React workspaces, host controls, piano, visualizers, bridge validation |
 | `schemas` | Versioned public JSON compatibility contracts |
 | `tests` | DSP, property, persistence, bridge, real-time, and packaged VST3 coverage |
@@ -268,14 +306,14 @@ The canonical continuation point for another coding session is [docs/CURRENT_WOR
 | M5 | Six ordered effects and isolated accepted-composition WAV preview | Automated gate passed; FL effects/WAV checks pending |
 | M6 | Native presets, migrations, assets, searchable history, project recovery | Automated gate verified; FL persistence checks pending |
 | M7 | Offline Jarvis text workflow, adaptive sound questions, explained A/B proposals, optional secure provider | Automated gate verified; FL Jarvis/project checks pending |
-| M8 | FL Studio matrix, performance/recovery hardening, packaging, legal/asset audit, release docs | Coming next |
+| M8 | FL Studio matrix, diagnostics/performance/recovery hardening, packaging, legal/asset audit, release docs | Automated gate verified; FL human matrix and owner distribution decisions pending |
 
 The connected M7 workflow now asks focused sound-design questions, translates complete answers into bounded explanations, and exposes reversible A/B plus explicit accept/reject in the product interface. Offline/manual operation remains complete; an optional model provider cannot bypass the parameter catalog, embed user keys, or directly control the DAW.
 
-Coming next, M8 turns the private engineering build into a release candidate: complete human FL Studio runs, x86_64 performance/recovery baselines, distribution signing/notarization decisions, licensing and asset-rights review, packaging, troubleshooting, and final release documentation.
+Next in M8: complete the human FL Studio matrix and resolve the owner decisions for CPU budget, signing/notarization, JUCE licensing, final identity, distribution, privacy notice, and asset approval. A diagnostics screenshot will be retained only from the real Release Standalone after the producer performs the intentional Preview action; no mockup will substitute for it.
 
 ## Scope, originality, and release boundary
 
 `folk park` is an original product and does not copy Serum code, interface assets, presets, wavetables, private state formats, or license behavior. User audio is accepted only through the documented WAV conversion boundary.
 
-This repository currently produces private engineering artifacts. Public binary distribution remains blocked until JUCE distribution licensing, signing/notarization, final product identity, privacy/legal review, and asset-rights decisions are resolved. See [Compatibility and legal](docs/COMPATIBILITY_AND_LEGAL.md), [licenses](LICENSES.md), and [open decisions](docs/OPEN_DECISIONS.md).
+This repository currently produces private engineering artifacts. Public binary distribution remains blocked until JUCE distribution licensing, signing/notarization, final product identity, privacy/legal review, and asset-rights decisions are resolved. See [Compatibility and legal](docs/COMPATIBILITY_AND_LEGAL.md), [licenses](LICENSES.md), [third-party notices](THIRD_PARTY_NOTICES.md), [packaging notes](docs/PACKAGING.md), and [open decisions](docs/OPEN_DECISIONS.md).

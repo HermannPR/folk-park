@@ -131,3 +131,29 @@ test("M7 exposes a bounded offline Jarvis conversation and explicit review bound
   assert.doesNotMatch(view, /https?:\/\//);
   assert.doesNotMatch(settings, /https?:\/\//);
 });
+
+test("M8 diagnostics require an exact privacy-safe preview before clipboard copy", async () => {
+  const app = await readFile(resolve(sourceRoot, "App.tsx"), "utf8");
+  const panel = await readFile(resolve(sourceRoot, "DiagnosticsPanel.tsx"), "utf8");
+  const editor = await readFile(resolve(sourceRoot, "../../src/plugin/PluginEditor.cpp"), "utf8");
+  assert.match(app, /<DiagnosticsPanel/);
+  assert.match(editor, /withNativeFunction\("previewDiagnostics"/);
+  assert.match(editor, /withNativeFunction\("copyPreviewedDiagnostics"/);
+  assert.match(editor, /textForCopy\(previewId\)/);
+  assert.match(panel, /Maximum 4 KiB/);
+  assert.match(panel, /Previewing never writes/);
+  assert.match(panel, /disabled=\{preview === null\}/);
+  assert.match(panel, /native\.copy\(preview\.previewId\)/);
+  assert.match(panel, /Excludes file paths, project or preset names, prompts, audio, and credentials/);
+  assert.doesNotMatch(panel, /https?:\/\//);
+});
+
+test("M8 editor owns and safely removes only its exact generated drag MIDI", async () => {
+  const editor = await readFile(resolve(sourceRoot, "../../src/plugin/PluginEditor.cpp"), "utf8");
+  const delivery = await readFile(resolve(sourceRoot, "../../src/midi/MidiDelivery.cpp"), "utf8");
+  assert.match(delivery, /getNonexistentChildFile\(prefix, "\.mid"/);
+  assert.match(editor, /~MidiDragButton\(\) override \{ cleanupTemporaryFile\(\); \}/);
+  assert.match(editor, /temporaryFile\.getParentDirectory\(\) == temporaryRoot/);
+  assert.match(editor, /temporaryFile\.getFileName\(\)\.startsWith\("folk-park-"\)/);
+  assert.match(editor, /!temporaryFile\.isSymbolicLink\(\)/);
+});

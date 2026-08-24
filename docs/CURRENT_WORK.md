@@ -1,6 +1,6 @@
 # Current work and mandatory agent handoff
 
-Last updated: 2026-08-23, America/Monterrey
+Last updated: 2026-08-24, America/Monterrey
 
 ## Read this first
 
@@ -34,7 +34,8 @@ The DOCX is the master product and engineering contract. Read it without modifyi
 ## Repository and Git state
 
 - Private repository: `HermannPR/folk-park`.
-- Current branch: `feat/m7-guided-assistant`, stacked exactly on `feat/m6-presets-history`.
+- Current branch: `feat/m8-release-hardening`, created at M7 handoff `eee67cf` and stacked exactly on `feat/m7-guided-assistant`.
+- Any M8 draft PR must use base exactly `feat/m7-guided-assistant` unless the documented stacked topology intentionally changes.
 - Any M7 draft PR must use base exactly `feat/m6-presets-history` unless the documented stacked topology intentionally changes.
 - M5 draft PR: <https://github.com/HermannPR/folk-park/pull/5>.
 - M6 private draft PR: <https://github.com/HermannPR/folk-park/pull/6>, base exactly `feat/m5-effects-preview`, head `feat/m6-presets-history`.
@@ -74,7 +75,7 @@ Git rules:
 - M5: ordered Distortion → Chorus → tempo-synced Delay → Reverb → Compressor → Parametric EQ and isolated accepted-composition WAV rendering; automated gate passed; FL effects/render checks pending.
 - M6: native presets/assets/migration, transactional composition history, and editor-independent project recovery; automated gate verified; every FL persistence case remains human-required.
 - M7: composition text, guided Jarvis sound workflow, reversible A/B, optional secure provider boundary, and full automated/Release evidence; automated checkpoint verified, with every FL Studio case still human-required.
-- M8: host/release hardening, packaging, legal/asset audit, and release documentation; current continuation milestone, not yet implemented.
+- M8: host/release hardening, diagnostics, support/rollback tooling, legal/asset audit, and release documentation; complete automated checkpoint verified, with FL Studio and owner distribution decisions still pending.
 
 Do not reimplement M0–M7. Preserve the oscillator displays, C2–B5 keyboard, held-key repeat behavior, effects, candidate/accepted MIDI boundary, accepted-only WAV workflow, transactional persistence, and explicit Jarvis A/B boundary while working on M8.
 
@@ -249,6 +250,34 @@ M8 starts from the verified M7 artifacts; it must not redesign or reimplement M0
 - Do not add a remote provider because Keychain exists. Provider selection remains open decision 5 and requires a separate privacy/consent review.
 - Do not claim signing/notarization, audible quality, FL compatibility, physical MIDI/audio-device behavior, or distribution readiness without exact evidence.
 - Keep the recruiter README factual and update screenshots only with real Release artifacts.
+
+### M8 diagnostics checkpoint established
+
+- `docs/M8_RELEASE_CHECKLIST.md` freezes defect severity, deliverables/evidence, diagnostics privacy, exact automated gates, and owner/human stop conditions.
+- ADR-0009 fixes a deterministic 4 KiB diagnostics preview, fixed sanitized codes/counters, callback-safe atomics, exact preview-before-copy enforcement, and the engineering-candidate label.
+- `src/diagnostics/Diagnostics.*` now formats only typed bounded configuration, fixed service codes, and counters; adversarial host text stops before newlines/path separators, and reports cannot reach 4 KiB.
+- The processor now publishes atomic sample-rate/block-size values, contains final non-finite output, and counts non-finite samples, direct/preview MIDI overflow, and rejected project state without callback formatting or allocation.
+- Settings implements a strict native Preview → exact-ID Copy workflow. Preview has no clipboard, filesystem, project, preference, database, provider, or network side effect.
+- UI tests/build: PASS, 16/16. Complete Debug Standalone/VST3 build and CTest: PASS, 13/13. Focused processor diagnostics and malformed-state integration: PASS. `git diff --check`: PASS.
+- No distribution setting, provider, owner decision, or FL Studio status changed. The prior M7 Release/pluginval evidence remains the latest complete Release gate.
+- `tests/RuntimeHardeningTests.cpp` now provides a practical 12-second default gate plus a bounded 120-second extended mode for finite synth/effects output, repeated note cycles, panic/release to zero voices, preview overflow recovery, and exact direct-MIDI Stop cleanup.
+- Final extended Debug observation on the documented Intel i9 Mac: 11,250 blocks / 120 simulated seconds at 48 kHz/512, four notes, 2×2 unison, all six effects, one panic; PASS in 87,280.9 ms (`0.727341×` realtime). This is evidence, not an owner-approved performance budget or FL result.
+- The processor integration suite reconstructs the editor three times while a host-held voice remains active. Complete Debug Standalone/VST3 build and CTest now pass 14/14; evidence is in `evidence/m8/runtime-hardening-debug.md`.
+- The legacy arbitrary `<4×` performance assertion is now a recorded finite positive measurement because M8 forbids inventing a product-owner CPU budget. Zero callback allocations and finite-output functional gates remain mandatory.
+- `scripts/verify_user_vst3.sh` performs read-only exact bundle, thin `x86_64`, deep/strict signature, executable hash, and size checks. Install defaults to no overwrite; `--replace` retains a timestamped rollback and verifies hash parity. Uninstall defaults to dry-run and `--execute` moves only the exact VST3 to Trash.
+- Install/repair/uninstall never touches `~/Library/Application Support/folk park`; presets, imported assets, history, projects, and exports remain producer data. `docs/SUPPORT_PLAYBOOK.md` documents backup, rescan, rollback, symptom recovery, and exact evidence fields.
+- `docs/PRIVACY.md`, `docs/PACKAGING.md`, `LICENSES.md`, and `THIRD_PARTY_NOTICES.md` now document offline/local data, diagnostics, private artifact contents, notice obligations, and unresolved legal/distribution gates.
+- The read-only release-material audit pins JUCE/VST3 license-file hashes and bundled React/React DOM/Scheduler/Three versions/licenses, rejects unreviewed runtime media/fonts/external UI URLs, and confirms built-ins/UI assets are project-authored code rather than bundled factory media.
+- Drag MIDI now uses unique temporary paths and the editor removes only its exact guarded non-symlink temp file on replacement/destruction. Focused MIDI, support-script, processor, and UI contract tests pass; installer dry-run verified the retained M7 Release bundle without changing it.
+- UI lint/contracts: PASS, 17/17. Complete Debug Standalone/VST3 build and CTest: PASS, 15/15. Read-only release-material audit: PASS.
+- Clean M8 Release build/CTest: PASS, 16/16 in 7.83 seconds. The packaged VST3 smoke instantiated and rendered finite centred stereo audio from MIDI.
+- Extended Release runtime: PASS, 11,250 blocks / 120 simulated seconds at 48 kHz/512 in 18,367 ms (`0.153058×` realtime); every sample remained finite and all runtime-recovery cases passed. This is not an owner-approved CPU budget.
+- pluginval 1.0.4 strictness 5: `SUCCESS`. The optional separate Steinberg-validator subtest remains unavailable because no validator executable is installed.
+- Release/installed VST3 hash: `9295e582e705837020f72f657105d5efd2213d5e8904dee628d7e55e52a82a84`. Release Standalone hash: `bb61054c5acf8f9fb3711acd49220dc6ddcf6508d4ea4bc5513d6e82c1778386`.
+- The exact validated M8 VST3 is installed. Thin `x86_64`, deep/strict signature, build/install hash parity, and independent installed-bundle MIDI render all pass. The prior M7 bundle is retained at `~/Library/Audio/Plug-Ins/VST3/folk park.vst3.backup-20260824T133139Z` for rollback; no producer data was touched.
+- Release-material, development-origin, authored-source `eval`, sensitive-token-form, seven-schema, repository-private, and diff checks pass. The one bundled `eval` occurrence is JUCE's pinned Android compatibility branch and is not used on Intel macOS.
+- `evidence/m8/verification.md` and the fresh strictness-5 validator log retain the exact automated result/hashes. The only visual evidence still pending is the real Release diagnostics panel after the producer performs the intentional Preview action; macOS denied accessibility automation, and no mockup or clipboard bypass is permitted.
+- Every FL Studio row remains `HUMAN RUN REQUIRED`. Signing/notarization, JUCE distribution licensing, final identity, asset approval, public privacy notice, remote provider, and an owner-approved CPU budget remain explicit owner decisions.
 
 ## Commands and local environment
 
