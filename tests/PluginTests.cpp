@@ -375,6 +375,24 @@ void testAssistantProposalAuditionAndAcceptance()
                && std::abs(cutoff->getValue() - externallyEdited) < 1.0e-6f,
            "An external host edit must invalidate A/B without being overwritten");
 
+    auto partiallyMatching = makeAssistantProposal(processor, 71004);
+    partiallyMatching.changes.front().proposedNormalized
+        = partiallyMatching.changes.front().currentNormalized;
+    expect(processor.beginAssistantProposal(partiallyMatching).wasOk()
+               && processor.getAssistantAuditionSnapshot().proposal.has_value()
+               && processor.getAssistantAuditionSnapshot().proposal->changes.size() == 1
+               && processor.rejectAssistantProposal().wasOk(),
+           "Host-canonical no-op changes must be omitted while useful proposal changes remain reviewable");
+
+    auto alreadyMatching = makeAssistantProposal(processor, 71005);
+    for (auto& change : alreadyMatching.changes)
+        change.proposedNormalized = change.currentNormalized;
+    const auto alreadyMatchingResult = processor.beginAssistantProposal(alreadyMatching);
+    expect(alreadyMatchingResult.failed()
+               && alreadyMatchingResult.getErrorMessage().contains("already matches")
+               && !processor.getAssistantAuditionSnapshot().active(),
+           "An entirely matching proposal must close clearly without creating an A/B session");
+
     juce::AudioBuffer<float> audio(2, 256);
     auto midi = noteOnBuffer();
     processor.processBlock(audio, midi);

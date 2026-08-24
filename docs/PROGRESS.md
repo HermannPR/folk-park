@@ -419,6 +419,17 @@
 - Installed optimized VST3 SHA-256: `5377f6dcb0af792cacf0733415b972469e09978b8faa1f2b786b733517b89250`; rollback bundle retained at `~/Library/Audio/Plug-Ins/VST3/folk park.vst3.backup-20260824T154551Z`. The Release Standalone was restarted and the current default built-in output is 48 kHz.
 - Automated evidence is retained in `evidence/m9/verification.md`. Audible Standalone and FL Studio confirmation remain human-required; the separate extreme-gain output-ceiling defect remains open.
 
+## Jarvis reliability checkpoint
+
+- Reproduced a stale A/B interface in the real Release Standalone: the UI kept active audition controls after the processor had invalidated the session because a host sound parameter changed externally.
+- Jarvis now reloads authoritative native audition state before proposal creation and immediately after a failed A/B action. The failed proposal remains visible for explanation, but obsolete A/B controls disappear and the next request is no longer trapped.
+- Reproduced frequent `Assistant proposal contains a no-op parameter change` failures caused by legal host quantization of discrete parameters. The processor now validates proposal freshness first, omits only host-canonical changes that already match, retains useful changes, and returns `already matches` only when every change is redundant.
+- The walkthrough now commits the displayed neutral intensity default (`0.50`) when that question appears, so its Continue state agrees with the visible control.
+- Real Release Standalone interaction: a formerly rejected bright/wide/pluck/reverb/movement request produced an 11-change A/B proposal; a deliberate Synth-page edit invalidated it without stale controls; a separate D-minor, 118 BPM, four-bar chords-and-melody request produced a 43-note candidate awaiting explicit review.
+- UI tests/lint/build: PASS, 19/19. Complete Debug CTest: PASS, 18/18. Complete clean Release CTest: PASS, 19/19. pluginval 1.0.4 strictness 5: `SUCCESS`. Installed/build parity and independent installed finite-stereo MIDI rendering: PASS.
+- Installed VST3 executable SHA-256: `a93cbf855ed56f6f7ed8010164846fedbfbc067c5ebf5efcbb936f62e6eb1253`; rollback bundle: `~/Library/Audio/Plug-Ins/VST3/folk park.vst3.backup-20260824T162329Z`.
+- One concurrent Release run while the Standalone/accessibility automation were active measured the heavy 96 kHz/64 stress fixture at `1.00785x` and failed its timing gate. With the app closed, the isolated fixture passed at `0.649236x`, and the subsequent complete Release suite passed. The wall-clock performance assertion remains load-sensitive; this does not replace producer listening or the open output-ceiling work.
+
 ## Human-required status
 
 - Standalone physical keyboard/audio-device playability: PARTIAL. Automated real-window C3 hold/repeat/release passed; listening through the user's selected audio device remains human.

@@ -155,6 +155,12 @@ test("M7 exposes a bounded offline Jarvis conversation and explicit review bound
   assert.match(view, /Accept B/);
   assert.match(view, /Reject and restore A/);
   assert.match(view, /Review piano roll before accepting/);
+  assert.match(view, /const synchronized = await syncAuditionState\(\)/,
+    "creating a proposal must first reconcile potentially stale native A\/B state");
+  assert.match(view, /await syncAuditionState\(\);\n\s*addMessage\("jarvis", "A\/B action unavailable"/,
+    "a failed A\/B action must replace stale controls with authoritative native state");
+  assert.match(view, /question\.id === "intensity"[\s\S]*?intensity: \.5/,
+    "the visible guided intensity default must also be a committed answer");
   const answerHandler = view.match(/const setAnswer =[\s\S]*?\n  };/)?.[0] ?? "";
   assert.doesNotMatch(answerHandler, /setProgress/,
     "typing one guided answer must not unmount the current two-question step");

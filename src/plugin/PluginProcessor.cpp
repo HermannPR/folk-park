@@ -3,6 +3,7 @@
 #include "PluginEditor.h"
 #include "persistence/CompositionJson.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cerrno>
 #include <cstdlib>
@@ -1045,21 +1046,39 @@ juce::Result PluginProcessor::beginAssistantProposal(
     const assistant::ParameterProposal& proposal)
 {
     const std::lock_guard lock(assistantAuditionMutex);
+    if (const auto validation = assistant::validateParameterProposal(proposal);
+        validation.failed())
+        return validation;
     const auto revisionBefore = parameterRevision.load(std::memory_order_acquire);
     const auto current = getAssistantParameterSnapshot();
     if (revisionBefore != parameterRevision.load(std::memory_order_acquire))
         return juce::Result::fail("The sound changed while the assistant proposal was opening");
     auto hostCanonicalProposal = proposal;
-    for (auto& change : hostCanonicalProposal.changes)
+    constexpr float valueTolerance = 1.0e-6f;
+    for (const auto& change : hostCanonicalProposal.changes)
+    {
+        const auto currentValue = std::find_if(current.begin(), current.end(),
+            [&change](const auto& value) { return value.parameterId == change.parameterId; });
+        if (currentValue == current.end()
+            || std::abs(currentValue->normalized - change.currentNormalized) > valueTolerance)
+            return juce::Result::fail("Assistant proposal is stale for the current sound");
+    }
+    std::erase_if(hostCanonicalProposal.changes, [this, &current](auto& change)
     {
         auto* parameter = parameters.getParameter(change.parameterId);
         if (parameter == nullptr)
-            return juce::Result::fail("Assistant proposal references a missing host parameter");
+            return false;
         const auto& range = parameter->getNormalisableRange();
         const auto hostValue = range.snapToLegalValue(
             parameter->convertFrom0to1(change.proposedNormalized));
         change.proposedNormalized = parameter->convertTo0to1(hostValue);
-    }
+        const auto currentValue = std::find_if(current.begin(), current.end(),
+            [&change](const auto& value) { return value.parameterId == change.parameterId; });
+        return currentValue != current.end()
+            && std::abs(currentValue->normalized - change.proposedNormalized) <= valueTolerance;
+    });
+    if (hostCanonicalProposal.changes.empty())
+        return juce::Result::fail("The current sound already matches this Jarvis proposal");
     const auto begun = assistantAudition.begin(hostCanonicalProposal, current);
     if (begun.wasOk())
         assistantRevisionBoundary = AssistantRevisionBoundary{revisionBefore, revisionBefore};
