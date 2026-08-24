@@ -88,3 +88,28 @@ After the producer reported that moving Repeat and other Compose macro controls 
 - Former installed bundle retained for rollback: `~/Library/Audio/Plug-Ins/VST3/folk park.vst3.backup-20260824T140808Z`.
 
 The rebuilt Standalone opened with a complete native snapshot and visible Synth workspace. Moving the affected controls remains producer-observed human evidence; neither Standalone interaction nor FL Studio status is promoted to PASS by the automated repair gate.
+
+## Post-checkpoint Orbital Habitat visual system — 2026-08-24
+
+The complete UI was rebuilt around one original code-native retro-CGI design system. Reusable components and tokens now provide the saturated palette, material lighting, physical depth, motion, focus, overlays, responsive layout, and low-graphics/reduced-motion behavior. The implementation adds no external runtime image, font, or network URL and does not reproduce third-party interface assets.
+
+- UI tests/lint/build: PASS, 19/19.
+- Production UI: index 0.40 kB; CSS 54.93 kB (13.62 kB gzip); JavaScript 835.66 kB (215.78 kB gzip).
+- Complete Release Standalone/VST3 build and CTest: PASS, 16/16.
+- pluginval 1.0.4 strictness 5: `SUCCESS`; retained log `pluginval/pluginval-orbital-theme-strictness-5.txt`, SHA-256 `1463f6e0c92f740853f0e26928f01f2ff64e65539dbd47dfafac4f1264e2c7a3`.
+- Release/installed VST3 executable SHA-256: `8b93eda7c06c28849fe825d99062fff31363bc2cba1c53725d1f2a3151354d71`; thin `x86_64`, exact build/install parity, and independent finite-stereo MIDI render pass.
+- Release Standalone executable SHA-256: `c34ff559eb46eeb347a6067d694473392f6f712529c0e20de4334e85f85175c9`.
+- Embedded UI SHA-256: index `b139fcadf5728e39c965fae2a410710a6319c894a6f9bf5560ca79ac1891d4b8`; CSS `ec0978f0a89b4d8809707dbf89e9ec071c6bab1f6398f3071bbd48ab73d96ff1`; JavaScript `4766c44c0d50e9c6e25db23e45c224920c8dd476a912ad9fe9b6d608155fe03f`.
+- Prior installed bundle retained for rollback: `~/Library/Audio/Plug-Ins/VST3/folk park.vst3.backup-20260824T143548Z`.
+
+Real Release Standalone visual/navigation inspection passes for the following views. This confirms the final embedded bundle renders and navigation activates; it is not an audible-quality, physical-input, automation-write/read, or FL Studio pass.
+
+| View | Evidence | SHA-256 |
+| --- | --- | --- |
+| Synth | `visual/orbital-synth.png` | `35d205ab034ae2e72795e30771293b52403665c0063b5fdde398c1e82bad29e2` |
+| Compose | `visual/orbital-compose.png` | `58bba8775384b5d9bb04585387eb5af4a2faf0091827f674ccf22bb08f98c5d6` |
+| Jarvis | `visual/orbital-jarvis.png` | `cbd4680d1662b0544242c3f8da7ddf74fb1f3e773a55046d213f392391dcc460` |
+| FX | `visual/orbital-fx.png` | `2bedd4cc48a64d727088de784edff6eeb60706883ac0e8f0bbab1d15a4afbd84` |
+| History | `visual/orbital-history.png` | `2173ba89e2da3c5673d9d16523cabea834ed721c6fb7bccaeecf80a78e430fdd` |
+
+The product-growth proposal in `plans/RHYTHM_LAB.md` is documentation only. No drum engine, factory sample library, or break recording is claimed as implemented by this checkpoint.

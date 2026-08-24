@@ -55,6 +55,7 @@ The DOCX is the master product and engineering contract. Read it without modifyi
 - M8 automated verification checkpoint: `e2df379 Verified and documented the M8 automated checkpoint`.
 - M8 private draft PR: <https://github.com/HermannPR/folk-park/pull/8>, base exactly `feat/m7-guided-assistant`, head `feat/m8-release-hardening`.
 - Post-M8 Compose repair checkpoint: `250c632 Hardened deferred Compose control updates`. The reported black WebView was traced to deferred React state updater callbacks reading a cleared `event.currentTarget`. The repair captures range/checkbox primitives before scheduling updates for all six macros, four part selectors, and both Settings presentation toggles. UI tests/lint/build pass 18/18, complete Release CTest passes 16/16, pluginval strictness 5 succeeds, and the repaired installed VST3 passes exact parity plus independent finite-audio MIDI rendering. Real Standalone/FL producer interaction remains pending.
+- Post-M8 Orbital Habitat implementation checkpoint: `b121e0e Implemented the Orbital Habitat visual system`. `ui/src/design-system.tsx` owns the reusable Button, IconButton, Panel, Sidebar, Navbar, Tabs, Slider, Knob, Toggle, Dropdown, Modal, Tooltip, TextInput, NumericInput, TextArea, ProgressBar, Meter, ContextMenu, Notification, and StatusIndicator primitives. `ui/src/styles.css` owns the complete token/material/background/responsive system; host controls preserve native JUCE gesture semantics. UI tests/lint/build pass 19/19, Release CTest passes 16/16, pluginval strictness 5 ends `SUCCESS`, and installed/build VST3 hash parity plus independent finite-audio MIDI render pass. Five real Release screenshots are retained under `evidence/m8/visual/`. FL Studio visual/input/listening checks remain human-required.
 - Earlier M6 commits are:
   - `735fb84 Established the M6 persistence and migration contracts`
   - `a69a8bc Implemented versioned native presets and validated assets`
@@ -83,6 +84,8 @@ Git rules:
 - M6: native presets/assets/migration, transactional composition history, and editor-independent project recovery; automated gate verified; every FL persistence case remains human-required.
 - M7: composition text, guided Jarvis sound workflow, reversible A/B, optional secure provider boundary, and full automated/Release evidence; automated checkpoint verified, with every FL Studio case still human-required.
 - M8: host/release hardening, diagnostics, support/rollback tooling, legal/asset audit, and release documentation; complete automated checkpoint verified, with FL Studio and owner distribution decisions still pending.
+- Post-M8 visual system: Orbital Habitat reusable tokens/components, surreal CGI shell, physical host-aware controls, responsive/reduced-motion behavior, and real Release visual evidence are implemented and automatically verified.
+- Proposed next product milestone: Rhythm Lab is specified in `plans/RHYTHM_LAB.md`; implementation has not started and must not be confused with a shipped drum engine.
 
 Do not reimplement M0–M7. Preserve the oscillator displays, C2–B5 keyboard, held-key repeat behavior, effects, candidate/accepted MIDI boundary, accepted-only WAV workflow, transactional persistence, and explicit Jarvis A/B boundary while working on M8.
 
@@ -300,6 +303,18 @@ M8 starts from the verified M7 artifacts; it must not redesign or reimplement M0
 - pluginval 1.0.4 strictness 5 ends `SUCCESS`; the log is retained at `evidence/m8/pluginval/pluginval-compose-repair-strictness-5.txt`.
 - The repaired bundle is installed at `~/Library/Audio/Plug-Ins/VST3/folk park.vst3` with executable SHA-256 `823bf765a1744b7de6e8232ef17ad4d93d209628e01dfd6f716b2dff14b0131d`. Thin `x86_64`, deep/strict signature verification, exact build/install parity, and an independent installed-bundle finite-stereo MIDI render pass. The former bundle remains at `~/Library/Audio/Plug-Ins/VST3/folk park.vst3.backup-20260824T140808Z`.
 - Do not claim a real interaction pass until Hermann moves the controls in the rebuilt Standalone and, separately, in FL Studio.
+
+### Post-M8 Orbital Habitat visual system
+
+- The interface now uses one code-native design system influenced by early pre-rendered CGI, synthetic materials, experimental workstation graphics, and psychedelic electronic culture. It does not reproduce third-party interface assets.
+- Shared design tokens cover the saturated palette, gradients, material highlights, depth, glows, shadows, radii, spacing, typography, and motion. CSS-authored egg/orbit/landscape geometry adds no runtime image, font, or network dependency.
+- Shared primitives cover all requested navigation, surface, input, feedback, overlay, meter, and status controls. Compose, Jarvis, modulation, native host controls, and Settings reuse the physical slider/knob/toggle language.
+- UI tests/lint/build pass 19/19. The final production bundle is 54.93 kB CSS (13.62 kB gzip) and 835.66 kB JavaScript (215.78 kB gzip); the only Vite warning is the known pinned JUCE Android compatibility helper.
+- Complete Release CTest passes 16/16. pluginval strictness 5 ends `SUCCESS` in `evidence/m8/pluginval/pluginval-orbital-theme-strictness-5.txt`.
+- Release/installed VST3 executable SHA-256 is `8b93eda7c06c28849fe825d99062fff31363bc2cba1c53725d1f2a3151354d71`; exact parity and the independent finite-stereo MIDI render pass. The previous bundle is retained at `~/Library/Audio/Plug-Ins/VST3/folk park.vst3.backup-20260824T143548Z`.
+- Release Standalone SHA-256 is `c34ff559eb46eeb347a6067d694473392f6f712529c0e20de4334e85f85175c9`.
+- Real Release visual inspection passes for Synth, Compose, Jarvis, FX, and History. These are appearance/navigation observations, not audible quality or FL Studio evidence.
+- The proposed next product-growth system is documented in `plans/RHYTHM_LAB.md`: hybrid synthesized/sampled drum voices, deterministic genre-aware patterns, lane locking/regeneration/editing, stems, and a rights-safe break slicer. Implementation has not started.
 
 ## Commands and local environment
 

@@ -347,6 +347,19 @@
 - `tests/PluginTests.cpp`
 - `tests/Vst3SmokeTests.cpp`
 
+## Post-M8 Orbital Habitat visual checkpoint
+
+- Established one original retro-CGI design language across Synth, Compose, Jarvis, FX, History, Settings, navigation, status, and overlays. No third-party interface asset, external runtime image/font, or network URL was added.
+- Added shared visual tokens for palette, gradients, physical materials, specular highlights, depth, glows, radii, spacing, typography, and motion, including low-graphics and reduced-motion fallbacks.
+- Added reusable Button, IconButton, Panel, Sidebar, Navbar, Tabs, Slider, Knob, Toggle, Dropdown, Modal, Tooltip, TextInput, NumericInput, TextArea, ProgressBar, Meter, ContextMenu, Notification, and StatusIndicator components.
+- Refactored host-aware sliders, knobs, selects, and toggles without changing JUCE parameter gesture ownership. Compose and Jarvis now reuse the same physical controls while retaining the deferred-event repair.
+- UI contracts/lint/build: PASS, 19/19. Production bundle: local 0.40 kB index, 54.93 kB CSS (13.62 kB gzip), and 835.66 kB JavaScript (215.78 kB gzip).
+- Complete Release CTest: PASS, 16/16. pluginval 1.0.4 strictness 5: `SUCCESS` across editor, processing, state, automation, buses, and its supported sample-rate/block matrix.
+- Installed/build VST3 exact executable hash parity and independent finite-audio MIDI render: PASS. VST3 SHA-256: `8b93eda7c06c28849fe825d99062fff31363bc2cba1c53725d1f2a3151354d71`; Standalone SHA-256: `c34ff559eb46eeb347a6067d694473392f6f712529c0e20de4334e85f85175c9`.
+- The previous user VST3 remains recoverable at `~/Library/Audio/Plug-Ins/VST3/folk park.vst3.backup-20260824T143548Z`. No project, preset, sample, history, export, or FL Studio data was touched.
+- Actual Release Standalone screenshots and visual/navigation inspection are retained for Synth, Compose, Jarvis, FX, and History under `evidence/m8/visual/`. This is not an audible or FL Studio pass.
+- Established `plans/RHYTHM_LAB.md` as the separate future drum-product plan. It requires audible hybrid drum voices, deterministic patterns, per-lane control, stems, and a licensed/original/user-import break slicer; implementation has not started.
+
 ## Human-required status
 
 - Standalone physical keyboard/audio-device playability: PARTIAL. Automated real-window C3 hold/repeat/release passed; listening through the user's selected audio device remains human.
