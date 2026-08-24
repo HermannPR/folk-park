@@ -1237,9 +1237,10 @@ juce::WebBrowserComponent::Options PluginEditor::browserOptions()
         .withNativeFunction("cleanupHistory", [this](const auto& arguments, auto complete)
         {
             bool keepFavorites = true;
-            if (arguments.size() != 1 || !strictBoolean(arguments[0], keepFavorites))
+            if (arguments.size() != 1 || !strictBoolean(arguments[0], keepFavorites)
+                || !keepFavorites)
             {
-                complete("History cleanup requires the keep-favorites boolean");
+                complete("Release 0.1 cleanup permanently removes only expired non-favorites");
                 return;
             }
             const auto result = ownerProcessor.cleanupHistory(keepFavorites);

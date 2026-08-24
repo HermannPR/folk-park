@@ -61,6 +61,14 @@ juce::Result PersistenceCoordinator::initialiseLocked()
 
     if (!currentStatus.historyAvailable)
     {
+        if (databaseFile.isSymbolicLink())
+        {
+            history.reset();
+            currentStatus.historyAvailable = false;
+            currentStatus.message =
+                "Presets are available; history database path uses an unsafe symbolic link";
+            return juce::Result::ok();
+        }
         auto candidate = std::make_unique<SqliteHistoryRepository>(databaseFile);
         const auto result = candidate->initialise();
         if (result.wasOk())

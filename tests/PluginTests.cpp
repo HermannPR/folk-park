@@ -646,6 +646,94 @@ void testProjectStateRestoresAssetsAndAcceptedComposition()
     }
 }
 
+void testConfirmedImportRetryAndExternalLocalization()
+{
+    using namespace folkpark;
+    TemporaryDirectory temporary;
+    const auto localRoot = temporary.directory.getChildFile("local-store");
+    const auto retrySource = temporary.directory.getChildFile("retry-source.wav");
+    expect(writeWavetableFixture(retrySource),
+           "Confirmed-import retry fixture must create a user-owned WAV");
+    PluginProcessor retrying({true, localRoot});
+    retrying.prepareToPlay(48000.0, 256);
+    expect(retrying.initialisePersistence().wasOk(),
+           "Confirmed-import retry fixture must initialize local persistence");
+    const auto builtIn = synth::WavetableBank::createBuiltIn();
+    expect(builtIn != nullptr && retrying.publishWavetable(0, *builtIn),
+           "Retry fixture must occupy oscillator A's next block-boundary exchange");
+    expect(retrying.requestWavetableImport(retrySource, 0, 2048).wasOk()
+               && waitForImportReview(retrying, 5000),
+           "Retry fixture WAV must reach explicit confirmation");
+    expect(retrying.confirmWavetableImport().failed()
+               && retrying.getWavetableImportSnapshot().status
+                    == synth::WavetableImportService::Status::awaitingConfirmation,
+           "Busy audio publication must retain the reviewed import for retry");
+    juce::AudioBuffer<float> audio(2, 256);
+    juce::MidiBuffer midiBuffer;
+    retrying.processBlock(audio, midiBuffer);
+    expect(retrying.confirmWavetableImport().wasOk()
+               && retrying.getWavetableImportSnapshot().status
+                    == synth::WavetableImportService::Status::loaded,
+           "Reviewed import must succeed after the occupied exchange advances");
+
+    const auto externalRoot = temporary.directory.getChildFile("external-preset");
+    expect(externalRoot.createDirectory(),
+           "External preset fixture directory must be isolated and created");
+    const auto externalSource = temporary.directory.getChildFile("external-source.wav");
+    expect(writeWavetableFixture(externalSource),
+           "External preset fixture must create its user-owned WAV");
+    persistence::AssetReference externalReference;
+    expect(persistence::PresetAssetStore::importWavetableSource(
+               externalSource, externalRoot, persistence::AssetSlot::oscillatorB,
+               externalReference).wasOk(),
+           "External fixture WAV must enter its own content-addressed asset root");
+    const auto externalId = midi::deterministicUuid(64001, "m6-external-preset");
+    auto externalDocument = persistence::makePresetTemplate(
+        FOLK_PARK_VERSION, externalId, "Localized external sound");
+    externalDocument.assets.push_back(externalReference);
+    const auto externalPreset = externalRoot.getChildFile("localized.folkparkpreset");
+    expect(persistence::PresetStore::save(externalDocument, externalPreset, false).wasOk(),
+           "External native preset fixture must save deterministically");
+
+    const auto importedRoot = temporary.directory.getChildFile("imported-store");
+    PluginProcessor importing({true, importedRoot});
+    importing.prepareToPlay(48000.0, 256);
+    expect(importing.initialisePersistence().wasOk()
+               && importing.importExternalPreset(externalPreset).wasOk(),
+           "External preset must validate, localize its asset, save locally, and apply");
+    const auto localizedAsset = importedRoot.getChildFile("Presets")
+        .getChildFile(externalReference.relativePath);
+    expect(localizedAsset.existsAsFile(),
+           "External preset import must retain an independent content-addressed asset");
+    importing.processBlock(audio, midiBuffer);
+    expect(externalRoot.deleteRecursively(false),
+           "External localization test must remove only its isolated source directory");
+    expect(importing.loadLibraryPreset(externalId).wasOk(),
+           "Localized preset must reload after its external source directory disappears");
+}
+
+void testHistorySymlinkFailureIsolation()
+{
+    using namespace folkpark;
+    TemporaryDirectory temporary;
+    const auto target = temporary.directory.getChildFile("unrelated-target.sqlite3");
+    expect(target.replaceWithText("must never be opened as folk park history"),
+           "History symlink fixture target must be created inside the temporary root");
+    expect(target.createSymbolicLink(temporary.directory.getChildFile("history.sqlite3"), false),
+           "History symlink fixture must create a database-path link");
+    PluginProcessor processor({true, temporary.directory});
+    expect(processor.initialisePersistence().wasOk(),
+           "Unsafe history symlink must degrade history without failing preset storage");
+    const auto status = processor.getPersistenceStatus();
+    expect(status.presetAvailable && !status.historyAvailable
+               && status.message.containsIgnoreCase("symbolic link"),
+           "History symlink rejection must be visible and isolated from native presets");
+    PresetSaveRequest save;
+    save.name = "Preset despite unsafe history";
+    expect(processor.saveCurrentPreset(save).wasOk(),
+           "Unsafe history path must not block atomic native preset saving");
+}
+
 void testHistoryDatabaseFailureIsolation()
 {
     using namespace folkpark;
@@ -688,6 +776,8 @@ int main()
     testPresetAndHistoryRestartIntegration();
     testPresetSaveAsAndExplicitOverwrite();
     testProjectStateRestoresAssetsAndAcceptedComposition();
+    testConfirmedImportRetryAndExternalLocalization();
+    testHistorySymlinkFailureIsolation();
     testHistoryDatabaseFailureIsolation();
 
     if (failures == 0)

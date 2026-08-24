@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getNativeFunction } from "@juce/index.js";
 import { parseHistoryComparison, parsePersistenceWorkspace,
   type HistoryComparison, type PersistenceWorkspace } from "./protocol.ts";
@@ -43,6 +43,7 @@ export function PersistenceView({ announce, refreshSoundSnapshot }: Props) {
   const [retention, setRetention] = useState(180);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [comparison, setComparison] = useState<HistoryComparison | null>(null);
+  const syncedPreset = useRef("");
 
   const refresh = useCallback(async () => {
     const value = await native.getWorkspace(search.slice(0, 128), favoritesOnly, includeDeleted);
@@ -52,6 +53,21 @@ export function PersistenceView({ announce, refreshSoundSnapshot }: Props) {
   }, [announce, favoritesOnly, includeDeleted, search]);
 
   useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    if (workspace === null) return;
+    const current = workspace.presets.find((preset) => preset.id === workspace.status.currentPresetId);
+    const identity = `${workspace.status.currentPresetId}:${workspace.status.currentPresetName}`;
+    if (syncedPreset.current === identity) return;
+    syncedPreset.current = identity;
+    setName(current?.name ?? workspace.status.currentPresetName ?? "New sound");
+    setAuthor(current?.author ?? "");
+    setTags(current?.tags.join(", ") ?? "");
+    setGenre(current?.genre ?? "");
+    setEmotion(current?.emotion ?? "");
+    setFavorite(current?.favorite ?? false);
+    setDescription("");
+    setAllowOverwrite(false);
+  }, [workspace]);
 
   const refreshAfterSoundAction = async (operation: Promise<unknown>, success: string) => {
     const value = await operation;
@@ -85,6 +101,8 @@ export function PersistenceView({ announce, refreshSoundSnapshot }: Props) {
     return <section className="surface recovery"><h2>Opening local library…</h2><p>Preset and history work stays off the audio callback.</p><button onClick={() => void refresh()}>Retry</button></section>;
 
   const status = workspace.status;
+  const currentIsLibraryPreset = workspace.presets.some(
+    (preset) => preset.id === status.currentPresetId);
   return <div className="history-layout">
     <section className="surface persistence-status wide-card">
       <div className="section-heading"><div><span>M6</span><h2>Native presets + recoverable history</h2></div><small>{status.historyAvailable ? "online" : "degraded"}</small></div>
@@ -103,8 +121,9 @@ export function PersistenceView({ announce, refreshSoundSnapshot }: Props) {
     <section className="surface preset-save">
       <div className="section-heading"><div><span>SAVE</span><h2>Current sound</h2></div><small>Deterministic JSON</small></div>
       <div className="preset-form"><label>Name<input maxLength={96} value={name} onChange={(event) => setName(event.currentTarget.value)} /></label><label>Author<input maxLength={96} value={author} onChange={(event) => setAuthor(event.currentTarget.value)} /></label><label>Tags · comma separated<input maxLength={512} value={tags} onChange={(event) => setTags(event.currentTarget.value)} /></label><label>Genre<input maxLength={64} value={genre} onChange={(event) => setGenre(event.currentTarget.value)} /></label><label>Emotion<input maxLength={64} value={emotion} onChange={(event) => setEmotion(event.currentTarget.value)} /></label><label>Description<textarea maxLength={1024} value={description} onChange={(event) => setDescription(event.currentTarget.value)} /></label></div>
-      <div className="check-row"><label><input type="checkbox" checked={favorite} onChange={(event) => setFavorite(event.currentTarget.checked)} />Favorite</label><label><input type="checkbox" checked={allowOverwrite} onChange={(event) => setAllowOverwrite(event.currentTarget.checked)} />Explicitly replace current preset</label></div>
-      <div className="actions"><button className="primary" disabled={!status.presetAvailable || name.trim().length === 0} onClick={() => void save()}>Save native preset</button><button disabled={!status.presetAvailable} onClick={() => void refreshAfterSoundAction(native.choosePresetFile(), "External preset validated, localized, and applied")}>Import .folkparkpreset</button></div>
+      <div className="check-row"><label><input type="checkbox" checked={favorite} onChange={(event) => setFavorite(event.currentTarget.checked)} />Favorite</label><label><input type="checkbox" disabled={!currentIsLibraryPreset} checked={allowOverwrite} onChange={(event) => setAllowOverwrite(event.currentTarget.checked)} />Explicitly replace current library preset</label></div>
+      <p>{allowOverwrite ? "The current library preset will keep its UUID and be replaced atomically." : "A new preset with a new stable UUID will be created. Existing presets remain unchanged."}</p>
+      <div className="actions"><button className="primary" disabled={!status.presetAvailable || name.trim().length === 0} onClick={() => void save()}>{allowOverwrite ? "Replace current preset" : "Save as new preset"}</button><button disabled={!status.presetAvailable} onClick={() => void refreshAfterSoundAction(native.choosePresetFile(), "External preset validated, localized, and applied")}>Import .folkparkpreset</button></div>
     </section>
 
     <section className="surface preset-browser">

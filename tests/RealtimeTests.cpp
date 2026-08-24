@@ -111,6 +111,15 @@ int main()
         std::cerr << "FAIL: atomic preset snapshot must queue before the measured audio block\n";
         return 1;
     }
+    const ModulationRoute competingRoute{
+        ModulationSource::lfo2, ModulationDestination::oscillatorBPosition,
+        -0.5f, ModulationCurve::linear, true};
+    if (engine.publishPresetSnapshot(*replacement, *replacement,
+                                     std::span{&competingRoute, 1}))
+    {
+        std::cerr << "FAIL: busy preset publication must reject a competing complete snapshot\n";
+        return 1;
+    }
 
     MusicIntent directIntent;
     directIntent.seed = 42;

@@ -20,10 +20,10 @@
 
 ## M6 commands and exact results so far
 
-- Integrated UI production build: PASS; UI tests 10/10; lint PASS. These were recorded at commit `5a940aa` before the current C++-only hardening changes.
+- Current UI production build: PASS; `app.js` 806.08 kB (209.25 kB gzip), `app.css` 16.30 kB; UI tests 10/10; lint PASS. The known direct-eval warning remains confined to JUCE's pinned Android compatibility helper.
 - Current complete Debug build: PASS for native tests, Standalone, and VST3.
 - `ctest --preset macos-x86_64-debug --output-on-failure`: PASS, 10/10.
-- Focused processor recovery covers real user-WAV conversion/retention, editor-independent host-state restore, accepted-composition restore, malformed/oversized payload rejection, missing-asset rollback, wrong-hash rejection, exact relink, Save As identity, explicit overwrite, dirty tracking, database isolation, and persistence restart.
+- Focused processor recovery covers real user-WAV conversion/retention, retry after busy audio publication, external preset asset localization/independent reload, editor-independent host-state restore, accepted-composition restore, malformed/oversized payload rejection, missing-asset rollback, wrong-hash rejection, exact relink, Save As identity, explicit overwrite, dirty tracking, SQLite symlink rejection, database isolation, and persistence restart.
 - `git diff --check`: PASS at the working checkpoint review.
 
 ## M6 evidence still required before milestone completion

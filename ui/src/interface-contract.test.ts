@@ -88,6 +88,10 @@ test("M6 exposes native preset recovery and transactional composition history", 
   assert.match(view, /Compare selected/);
   assert.match(view, /recoverable trash/);
   assert.match(view, /window\.confirm/);
+  assert.match(view, /Save as new preset/);
+  assert.match(view, /new stable UUID/);
+  assert.match(view, /Explicitly replace current library preset/);
+  assert.match(editor, /permanently removes only expired non-favorites/);
   assert.match(view, /Composition acceptance and audio remain available/);
   assert.doesNotMatch(app, /History and preset persistence are prepared/);
   assert.doesNotMatch(view, /https?:\/\//);

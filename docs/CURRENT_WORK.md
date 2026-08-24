@@ -39,6 +39,7 @@ The DOCX is the master product and engineering contract. Read it without modifyi
 - No M6 PR was open when this handoff was written.
 - Integration checkpoint: `5a940aa Integrated preset and history workflows`.
 - The intended checkpoint subject for the current hardening work is `Hardened M6 project recovery boundaries`. Resolve its final hash with `git log`; do not rely on a copied hash.
+- A following bounded checkpoint uses the subject `Hardened M6 persistence and Save As boundaries`; resolve its final hash with `git log` after it is committed.
 - Earlier M6 commits are:
   - `735fb84 Established the M6 persistence and migration contracts`
   - `a69a8bc Implemented versioned native presets and validated assets`
@@ -142,6 +143,8 @@ The following results were recorded on 2026-08-23 on the integrated worktree:
 - Real-time allocation test passed as part of the 10-test suite.
 - The current C++ hardening stage completed another full Debug Standalone/VST3 build and 10/10 CTest pass after adding project-state recovery.
 - Focused processor tests now use a real generated WAV to prove editor-independent parameter/wavetable/accepted-composition restore, bounded malformed/oversized rejection, no partial mutation on a missing asset, wrong-hash rejection, exact relink completion, dirty tracking, distinct Save As UUIDs, and explicit overwrite.
+- Current UI build/test/lint passes 10/10 with an explicit Save-as-new versus replace-current workflow; generated JS is 806.08 kB (209.25 kB gzip) and CSS is 16.30 kB.
+- Additional native hardening proves confirmed-import retry after a deliberately busy exchange, external preset asset localization and reload without its source directory, SQLite path symlink rejection with presets still available, and competing complete preset publication rejection. The subsequent full Debug build and CTest suite pass 10/10.
 
 A first version of the restart integration test compared a requested normalized float against JUCE's quantized stored value and failed. The test was corrected to capture the actual parameter value before save; the targeted test and the subsequent full 10/10 suite passed. This was a test expectation issue, not a persistence failure.
 
@@ -158,11 +161,11 @@ The first three integration risks were addressed: host state now contains a boun
 
 Remaining explicit review targets, not necessarily confirmed defects:
 
-1. Atomic preset publication: finish the producer/consumer handshake review and expand contention/busy tests if needed. Prove no partial A/B/route replacement is externally visible and no busy/invalid publication damages active state. Do not add an audio-thread mutex or wait.
-2. Asset transactions: project missing/wrong/exact relink is covered. Still exercise external preset asset localization, retry after confirmed-import publication failure, multiple-asset failure ordering, and orphan-safe behavior.
+1. Atomic preset publication: invalid and competing-busy complete snapshots are covered, along with zero allocations. Finish any concurrency review needed for Release evidence; do not add an audio-thread mutex or wait.
+2. Asset transactions: project missing/wrong/exact relink, external localization/independent reload, and confirmed-import busy retry are covered. Review only remaining multiple-asset failure ordering and orphan-safe behavior.
 3. History boundaries: expand adversarial processor/bridge tests for malformed UUIDs, excessive strings/tags/results, unavailable/corrupt/future database, recall failure, retention/favorite preservation, and non-mutating compare. Repository-level coverage already exists for many of these; verify the exposed native boundary too.
-4. Symlinks and root safety: review the coordinator's root/database/assets handling when roots are files, symlinks, unwritable, or concurrently changed.
-5. UI behavior: verify loading/error/degraded states, active preset naming, Save As/overwrite confirmation, missing-asset recovery, soft-delete recovery, comparison, cleanup confirmation, keyboard accessibility, and narrow layout in the built Standalone.
+4. Symlinks and root safety: preset root/assets and the SQLite file reject symbolic links; database failure leaves presets available. Review remaining root-as-file/unwritable/concurrent-change behavior.
+5. UI behavior: source contracts and build pass, and Save As is now explicit. Visually verify loading/error/degraded states, active preset naming, overwrite confirmation, missing-asset recovery, soft-delete recovery, comparison, cleanup confirmation, keyboard accessibility, and narrow layout in the built Standalone.
 6. State size/fallback: the custom project payload is bounded at 8 MiB and rejects malformed/oversized input transactionally. Confirm the largest valid composition plus preset remains below the serialized XML bound during the Release gate.
 
 ## Exact continuation sequence for the next coding agent
@@ -199,7 +202,7 @@ If the integration changes are unexpectedly uncommitted, inspect them rather tha
 
 Host project state, Save As, dirty tracking, and project missing-asset recovery are implemented and Debug-tested. Use the remaining known-gaps list as the checklist. Keep filesystem and database work off `processBlock`; add focused tests for any repaired boundary and retain exact error reporting.
 
-The current checkpoint subject is `Hardened M6 project recovery boundaries`. If additional material hardening is needed, commit it separately with an accurate impersonal subject.
+The project-recovery checkpoint is `a67ec8a Hardened M6 project recovery boundaries`. The next bounded checkpoint is `Hardened M6 persistence and Save As boundaries`. If additional material hardening is needed, commit it separately with an accurate impersonal subject.
 
 ### 3. Run the complete M6 gate
 
