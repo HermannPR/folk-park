@@ -37,7 +37,8 @@ The DOCX is the master product and engineering contract. Read it without modifyi
 - M6 is stacked on `feat/m5-effects-preview`; any M6 PR must use that exact base unless the documented branch topology intentionally changes.
 - M5 draft PR: <https://github.com/HermannPR/folk-park/pull/5>.
 - No M6 PR was open when this handoff was written.
-- The intended checkpoint subject for the integration work described here is `Integrated preset and history workflows`. Resolve its hash with `git log`; do not rely on a copied hash.
+- Integration checkpoint: `5a940aa Integrated preset and history workflows`.
+- The intended checkpoint subject for the current hardening work is `Hardened M6 project recovery boundaries`. Resolve its final hash with `git log`; do not rely on a copied hash.
 - Earlier M6 commits are:
   - `735fb84 Established the M6 persistence and migration contracts`
   - `a69a8bc Implemented versioned native presets and validated assets`
@@ -67,7 +68,7 @@ Do not reimplement M0-M5. Preserve the oscillator displays, C2-B5 keyboard, key-
 
 ## Current milestone: M6 native presets and composition history
 
-M6 is integrated but **not complete**. Foundation modules, processor coordination, native bridge, and the React workspace exist. The next agent must harden the failure boundaries, fill remaining state-recall gaps, run the complete Release gate, and document evidence before claiming M6 complete.
+M6 is integrated and its first project-recovery hardening stage passes Debug, but it is **not complete**. Foundation modules, processor coordination, native bridge, the React workspace, bounded host project state, imported-asset recovery, accepted-composition restore, dirty tracking, and explicit Save As semantics exist. The next agent must finish the remaining adversarial/UI review, run the complete Release gate, and document evidence before claiming M6 complete.
 
 ### Established foundation
 
@@ -128,7 +129,7 @@ Tests added or extended:
 - Import tests verify confirmed metadata and source retention.
 - UI protocol and interface-contract tests cover the M6 bridge, recovery, compare, trash, confirmation, bounds, and lack of remote URLs.
 
-## Verification actually completed for this integration checkpoint
+## Verification actually completed for the M6 working checkpoint
 
 The following results were recorded on 2026-08-23 on the integrated worktree:
 
@@ -139,6 +140,8 @@ The following results were recorded on 2026-08-23 on the integrated worktree:
 - Debug build: passed after integrating the new sources/tests.
 - Full Debug CTest: 10/10 passed. The last command was `/Users/hermannpr/Library/Python/3.9/bin/ctest --preset macos-x86_64-debug --output-on-failure`.
 - Real-time allocation test passed as part of the 10-test suite.
+- The current C++ hardening stage completed another full Debug Standalone/VST3 build and 10/10 CTest pass after adding project-state recovery.
+- Focused processor tests now use a real generated WAV to prove editor-independent parameter/wavetable/accepted-composition restore, bounded malformed/oversized rejection, no partial mutation on a missing asset, wrong-hash rejection, exact relink completion, dirty tracking, distinct Save As UUIDs, and explicit overwrite.
 
 A first version of the restart integration test compared a requested normalized float against JUCE's quantized stored value and failed. The test was corrected to capture the actual parameter value before save; the targeted test and the subsequent full 10/10 suite passed. This was a test expectation issue, not a persistence failure.
 
@@ -151,17 +154,16 @@ Do not overstate this checkpoint:
 
 ## Known gaps and risks to examine before M6 completion
 
-These are explicit review targets, not necessarily confirmed defects:
+The first three integration risks were addressed: host state now contains a bounded versioned preset/composition payload and asset references; parameter callbacks use atomic-only revision tracking; and non-overwrite Save As creates a new UUID. README, progress, and the FL matrix now describe the M6 working state truthfully.
 
-1. Project/session recall: inspect `getStateInformation`/`setStateInformation`. Native presets and history survive restart, but current preset identity, oscillator asset references, and accepted composition may not yet be embedded in host project state. Imported wavetables must not disappear when reopening an FL project.
-2. Dirty tracking: imported wavetable changes mark the current preset dirty, but ordinary APVTS parameter/automation changes may not. Implement this without locks or filesystem work on the audio thread.
-3. Save As behavior: inspect stable-ID reuse and overwrite semantics. Explicit overwrite must remain required; a renamed non-overwrite save should be able to create a new UUID without silently replacing the current preset.
-4. Atomic preset publication: review the producer/consumer handshake under ThreadSanitizer-style reasoning. Prove no partial A/B/route replacement is externally visible and no busy/invalid publication damages active state. Do not add an audio-thread mutex or wait.
-5. Asset transactions: add end-to-end tests for missing asset reporting, correct-hash relink, wrong-hash rejection, external preset asset localization, retry after failed import, and rollback after failure at every preparation step.
-6. History boundaries: add adversarial bridge/repository tests for malformed UUIDs, excessive strings/tags/results, unavailable/corrupt/future database, recall failure, retention/favorite preservation, and non-mutating compare.
-7. Symlinks and root safety: review the coordinator's root/database/assets handling when roots are files, symlinks, unwritable, or concurrently changed.
-8. UI behavior: verify loading/error/degraded states, active preset naming, overwrite confirmation, missing-asset recovery, soft-delete recovery, comparison, cleanup confirmation, keyboard accessibility, and narrow layout in the built Standalone.
-9. Documentation is stale outside this file: `README.md` and `docs/PROGRESS.md` still primarily describe M5. Update them only after reconciling the final verified M6 state.
+Remaining explicit review targets, not necessarily confirmed defects:
+
+1. Atomic preset publication: finish the producer/consumer handshake review and expand contention/busy tests if needed. Prove no partial A/B/route replacement is externally visible and no busy/invalid publication damages active state. Do not add an audio-thread mutex or wait.
+2. Asset transactions: project missing/wrong/exact relink is covered. Still exercise external preset asset localization, retry after confirmed-import publication failure, multiple-asset failure ordering, and orphan-safe behavior.
+3. History boundaries: expand adversarial processor/bridge tests for malformed UUIDs, excessive strings/tags/results, unavailable/corrupt/future database, recall failure, retention/favorite preservation, and non-mutating compare. Repository-level coverage already exists for many of these; verify the exposed native boundary too.
+4. Symlinks and root safety: review the coordinator's root/database/assets handling when roots are files, symlinks, unwritable, or concurrently changed.
+5. UI behavior: verify loading/error/degraded states, active preset naming, Save As/overwrite confirmation, missing-asset recovery, soft-delete recovery, comparison, cleanup confirmation, keyboard accessibility, and narrow layout in the built Standalone.
+6. State size/fallback: the custom project payload is bounded at 8 MiB and rejects malformed/oversized input transactionally. Confirm the largest valid composition plus preset remains below the serialized XML bound during the Release gate.
 
 ## Exact continuation sequence for the next coding agent
 
@@ -193,11 +195,11 @@ If the integration changes are unexpectedly uncommitted, inspect them rather tha
 - `ui/src/interface-contract.test.ts`, `ui/src/protocol.test.ts`, `ui/src/styles.css`
 - generated `resources/ui/app.js`, `resources/ui/app.css`, and `resources/ui/index.html` when changed by the UI build
 
-### 2. Harden M6 as a separate buildable stage
+### 2. Finish the remaining M6 hardening review
 
-Use the known-gaps list as the review checklist. Prioritize host project-state restoration and transactional asset/preset failure tests because they protect users' work. Keep filesystem and database work off `processBlock`. Add focused tests for each repaired boundary and retain exact error reporting.
+Host project state, Save As, dirty tracking, and project missing-asset recovery are implemented and Debug-tested. Use the remaining known-gaps list as the checklist. Keep filesystem and database work off `processBlock`; add focused tests for any repaired boundary and retain exact error reporting.
 
-Suggested commit subject: `Hardened M6 persistence failure boundaries`.
+The current checkpoint subject is `Hardened M6 project recovery boundaries`. If additional material hardening is needed, commit it separately with an accurate impersonal subject.
 
 ### 3. Run the complete M6 gate
 

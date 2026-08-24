@@ -48,6 +48,52 @@ bool buffersMatch(const juce::AudioBuffer<float>& first,
     return true;
 }
 
+bool writeWavetableFixture(const juce::File& file)
+{
+    std::unique_ptr<juce::OutputStream> stream = file.createOutputStream();
+    if (stream == nullptr)
+        return false;
+    juce::WavAudioFormat format;
+    auto writer = format.createWriterFor(
+        stream, juce::AudioFormatWriter::Options{}.withSampleRate(48000.0)
+                                                      .withNumChannels(1)
+                                                      .withBitsPerSample(24));
+    if (writer == nullptr)
+        return false;
+    constexpr int cycleLength = 2048;
+    juce::AudioBuffer<float> audio(1, cycleLength * 3);
+    for (int cycle = 0; cycle < 3; ++cycle)
+    {
+        for (int sample = 0; sample < cycleLength; ++sample)
+        {
+            const auto phase = static_cast<float>(sample) / static_cast<float>(cycleLength);
+            const auto sine = std::sin(juce::MathConstants<float>::twoPi * phase);
+            const auto triangle = 1.0f - 4.0f * std::abs(phase - 0.5f);
+            const auto morph = static_cast<float>(cycle) / 2.0f;
+            audio.setSample(0, cycle * cycleLength + sample,
+                            sine + morph * (triangle - sine));
+        }
+    }
+    return writer->writeFromAudioSampleBuffer(audio, 0, audio.getNumSamples());
+}
+
+bool waitForImportReview(folkpark::PluginProcessor& processor, int timeoutMilliseconds)
+{
+    const auto deadline = juce::Time::getMillisecondCounterHiRes()
+        + static_cast<double>(timeoutMilliseconds);
+    while (juce::Time::getMillisecondCounterHiRes() < deadline)
+    {
+        const auto status = processor.getWavetableImportSnapshot().status;
+        if (status == folkpark::synth::WavetableImportService::Status::awaitingConfirmation)
+            return true;
+        if (status == folkpark::synth::WavetableImportService::Status::failed)
+            return false;
+        juce::Thread::sleep(5);
+    }
+    return processor.getWavetableImportSnapshot().status
+        == folkpark::synth::WavetableImportService::Status::awaitingConfirmation;
+}
+
 folkpark::PluginProcessor::PersistenceConfiguration disabledPersistence()
 {
     return {false, {}};
@@ -320,8 +366,8 @@ void testCompositionAcceptanceAndProcessorRouting()
     processor.getStateInformation(state);
     PluginProcessor restored(disabledPersistence());
     restored.setStateInformation(state.getData(), static_cast<int>(state.getSize()));
-    expect(!restored.getCompositionSnapshot().hasAccepted,
-           "M3 session MIDI must not pretend to persist before M6 history support");
+    expect(restored.getCompositionSnapshot().hasAccepted,
+           "M6 project state must restore the explicitly accepted composition");
 }
 
 void testPreviewKeyboardProcessorPath()
@@ -383,6 +429,8 @@ void testPresetAndHistoryRestartIntegration()
     save.description = "Processor-level transactional preset fixture";
     expect(processor.saveCurrentPreset(save).wasOk(),
            "Current processor sound must save through the atomic native preset store");
+    expect(!processor.getPersistenceStatus().currentPresetDirty,
+           "A successful native preset save must establish a clean parameter revision");
     const auto library = processor.listPresets();
     expect(library.status.wasOk() && library.presets.size() == 1,
            "Saved native preset must appear in the bounded local browser");
@@ -390,10 +438,14 @@ void testPresetAndHistoryRestartIntegration()
         return;
     const auto presetId = library.presets.front().id;
     cutoff->setValueNotifyingHost(0.91f);
+    expect(processor.getPersistenceStatus().currentPresetDirty,
+           "Host parameter changes must mark the active native sound dirty without a callback lock");
     expect(processor.loadLibraryPreset(presetId).wasOk(),
            "Complete local preset must prepare and publish transactionally");
     expect(std::abs(cutoff->getValue() - savedCutoff) <= 1.0e-6f,
            "Preset recall must restore the exact normalized host parameter value");
+    expect(!processor.getPersistenceStatus().currentPresetDirty,
+           "Transactional preset recall must establish a clean parameter revision");
 
     juce::AudioBuffer<float> audio(2, 128);
     juce::MidiBuffer emptyMidi;
@@ -430,6 +482,167 @@ void testPresetAndHistoryRestartIntegration()
                "History recall must explicitly restore an accepted, deliverable composition");
         expect(restarted.inspectHistory(reopenedHistory.entries.back().id).has_value(),
                "History comparison inspection must not mutate or lose the stored entry");
+    }
+}
+
+void testPresetSaveAsAndExplicitOverwrite()
+{
+    using namespace folkpark;
+    TemporaryDirectory temporary;
+    PluginProcessor processor({true, temporary.directory});
+    expect(processor.initialisePersistence().wasOk(),
+           "Save As fixture must initialize its isolated preset root");
+    PresetSaveRequest first;
+    first.name = "First identity";
+    expect(processor.saveCurrentPreset(first).wasOk(),
+           "First native preset save must create a stable identity");
+    const auto firstId = processor.getPersistenceStatus().currentPresetId;
+
+    PresetSaveRequest second = first;
+    second.name = "Second identity";
+    expect(processor.saveCurrentPreset(second).wasOk(),
+           "Save As without overwrite must create a new native preset");
+    const auto secondId = processor.getPersistenceStatus().currentPresetId;
+    expect(firstId != secondId && midi::isUuid(firstId) && midi::isUuid(secondId),
+           "Save As must generate a distinct stable UUID");
+    expect(processor.listPresets().presets.size() == 2,
+           "Save As must retain both native preset documents");
+
+    expect(processor.saveCurrentPreset(second).failed(),
+           "A colliding safe filename must not overwrite implicitly");
+    second.allowOverwrite = true;
+    expect(processor.saveCurrentPreset(second).wasOk(),
+           "Explicit overwrite must update the current stable preset identity");
+    expect(processor.getPersistenceStatus().currentPresetId == secondId
+               && processor.listPresets().presets.size() == 2,
+           "Explicit overwrite must preserve the current UUID and library cardinality");
+}
+
+void testProjectStateRestoresAssetsAndAcceptedComposition()
+{
+    using namespace folkpark;
+    TemporaryDirectory temporary;
+    const auto sourceFile = temporary.directory.getChildFile("owned-project-wavetable.wav");
+    expect(writeWavetableFixture(sourceFile),
+           "Project-state fixture must create a user-owned WAV source");
+
+    PluginProcessor source({true, temporary.directory});
+    source.prepareToPlay(48000.0, 256);
+    expect(source.initialisePersistence().wasOk(),
+           "Project-state fixture must initialize its isolated persistence root");
+    expect(source.requestWavetableImport(sourceFile, 0, 2048).wasOk()
+               && waitForImportReview(source, 5000),
+           "User-owned WAV must reach explicit import review");
+    expect(source.confirmWavetableImport().wasOk(),
+           "Confirmed user-owned WAV must publish and retain a content-addressed source");
+
+    auto* cutoff = source.state().getParameter(parameterIds::filterCutoff);
+    expect(cutoff != nullptr, "Project-state cutoff parameter must exist");
+    if (cutoff == nullptr)
+        return;
+    cutoff->setValueNotifyingHost(0.314f);
+    const auto expectedCutoff = cutoff->getValue();
+    midi::MusicIntent intent;
+    intent.seed = 63001;
+    intent.requestId = midi::deterministicUuid(intent.seed, "m6-project-state");
+    expect(source.generateCompositionCandidate(intent).wasOk()
+               && source.acceptCompositionCandidate().wasOk(),
+           "Project state must have an explicitly accepted composition to restore");
+    const auto expectedWavetable = source.getWavetableUiSnapshot(0);
+
+    juce::MemoryBlock state;
+    source.getStateInformation(state);
+    expect(!state.isEmpty() && state.getSize() < 8U * 1024U * 1024U,
+           "Versioned project state must remain non-empty and bounded");
+
+    PluginProcessor restored({true, temporary.directory});
+    restored.prepareToPlay(48000.0, 256);
+    restored.setStateInformation(state.getData(), static_cast<int>(state.getSize()));
+    const auto* restoredCutoff = restored.state().getParameter(parameterIds::filterCutoff);
+    const auto restoredWavetable = restored.getWavetableUiSnapshot(0);
+    expect(restoredCutoff != nullptr
+               && std::abs(restoredCutoff->getValue() - expectedCutoff) <= 1.0e-6f,
+           "Host project recall must restore the exact native preset parameters");
+    expect(restoredWavetable.frameCount == expectedWavetable.frameCount
+               && std::equal(restoredWavetable.samples.begin(), restoredWavetable.samples.end(),
+                             expectedWavetable.samples.begin()),
+           "Host project recall must reconstruct the imported oscillator wavetable");
+    expect(restored.getCompositionSnapshot().hasAccepted
+               && restored.getCompositionSnapshot().acceptedRequestId == intent.requestId,
+           "Host project recall must restore the exact accepted composition without an editor");
+
+    const auto stateXml = PluginProcessor::getXmlFromBinary(
+        state.getData(), static_cast<int>(state.getSize()));
+    expect(stateXml != nullptr, "Bounded project state must reopen as JUCE XML");
+    if (stateXml != nullptr)
+    {
+        auto malformedTree = juce::ValueTree::fromXml(*stateXml);
+        auto session = malformedTree.getChildWithName("FolkParkProjectSession");
+        const juce::MemoryBlock malformedComposition("{}", 2);
+        session.setProperty("acceptedCompositionPayload", juce::var(malformedComposition), nullptr);
+        juce::MemoryBlock malformedState;
+        if (const auto malformedXml = malformedTree.createXml())
+            PluginProcessor::copyXmlToBinary(*malformedXml, malformedState);
+        PluginProcessor rejected({true, temporary.directory});
+        auto* rejectedCutoff = rejected.state().getParameter(parameterIds::filterCutoff);
+        if (rejectedCutoff != nullptr)
+            rejectedCutoff->setValueNotifyingHost(0.88f);
+        const auto beforeRejected = rejectedCutoff != nullptr ? rejectedCutoff->getValue() : -1.0f;
+        rejected.setStateInformation(malformedState.getData(),
+                                     static_cast<int>(malformedState.getSize()));
+        expect(rejectedCutoff != nullptr
+                   && std::abs(rejectedCutoff->getValue() - beforeRejected) <= 1.0e-7f
+                   && !rejected.getCompositionSnapshot().hasAccepted,
+               "Malformed custom project payload must reject the complete transaction");
+        juce::MemoryBlock oversizedState;
+        oversizedState.setSize(8U * 1024U * 1024U + 1U, true);
+        rejected.setStateInformation(oversizedState.getData(),
+                                     static_cast<int>(oversizedState.getSize()));
+        expect(std::abs(rejectedCutoff->getValue() - beforeRejected) <= 1.0e-7f,
+               "Oversized host project state must be rejected before parsing or mutation");
+    }
+
+    const auto assetsDirectory = temporary.directory.getChildFile("Presets").getChildFile("assets");
+    const auto assets = assetsDirectory.findChildFiles(juce::File::findFiles, false, "*.wav");
+    expect(assets.size() == 1, "Project-state fixture must retain one content-addressed WAV");
+    if (assets.size() != 1)
+        return;
+    const auto recoveryFile = temporary.directory.getChildFile("matching-recovery.wav");
+    expect(assets[0].copyFileTo(recoveryFile),
+           "Missing-asset fixture must retain a matching explicit recovery source");
+    expect(assets[0].deleteFile(),
+           "Missing-asset fixture must remove only its isolated temporary stored asset");
+
+    PluginProcessor missing({true, temporary.directory});
+    missing.prepareToPlay(48000.0, 256);
+    auto* missingCutoff = missing.state().getParameter(parameterIds::filterCutoff);
+    const auto unchangedCutoff = missingCutoff != nullptr ? missingCutoff->getValue() : -1.0f;
+    missing.setStateInformation(state.getData(), static_cast<int>(state.getSize()));
+    expect(missingCutoff != nullptr
+               && std::abs(missingCutoff->getValue() - unchangedCutoff) <= 1.0e-7f
+               && !missing.getCompositionSnapshot().hasAccepted,
+           "Missing project asset must leave the complete live sound and composition unchanged");
+    const auto missingStatus = missing.getPersistenceStatus();
+    expect(missingStatus.missingAssets.size() == 1,
+           "Missing project asset must remain visible for explicit recovery");
+    if (!missingStatus.missingAssets.empty())
+    {
+        const auto wrongRecovery = temporary.directory.getChildFile("wrong-recovery.wav");
+        expect(wrongRecovery.replaceWithText("not the requested wavetable"),
+               "Wrong recovery fixture must be created inside the isolated test root");
+        expect(missing.relinkPendingPresetAsset(missingStatus.missingAssets.front().slot,
+                                                wrongRecovery).failed(),
+               "Wrong hash-and-size relink must be rejected");
+        expect(std::abs(missingCutoff->getValue() - unchangedCutoff) <= 1.0e-7f
+                   && !missing.getCompositionSnapshot().hasAccepted
+                   && missing.getPersistenceStatus().missingAssets.size() == 1,
+               "Rejected relink must retain the pending transaction and unchanged live state");
+        expect(missing.relinkPendingPresetAsset(missingStatus.missingAssets.front().slot,
+                                                recoveryFile).wasOk(),
+               "Exact hash-and-size relink must finish the pending project transaction");
+        expect(std::abs(missingCutoff->getValue() - expectedCutoff) <= 1.0e-6f
+                   && missing.getCompositionSnapshot().hasAccepted,
+               "Successful relink must atomically finish sound and accepted-composition recall");
     }
 }
 
@@ -473,9 +686,11 @@ int main()
     testCompositionAcceptanceAndProcessorRouting();
     testPreviewKeyboardProcessorPath();
     testPresetAndHistoryRestartIntegration();
+    testPresetSaveAsAndExplicitOverwrite();
+    testProjectStateRestoresAssetsAndAcceptedComposition();
     testHistoryDatabaseFailureIsolation();
 
     if (failures == 0)
-        std::cout << "PASS: M1–M5 processor paths plus M6 preset/history restart and failure isolation\n";
+        std::cout << "PASS: M1–M5 processor paths plus M6 preset/history/project-state recovery\n";
     return failures == 0 ? 0 : 1;
 }

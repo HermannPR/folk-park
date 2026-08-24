@@ -155,14 +155,25 @@ juce::Result CompositionSession::acceptCandidate()
 
 juce::Result CompositionSession::restoreAccepted(CompositionBundle bundle)
 {
-    if (const auto validation = validateBundle(bundle); validation.failed())
-        return juce::Result::fail("Recalled composition is invalid: "
-                                  + validation.getErrorMessage());
+    return restoreProjectState(std::move(bundle));
+}
+
+juce::Result CompositionSession::restoreProjectState(
+    std::optional<CompositionBundle> acceptedBundle)
+{
+    if (acceptedBundle.has_value())
+    {
+        if (const auto validation = validateBundle(*acceptedBundle); validation.failed())
+            return juce::Result::fail("Recalled composition is invalid: "
+                                      + validation.getErrorMessage());
+    }
     const std::lock_guard lock(mutex);
-    candidate = bundle;
-    accepted = std::move(bundle);
-    candidateMatchesAccepted = true;
-    status = "History entry recalled as the accepted composition; delivery is enabled";
+    candidate = acceptedBundle;
+    accepted = std::move(acceptedBundle);
+    candidateMatchesAccepted = accepted.has_value();
+    status = accepted.has_value()
+        ? "Stored composition restored as accepted; delivery is enabled"
+        : "No composition is stored in this project state";
     return juce::Result::ok();
 }
 

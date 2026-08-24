@@ -49,13 +49,15 @@ struct HistoryEntryDetail
     int noteCount = 0;
 };
 
-class PluginProcessor final : public juce::AudioProcessor
+class PluginProcessor final : public juce::AudioProcessor,
+                              private juce::AudioProcessorValueTreeState::Listener
 {
 public:
     using PersistenceConfiguration = persistence::PersistenceConfiguration;
 
     PluginProcessor();
     explicit PluginProcessor(PersistenceConfiguration configuration);
+    ~PluginProcessor() override;
 
     void prepareToPlay(double sampleRate, int maximumExpectedSamplesPerBlock) override;
     void releaseResources() override;
@@ -193,6 +195,10 @@ public:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
 private:
+    void parameterChanged(const juce::String&, float) override
+    {
+        parameterRevision.fetch_add(1, std::memory_order_relaxed);
+    }
     [[nodiscard]] synth::ParameterSnapshot readSynthParameters() const noexcept;
     [[nodiscard]] effects::Parameters readEffectsParameters(double tempoBpm) const noexcept;
     [[nodiscard]] render::OfflinePreviewSnapshot makeOfflinePreviewSnapshot(double tempoBpm) const;
@@ -206,6 +212,19 @@ private:
         const synth::WavetableConverter::Metadata& metadata,
         const juce::File& source);
     void recordAcceptedComposition(const midi::CompositionBundle& bundle);
+    void clearPendingProjectRestore();
+    [[nodiscard]] juce::Result completeProjectRestore(
+        const persistence::PresetDocument& document,
+        std::optional<midi::CompositionBundle> acceptedBundle,
+        bool dirty,
+        const juce::String& historyEntryId);
+
+    struct PendingProjectRestore
+    {
+        std::optional<midi::CompositionBundle> acceptedBundle;
+        bool dirty = false;
+        juce::String historyEntryId;
+    };
 
     juce::UndoManager undoManager;
     juce::AudioProcessorValueTreeState parameters;
@@ -217,6 +236,10 @@ private:
     midi::PreviewMidiQueue previewMidiQueue;
     render::OfflinePreviewService offlinePreviewService;
     std::unique_ptr<persistence::PersistenceCoordinator> persistenceCoordinator;
+    mutable std::mutex projectStateMutex;
+    std::optional<PendingProjectRestore> pendingProjectRestore;
+    std::atomic<std::uint64_t> parameterRevision{0};
+    std::atomic<std::uint64_t> cleanParameterRevision{0};
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> masterGain;
     std::atomic<bool> panicRequested{false};
 

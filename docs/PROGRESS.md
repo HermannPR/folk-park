@@ -2,10 +2,39 @@
 
 ## Current checkpoint
 
-- Milestone: M5 — ordered effects and isolated accepted-composition WAV rendering
-- Status: UI, Debug, Release, built/installed VST3, effect DSP, offline isolation, WAV contract, architecture, signature, visual, and pluginval gates passed; FL Studio human effects/tempo/automation/WAV runs remain required
-- Date: 2026-08-21 (America/Monterrey)
-- Branch: `feat/m5-effects-preview`, stacked on M4 draft PR #4
+- Milestone: M6 — native presets, transactional history, and host project recovery
+- Status: M6 foundation/integration and the current Debug hardening gate pass; complete M6 Release/pluginval/artifact/visual gates and all FL Studio human runs remain required
+- Date: 2026-08-23 (America/Monterrey)
+- Branch: `feat/m6-presets-history`, stacked exactly on `feat/m5-effects-preview`
+
+## Implemented M6 working checkpoint
+
+- Added deterministic version-2 `.folkparkpreset` documents plus pure oldest-supported migration, complete 102-parameter/effect/route capture, bounded parsing, atomic explicit-overwrite saves, content-addressed WAV assets, traversal/symlink rejection, and exact missing-asset relink.
+- Added a SQLite repository behind `HistoryRepository` with transactional migrations, bounded search, exact recall, lineage, favorites/tags, soft deletion, retention, cleanup, and database-failure isolation.
+- Integrated a non-audio `PersistenceCoordinator`, processor workflows, strict native bridge payloads, and a React preset/history workspace. No filesystem, JSON, or SQLite work is reachable from `processBlock`.
+- Added one audio-block-boundary preset publication for prepared oscillator A/B banks and modulation routes. Failed validation/busy publication leaves active state unchanged.
+- Added versioned bounded host project state containing a complete native preset payload, imported asset references, dirty status, accepted composition, and history lineage. Restoration does not require an editor.
+- Missing project assets leave parameters, wavetables, and composition unchanged while exposing recovery metadata. Wrong hash/size is rejected; exact relink completes the pending sound-and-composition transaction.
+- Added atomic-only parameter revision tracking for reliable dirty state without locking the audio callback.
+- Corrected Save As so non-overwrite creates a new UUID while updates require explicit overwrite and retain the active UUID.
+
+## M6 commands and exact results so far
+
+- Integrated UI production build: PASS; UI tests 10/10; lint PASS. These were recorded at commit `5a940aa` before the current C++-only hardening changes.
+- Current complete Debug build: PASS for native tests, Standalone, and VST3.
+- `ctest --preset macos-x86_64-debug --output-on-failure`: PASS, 10/10.
+- Focused processor recovery covers real user-WAV conversion/retention, editor-independent host-state restore, accepted-composition restore, malformed/oversized payload rejection, missing-asset rollback, wrong-hash rejection, exact relink, Save As identity, explicit overwrite, dirty tracking, database isolation, and persistence restart.
+- `git diff --check`: PASS at the working checkpoint review.
+
+## M6 evidence still required before milestone completion
+
+- Complete clean UI install/build/test/lint and audit record after final M6 changes.
+- Complete Release configure/build/CTest, built VST3 smoke, thin `x86_64` inspection, code-signature inspection, pluginval strictness 5, installed artifact/hash parity, and development-server/secret scan.
+- Standalone visual/interaction evidence for preset browser, history, Save As, compare/trash/retention, and missing-asset/degraded states.
+- `evidence/m6/verification.md` and bounded supporting artifacts.
+- Every M6 FL Studio case remains HUMAN RUN REQUIRED.
+
+## Previous M5 checkpoint
 
 ## Implemented M5 checkpoint
 
@@ -162,6 +191,7 @@
 - M4 actual A/B visual response to host automation/import, full matrix review/apply/discard, immediate Undo/Redo, candidate note editing, and accepted-versus-candidate delivery inside FL Studio: HUMAN RUN REQUIRED.
 - M5 audible ordered effects, independent bypass/click behavior, host-tempo delay changes, automation write/read, save-close-reopen, and CPU use inside FL Studio: HUMAN RUN REQUIRED.
 - M5 accepted WAV chooser/render/cancel/import/playback, expected length/tail, current-sound parity, and live-voice isolation inside the FL wrapper: HUMAN RUN REQUIRED.
+- M6 native preset Save As/explicit overwrite/load, content-addressed imported-table project reopen, wrong-file rejection/exact relink, accepted composition restore, history search/compare/recall/trash/retention, and database-unavailable behavior inside FL Studio: HUMAN RUN REQUIRED.
 - WAV import through the real macOS chooser, preview/confirm/cancel, table audition, FL project save/reopen limitation, and failure recovery: HUMAN RUN REQUIRED.
 - M3 candidate generation/preview/accept interaction in the physical Standalone: HUMAN RUN REQUIRED.
 - M3 `.mid` drag into the FL Studio piano roll/channel workflow and musical parity after import: HUMAN RUN REQUIRED.
@@ -170,13 +200,13 @@
 
 ## Risks and limitations
 
-- A confirmed imported wavetable lives in bounded session memory only. Source audio or converted table persistence is intentionally deferred to M6; reopening a project currently restores parameters/routes but uses the built-in table. The UI states the review boundary but cannot yet warn on project reopen.
+- Imported wavetable sources are retained in bounded content-addressed local storage and referenced by versioned project state. Automated missing-asset recovery is covered, but FL Studio save-close-reopen, chooser recovery, and audible parity remain human checks.
 - The M4 interface edits all 32 route slots, but host automation of route structure is not supported; route changes are reviewed native transactions stored in plug-in state.
 - Three.js is a presentation dependency only. The measured local analysis cost and frame caps do not replace FL Studio CPU/GPU profiling on the target machine.
-- User-drawn LFOs and oversampling are optional M2 items and were deliberately deferred. Preset library/history and AI assistance are not implemented yet.
+- User-drawn LFOs and oversampling are optional M2 items and were deliberately deferred. Native preset/history integration is in M6 hardening; the M7 guided assistant is not implemented yet.
 - The CPU number is a reproducible local baseline, not a guarantee for every host/audio-device configuration. FL Studio profiling is still required.
 - pluginval's optional separate Steinberg-validator subtest was skipped because no validator executable path is installed.
-- Accepted compositions are session memory only until M6; project reopen intentionally restores synth parameters/routes but not M3 candidate/accepted clips.
+- Accepted compositions and their delivery state now round-trip in the bounded M6 project payload and remain searchable in local history. Actual FL Studio project reopen is not yet human-verified.
 - Direct MIDI begins at the next audio block using clip tempo. Host transport synchronization, reposition, and loop semantics are not claimed in M3.
 - M5 preview is an exported, validated WAV rather than an internal transport. Audition/import behavior in FL Studio remains a human workflow check.
 - The Vite build reports direct `eval` in JUCE's pinned `check_native_interop.js` Android compatibility helper. The macOS bundle loads only embedded local resources; no project source or runtime URL uses a remote origin.
@@ -184,4 +214,4 @@
 
 ## Next smallest verifiable task
 
-Run the installed M5 VST3 through the explicit FL Studio M1–M5 human matrix and record every result. Then begin M6 on a new stacked branch with transactional preset/history persistence, migrations, and imported-asset recovery.
+Complete the remaining M6 adversarial bridge/UI and persistence-root review, then run the full clean UI and Release x86_64/CTest/VST3-smoke/pluginval/artifact gate. Record `evidence/m6/verification.md`, update this document with exact hashes/results, and keep every unexecuted FL Studio case marked HUMAN RUN REQUIRED.

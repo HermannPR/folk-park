@@ -27,7 +27,11 @@ Environment at M0 intake:
 | Transport | Tempo, start/stop, PPQ, and unavailable fields are safe | HUMAN RUN REQUIRED | Pending |
 | Automation | Representative stable parameters record/replay | HUMAN RUN REQUIRED | Pending |
 | Project state | Save, close FL Studio, reopen, and restore state | HUMAN RUN REQUIRED | Pending |
-| Imported-table reopen limitation | Parameters/routes restore safely; imported table falls back to built-in because M6 asset persistence is not implemented | HUMAN RUN REQUIRED | Pending |
+| M6 imported-table project reopen | Save a project using imported A/B tables, close FL Studio, reopen, and confirm the exact tables and sound return from content-addressed storage | HUMAN RUN REQUIRED | Native editor-independent project-state recovery passed; FL pending |
+| M6 preset Save As/load | Create two presets with distinct IDs, require explicit overwrite, load each, and verify parameters/routes/effects/tables | HUMAN RUN REQUIRED | Native transactional Save As/load coverage passed; FL pending |
+| M6 missing-asset recovery | Remove an isolated test asset, reopen safely without partial mutation, reject a wrong WAV, then relink the exact user-selected WAV | HUMAN RUN REQUIRED | Native hash/size rejection and exact relink transaction passed; FL chooser/listening pending |
+| M6 accepted composition/history reopen | Reopen the project, verify accepted MIDI remains deliverable, search/compare/recall history, and test recoverable trash | HUMAN RUN REQUIRED | Native project-state and SQLite restart/recall coverage passed; FL pending |
+| M6 database unavailable | Make only the history database unavailable and verify acceptance, presets, existing audio, and project state continue | HUMAN RUN REQUIRED | Native failure-isolation test passed; FL pending |
 | MIDI drag | Generated `.mid` drags into a supported FL Studio destination | HUMAN RUN REQUIRED | Pending |
 | MIDI routing | Wrapper output port routes to a second instrument | HUMAN RUN REQUIRED | Pending |
 | Candidate note editing | Edit pitch/start/duration/velocity, verify accepted MIDI remains unchanged, accept again, then drag/direct-route the edit | HUMAN RUN REQUIRED | Native transactional edit tests passed; FL pending |

@@ -89,6 +89,7 @@ public:
                                           bool allowOverwrite);
     [[nodiscard]] PresetCandidateResult loadLibraryPreset(const juce::String& presetId);
     [[nodiscard]] PresetCandidateResult importExternalPreset(const juce::File& file);
+    [[nodiscard]] PresetCandidateResult prepareSessionPresetJson(const juce::String& json);
     [[nodiscard]] PresetCandidateResult relinkPendingAsset(AssetSlot slot,
                                                            const juce::File& selectedFile);
     [[nodiscard]] juce::Result setPresetFavorite(const juce::String& presetId,
@@ -100,6 +101,7 @@ public:
         const PresetDocument& document);
 
     void markPresetApplied(const PresetDocument& document);
+    void restoreSessionStatus(const PresetDocument& document, bool dirty);
     void markCurrentSoundDirty(const juce::String& message);
     void report(const juce::String& message);
     [[nodiscard]] juce::String currentPresetId() const;

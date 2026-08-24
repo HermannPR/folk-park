@@ -291,6 +291,8 @@ PresetCandidateResult PersistenceCoordinator::loadLibraryPreset(const juce::Stri
 {
     const std::lock_guard lock(mutex);
     PresetCandidateResult result;
+    pendingPreset.reset();
+    currentStatus.missingAssets.clear();
     if (!midi::isUuid(presetId))
     {
         result.status = juce::Result::fail("Preset ID is malformed");
@@ -323,6 +325,8 @@ PresetCandidateResult PersistenceCoordinator::importExternalPreset(const juce::F
 {
     const std::lock_guard lock(mutex);
     PresetCandidateResult result;
+    pendingPreset.reset();
+    currentStatus.missingAssets.clear();
     if (const auto availability = requirePresetLocked(); availability.failed())
     {
         result.status = availability;
@@ -344,6 +348,30 @@ PresetCandidateResult PersistenceCoordinator::importExternalPreset(const juce::F
     }
     return finishCandidateLocked(loaded.document, loaded.migrated,
                                  destinationForExternalPresetLocked(loaded.document), true);
+}
+
+PresetCandidateResult PersistenceCoordinator::prepareSessionPresetJson(const juce::String& json)
+{
+    const std::lock_guard lock(mutex);
+    PresetCandidateResult result;
+    pendingPreset.reset();
+    currentStatus.missingAssets.clear();
+    const auto decoded = PresetCodec::decode(json, migrationDefaults);
+    if (decoded.status.failed())
+    {
+        result.status = decoded.status;
+        currentStatus.message = decoded.status.getErrorMessage();
+        return result;
+    }
+    if (!decoded.document.assets.empty())
+    {
+        if (const auto availability = requirePresetLocked(); availability.failed())
+        {
+            result.status = availability;
+            return result;
+        }
+    }
+    return finishCandidateLocked(decoded.document, decoded.migrated, {}, false);
 }
 
 PresetCandidateResult PersistenceCoordinator::relinkPendingAsset(
@@ -420,10 +448,13 @@ PreparedPresetWavetables PersistenceCoordinator::prepareWavetables(
 {
     const std::lock_guard lock(mutex);
     PreparedPresetWavetables prepared;
-    if (const auto availability = requirePresetLocked(); availability.failed())
+    if (!document.assets.empty())
     {
-        prepared.status = availability;
-        return prepared;
+        if (const auto availability = requirePresetLocked(); availability.failed())
+        {
+            prepared.status = availability;
+            return prepared;
+        }
     }
     const auto assets = PresetAssetStore::validate(document, presetRoot);
     if (assets.status.failed() || !assets.missing.empty())
@@ -467,6 +498,17 @@ void PersistenceCoordinator::markPresetApplied(const PresetDocument& document)
     currentStatus.missingAssets.clear();
     currentStatus.message = "Preset applied at a safe audio-block boundary";
     pendingPreset.reset();
+}
+
+void PersistenceCoordinator::restoreSessionStatus(const PresetDocument& document, bool dirty)
+{
+    const std::lock_guard lock(mutex);
+    currentStatus.currentPresetId = document.metadata.id;
+    currentStatus.currentPresetName = document.metadata.name;
+    currentStatus.currentPresetDirty = dirty;
+    currentStatus.message = dirty
+        ? "Host project restored a modified native sound snapshot"
+        : "Host project restored the saved native sound snapshot";
 }
 
 void PersistenceCoordinator::markCurrentSoundDirty(const juce::String& message)
