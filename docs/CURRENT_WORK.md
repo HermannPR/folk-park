@@ -235,7 +235,7 @@ The next exact boundary is human/owner evidence:
 
 1. For the real diagnostics visual, have Hermann open the Release Standalone, select `SETTINGS`, click `Preview diagnostics`, and leave the panel visible. Preview itself performs no clipboard/filesystem/network write. Capture only the real app window, retain it as `evidence/m8/standalone-m8-diagnostics.png`, hash it, then update `README.md`, `evidence/m8/verification.md`, `docs/M8_RELEASE_CHECKLIST.md`, and `docs/PROGRESS.md`. Never substitute a mockup or click Copy without explicit intent.
 2. Start with the six-step safe first session in `docs/FL_STUDIO_TEST_MATRIX.md`, using a new disposable FL project. Only Hermann's real observed result may replace `HUMAN RUN REQUIRED`; automated VST3 loading is not FL evidence. Stop before deeper/destructive recovery cases if discovery, insertion, audio, Stop/Panic, or project reopen fails.
-3. Record owner decisions from `docs/OPEN_DECISIONS.md` before adding distribution work. Do not choose a CPU budget, JUCE license route, signing/notarization identity, legal identity, distribution/update channel, public privacy notice, asset approval, or remote provider by assumption.
+3. Use `docs/OWNER_RELEASE_DECISIONS.md` to record owner choices, then update the concise `docs/OPEN_DECISIONS.md` status before adding distribution work. Do not choose a CPU budget, JUCE license route, signing/notarization identity, legal identity, distribution/update channel, public privacy notice, asset approval, or remote provider by assumption.
 4. Re-run the complete Release/pluginval/install parity gate only if product/build code changes. Documentation-only human-evidence updates require focused link/diff/private-PR checks, not invented revalidation claims.
 5. Preserve meaningful impersonal commits and push only to the private M8 branch. Keep PR #8 a draft until the explicit remaining gates justify changing it.
 
@@ -289,6 +289,7 @@ M8 starts from the verified M7 artifacts; it must not redesign or reimplement M0
 - Release-material, development-origin, authored-source `eval`, sensitive-token-form, seven-schema, repository-private, and diff checks pass. The one bundled `eval` occurrence is JUCE's pinned Android compatibility branch and is not used on Intel macOS.
 - `evidence/m8/verification.md` and the fresh strictness-5 validator log retain the exact automated result/hashes. The only visual evidence still pending is the real Release diagnostics panel after the producer performs the intentional Preview action; macOS denied accessibility automation, and no mockup or clipboard bypass is permitted.
 - Every FL Studio row remains `HUMAN RUN REQUIRED`. Signing/notarization, JUCE distribution licensing, final identity, asset approval, public privacy notice, remote provider, and an owner-approved CPU budget remain explicit owner decisions.
+- `docs/OWNER_RELEASE_DECISIONS.md` maps those gates to the exact 0.1 artifact identity, pinned JUCE 8 EULA, current Apple Developer ID/notarization requirements, ZIP/DMG/PKG and updater choices, privacy/asset/performance/provider boundaries, a recommended low-risk sequence, and one reply template. No choice or distribution action is authorized by that worksheet.
 
 ## Commands and local environment
 

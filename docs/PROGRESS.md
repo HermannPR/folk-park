@@ -61,6 +61,14 @@
 - Full result, methods, limitations, and hashes: `evidence/m8/verification.md`. The real Release diagnostics screenshot awaits the producer-visible Preview action because macOS denied accessibility automation; no mock visual or clipboard bypass is accepted.
 - Every FL Studio row remains `HUMAN RUN REQUIRED`. Owner decisions for CPU budget, JUCE distribution licensing, signing/notarization, identity, distribution, privacy notice, asset approval, and remote provider remain unresolved.
 
+## M8 owner decision-readiness checkpoint
+
+- Added `docs/OWNER_RELEASE_DECISIONS.md` as a non-authorizing worksheet for private/closed-beta/public/commercial intent; JUCE 8 licensee/route/eligibility/seats; stable product/legal identity; Apple Developer ID/notarization; ZIP/DMG/PKG and updates; public privacy; asset/name approval; FL-informed CPU budget; provider scope; and the no-Serum-state compatibility statement.
+- Mapped the exact current facts: `folk park` 0.1.0, `com.folkpark.audio.folkpark`, `FlPk/FkP1`, JUCE 8.0.13 at the pinned commit, ad-hoc VST3, unsigned Standalone, no notarization/installer/updater/network/provider, and private repository status.
+- Verified the controlling JUCE 8 EULA currently publishes Starter/Indie/Pro/Educational thresholds and terms, makes the Product Owner responsible for licensing, and defines Framework User seats. Agent-assisted development is not inferred; written JUCE clarification is required if relevant.
+- Verified Apple currently requires program membership, Developer ID signing, hardened-runtime/notarization preparation, and current notarization tooling for a normal outside-App-Store distribution path. No certificate, account, credential, purchase, signing, submission, or publication was accessed or performed.
+- Recommended—but did not authorize—the low-risk order: private review and FL smoke → owner/license/identity decisions → signed/notarized manual ZIP beta → PKG only after install/rollback evidence; offline-only/manual-update for 0.1.
+
 ## M7 contract checkpoint
 
 - Added versioned typed `AssistantRequest`/`AssistantResponse` variants for composition versus sound and offline/mock/remote processing origins.

@@ -2,6 +2,8 @@
 
 No public installer/package is authorized. The current deliverables are the Release Standalone app and VST3 bundle produced by the pinned CMake preset after the embedded UI build.
 
+The owner-facing choice sequence, exact current identity, JUCE 8 inputs, Apple requirements, and ZIP/DMG/PKG tradeoffs are maintained in `docs/OWNER_RELEASE_DECISIONS.md`. Recommendations there are not authorization to distribute or sign.
+
 ## Candidate contents
 
 - `folk park.app` — Intel `x86_64` Standalone engineering application.
