@@ -2,8 +2,8 @@
 
 ## Current checkpoint
 
-- Milestone: M7 — offline Jarvis text, guided sound proposals, and secure provider boundary
-- Status: M7 automated checkpoint verified for Debug/Release, pluginval, installed-artifact parity, security, and real Release Standalone interaction; all FL Studio human runs remain required
+- Milestone: M8 — release-candidate hardening and distribution audit
+- Status: M7 automated checkpoint and private draft PR #7 are complete; M8 implementation has not started, and all FL Studio human runs remain required
 - Date: 2026-08-23 (America/Monterrey)
 - Branch: `feat/m7-guided-assistant`, stacked exactly on `feat/m6-presets-history`
 
