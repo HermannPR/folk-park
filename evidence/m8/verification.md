@@ -52,6 +52,7 @@ The 16 Release CTest suites are native engine, effects chain, offline preview is
 - Release and installed VST3 executable SHA-256: `9295e582e705837020f72f657105d5efd2213d5e8904dee628d7e55e52a82a84`.
 - Release Standalone executable SHA-256: `bb61054c5acf8f9fb3711acd49220dc6ddcf6508d4ea4bc5513d6e82c1778386`.
 - pluginval log SHA-256: `ff5a2222543e321444e3bc35994a801ae5402e06d8f44a2aeb6cb49bc94c94b4`.
+- pluginval tool-generated report SHA-256: `5e273f0be74ed78c0f52cf6a35bcb4d40c39bf59d0c52f658d527d700c137e63` (same run; differs only by omitting the canonical log's leading `Started validating` line).
 - Official pluginval 1.0.4 macOS archive SHA-256: `3c4c533bda0c5059eea3ddaea752d757ee2025041f0f47e6bcb0e87f6082b29f`.
 - Embedded UI index SHA-256: `b139fcadf5728e39c965fae2a410710a6319c894a6f9bf5560ca79ac1891d4b8`.
 - Embedded UI CSS SHA-256: `18bf71139fccd0f4983c19079f6746c436dccf4868630b898fddee29aa68af33`.
@@ -60,6 +61,7 @@ The 16 Release CTest suites are native engine, effects chain, offline preview is
 ## Retained artifacts
 
 - `pluginval/pluginval-release-strictness-5.txt`
+- `pluginval/Hermann Pauwells - folk park 0.1.0 - Mac OSX 15.7.9 VST3_20260824T072910.145-0600.txt` (pluginval's own timestamped report)
 - `runtime-hardening-debug.md`
 - Real Release diagnostics screenshot: pending the owner-visible Preview action required by macOS accessibility controls.
 

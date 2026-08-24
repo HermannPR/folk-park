@@ -48,6 +48,12 @@ The DOCX is the master product and engineering contract. Read it without modifyi
 - Secure provider-settings checkpoint: `1415f70 Established secure Jarvis provider settings`.
 - Final M7 checkpoint: `5711496 Verified and documented the M7 checkpoint`.
 - M7 private draft PR: <https://github.com/HermannPR/folk-park/pull/7>, base exactly `feat/m6-presets-history`, head `feat/m7-guided-assistant`.
+- M8 contract checkpoint: `a6d9857 Established the M8 release hardening contract`.
+- M8 diagnostics checkpoint: `0b1c07e Implemented bounded release diagnostics`.
+- M8 runtime checkpoint: `203def5 Established deterministic runtime recovery evidence`.
+- M8 support/provenance checkpoint: `b92115b Established release support and provenance controls`.
+- M8 automated verification checkpoint: `e2df379 Verified and documented the M8 automated checkpoint`.
+- M8 private draft PR: <https://github.com/HermannPR/folk-park/pull/8>, base exactly `feat/m7-guided-assistant`, head `feat/m8-release-hardening`.
 - Earlier M6 commits are:
   - `735fb84 Established the M6 persistence and migration contracts`
   - `a69a8bc Implemented versioned native presets and validated assets`
@@ -220,13 +226,18 @@ git log --oneline --decorate -12
 git diff --check
 git remote -v
 gh repo view HermannPR/folk-park --json visibility,nameWithOwner
-gh pr list --head feat/m6-presets-history --state all
-gh pr list --head feat/m7-guided-assistant --state all
+gh pr view 8 --json isDraft,state,baseRefName,headRefName,url
 ```
 
-Confirm the repository is still private, inspect every local change, and never discard work. Final M7 checkpoint `5711496` and draft PR #7 are pushed; only this M8 continuation handoff should be uncommitted before its own checkpoint. Clean UI/audit passes with 15/15 tests, Debug CTest passes 12/12, Release CTest passes 13/13, pluginval strictness 5 succeeds, installed/build VST3 parity and independent render pass, and real Release screenshots are retained. Review exact diffs, stage only the intended handoff paths, and use the impersonal subject `Established the M8 continuation handoff`.
+Confirm the repository remains private, branch `feat/m8-release-hardening` tracks its remote, and draft PR #8 remains stacked exactly on `feat/m7-guided-assistant`. Inspect every local change and never discard work. The complete M8 automated checkpoint is already committed and pushed; do not recreate the branch or repeat M0–M8 implementation.
 
-The M6 and M7 draft PRs already exist and the branches are correctly stacked. Preserve meaningful impersonal commits at every passing stage. The next boundary is M8 release hardening; do not enable a real remote adapter by assumption.
+The next exact boundary is human/owner evidence:
+
+1. For the real diagnostics visual, have Hermann open the Release Standalone, select `SETTINGS`, click `Preview diagnostics`, and leave the panel visible. Preview itself performs no clipboard/filesystem/network write. Capture only the real app window, retain it as `evidence/m8/standalone-m8-diagnostics.png`, hash it, then update `README.md`, `evidence/m8/verification.md`, `docs/M8_RELEASE_CHECKLIST.md`, and `docs/PROGRESS.md`. Never substitute a mockup or click Copy without explicit intent.
+2. Work through `docs/FL_STUDIO_TEST_MATRIX.md` with Hermann. Only his real observed result may replace `HUMAN RUN REQUIRED`; automated VST3 loading is not FL evidence.
+3. Record owner decisions from `docs/OPEN_DECISIONS.md` before adding distribution work. Do not choose a CPU budget, JUCE license route, signing/notarization identity, legal identity, distribution/update channel, public privacy notice, asset approval, or remote provider by assumption.
+4. Re-run the complete Release/pluginval/install parity gate only if product/build code changes. Documentation-only human-evidence updates require focused link/diff/private-PR checks, not invented revalidation claims.
+5. Preserve meaningful impersonal commits and push only to the private M8 branch. Keep PR #8 a draft until the explicit remaining gates justify changing it.
 
 ## Current milestone: M8 release-candidate hardening
 
