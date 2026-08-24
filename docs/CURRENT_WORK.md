@@ -37,8 +37,8 @@ The DOCX is the master product and engineering contract. Read it without modifyi
 - M6 branch: `feat/m6-presets-history`.
 - M6 is stacked on `feat/m5-effects-preview`; the M6 draft PR base must be exactly `feat/m5-effects-preview`.
 - M5 draft PR: <https://github.com/HermannPR/folk-park/pull/5>.
-- Resolve the M6 draft PR with `gh pr list --head feat/m6-presets-history --state all`; if it is absent after the final M6 checkpoint is pushed, create it as a private draft with the exact base above.
-- The final M6 documentation checkpoint subject is `Verified and documented the M6 checkpoint`; resolve its hash from `git log` rather than copying a stale hash.
+- M6 private draft PR: <https://github.com/HermannPR/folk-park/pull/6>, base exactly `feat/m5-effects-preview`, head `feat/m6-presets-history`.
+- Final M6 checkpoint: `b3e9e78 Verified and documented the M6 checkpoint`.
 - Earlier M6 commits are:
   - `735fb84 Established the M6 persistence and migration contracts`
   - `a69a8bc Implemented versioned native presets and validated assets`
