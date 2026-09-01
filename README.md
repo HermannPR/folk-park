@@ -1,5 +1,7 @@
 # folk park
 
+<p><img src="https://img.shields.io/badge/C%2B%2B-00599C?style=flat-square&logo=cplusplus&logoColor=white" height="20" alt="C++"> <img src="https://img.shields.io/badge/JUCE-8D6E63?style=flat-square" height="20" alt="JUCE"> <img src="https://img.shields.io/badge/VST3-6A1B9A?style=flat-square" height="20" alt="VST3"></p>
+
 **An original wavetable synthesizer and deterministic composition assistant for Intel macOS.**
 
 > **Implementation branches:** The verified M8 engineering candidate is reviewed on [`feat/m8-release-hardening`](https://github.com/HermannPR/folk-park/tree/feat/m8-release-hardening). Active synthesized-drum development is reviewed on [`feat/rhythm-lab-r1`](https://github.com/HermannPR/folk-park/tree/feat/rhythm-lab-r1). The default branch keeps this recruiter-facing overview while private stacked PRs and required FL Studio/owner gates remain open.
