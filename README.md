@@ -233,6 +233,12 @@ The final automated gate was verified on 2026-08-24 in America/Monterrey:
 
 The Release runtime probe exercised repeated notes, 2×2 unison, all six effects, panic/release, preview-overflow recovery, direct-MIDI Stop, and three editor reconstructions while checking every output sample for finiteness. It measured `0.153058×` realtime on the documented Intel i9 machine. That is reproducible one-machine evidence, not an owner-approved CPU budget or an audible-quality claim. The complete report and validator log are retained under [evidence/m8](https://github.com/HermannPR/folk-park/tree/feat/rhythm-lab-r1/evidence/m8/).
 
+## Validation
+
+- **pluginval** at strictness 5 ends `SUCCESS` for the VST3.
+- 19/19 UI contract checks and 16/16 native Release suites pass.
+- Independent finite-audio MIDI render through the installed VST3, with installed-bundle hash parity.
+
 ## Build and run
 
 ### Requirements
