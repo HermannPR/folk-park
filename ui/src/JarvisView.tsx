@@ -104,6 +104,16 @@ export function JarvisView({ draft, onDraftChange, announce, refreshSound,
     return () => { mounted = false; };
   }, []);
 
+  const syncAuditionState = useCallback(async () => {
+    try {
+      const parsed = parseJarvisAuditionState(await native.getJarvisState());
+      if (parsed !== null) setAudition(parsed);
+      return parsed;
+    } catch {
+      return null;
+    }
+  }, []);
+
   const askQuestions = useCallback(async () => {
     setBusy(true);
     const result = await native.getJarvisQuestions(soundPayload());
@@ -114,6 +124,10 @@ export function JarvisView({ draft, onDraftChange, announce, refreshSound,
       addMessage("jarvis", "Could not continue", message); announce(message); return;
     }
     setProgress(parsed);
+    if (parsed.questions.some((question) => question.id === "intensity")) {
+      setAnswers((current) => current.intensity === null
+        ? { ...current, intensity: .5 } : current);
+    }
     if (parsed.readyForProposal) {
       addMessage("jarvis", "Intent complete",
         "I have enough bounded context to build a parameter proposal. Nothing changes until you audition proposal B.");
@@ -124,7 +138,8 @@ export function JarvisView({ draft, onDraftChange, announce, refreshSound,
   }, [addMessage, announce, soundPayload]);
 
   const submitSound = async () => {
-    if (audition?.active) {
+    const synchronized = await syncAuditionState();
+    if ((synchronized ?? audition)?.active) {
       addMessage("jarvis", "Finish the current review", "Accept or reject the active A/B proposal first.");
       return;
     }
@@ -141,6 +156,7 @@ export function JarvisView({ draft, onDraftChange, announce, refreshSound,
     setBusy(false);
     if (parsed === null || parsed.proposal === null) {
       const message = boundedError(result, "Jarvis returned an invalid sound proposal");
+      await syncAuditionState();
       addMessage("jarvis", "Proposal unavailable", message); announce(message); return;
     }
     setAudition(parsed);
@@ -178,6 +194,7 @@ export function JarvisView({ draft, onDraftChange, announce, refreshSound,
     setBusy(false);
     if (parsed === null) {
       const message = boundedError(result, "Jarvis returned an invalid A/B state");
+      await syncAuditionState();
       addMessage("jarvis", "A/B action unavailable", message); announce(message); return;
     }
     setAudition(parsed); await refreshSound();

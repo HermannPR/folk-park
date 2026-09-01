@@ -4,6 +4,7 @@
 #include <juce_events/juce_events.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <iostream>
 #include <memory>
@@ -373,6 +374,24 @@ void testAssistantProposalAuditionAndAcceptance()
                     == assistant::AssistantSessionStatus::failed
                && std::abs(cutoff->getValue() - externallyEdited) < 1.0e-6f,
            "An external host edit must invalidate A/B without being overwritten");
+
+    auto partiallyMatching = makeAssistantProposal(processor, 71004);
+    partiallyMatching.changes.front().proposedNormalized
+        = partiallyMatching.changes.front().currentNormalized;
+    expect(processor.beginAssistantProposal(partiallyMatching).wasOk()
+               && processor.getAssistantAuditionSnapshot().proposal.has_value()
+               && processor.getAssistantAuditionSnapshot().proposal->changes.size() == 1
+               && processor.rejectAssistantProposal().wasOk(),
+           "Host-canonical no-op changes must be omitted while useful proposal changes remain reviewable");
+
+    auto alreadyMatching = makeAssistantProposal(processor, 71005);
+    for (auto& change : alreadyMatching.changes)
+        change.proposedNormalized = change.currentNormalized;
+    const auto alreadyMatchingResult = processor.beginAssistantProposal(alreadyMatching);
+    expect(alreadyMatchingResult.failed()
+               && alreadyMatchingResult.getErrorMessage().contains("already matches")
+               && !processor.getAssistantAuditionSnapshot().active(),
+           "An entirely matching proposal must close clearly without creating an A/B session");
 
     juce::AudioBuffer<float> audio(2, 256);
     auto midi = noteOnBuffer();
@@ -1018,6 +1037,208 @@ void testBoundedProcessorDiagnostics()
     expect(released.sampleRate == 0.0 && released.maximumBlockSize == 0,
            "Released audio resources must be reported as unavailable without stale thread data");
 }
+
+void testAudioStabilityTelemetryClassifiesDenseLevelPressure()
+{
+    using namespace folkpark;
+    {
+        PluginProcessor generated(disabledPersistence());
+        midi::MusicIntent intent;
+        intent.seed = 7007;
+        intent.requestId = midi::deterministicUuid(intent.seed, "m9-default-composition-level-baseline");
+        expect(generated.generateCompositionCandidate(intent).wasOk()
+                   && generated.acceptCompositionCandidate().wasOk(),
+               "M9 must reproduce the normal four-part composition path");
+        generated.prepareToPlay(48000.0, 512);
+        expect(generated.routeAcceptedMidi().wasOk(),
+               "M9 normal composition baseline must publish its accepted schedule");
+        juce::AudioBuffer<float> generatedAudio(2, 512);
+        auto renderedBlocks = 0;
+        const auto renderStart = std::chrono::steady_clock::now();
+        for (; renderedBlocks < 2'000 && generated.isDirectMidiPlaying(); ++renderedBlocks)
+        {
+            juce::MidiBuffer generatedMidi;
+            generatedMidi.ensureSize(4096);
+            generated.processBlock(generatedAudio, generatedMidi);
+        }
+        const auto renderSeconds = std::chrono::duration<double>(
+            std::chrono::steady_clock::now() - renderStart).count();
+        const auto audioSeconds = static_cast<double>(renderedBlocks * 512) / 48000.0;
+        const auto generatedMetrics = generated.getDiagnosticsSnapshot();
+        expect(generatedMetrics.nonFiniteOutputSamples == 0
+                   && generatedMetrics.directMidiOverflows == 0,
+               "Normal generated composition must stay finite and within its MIDI delivery bound");
+        std::cout << "M9 default composition baseline: output="
+                  << static_cast<double>(generatedMetrics.maximumOutputPeakMicro) / 1'000'000.0
+                  << ", over-unity-samples=" << generatedMetrics.overUnityOutputSamples
+                  << ", maximum-voices=" << generatedMetrics.maximumActiveVoices
+                  << ", voice-steals=" << generatedMetrics.voiceSteals
+                  << ", render-ratio=" << renderSeconds / audioSeconds << 'x' << '\n';
+    }
+
+#if !JUCE_DEBUG
+    for (const auto sampleRate : {44100.0, 48000.0, 96000.0})
+    {
+        for (const auto matrixBlockSize : {32, 64, 128, 256, 512, 1024})
+        {
+            PluginProcessor matrix(disabledPersistence());
+            midi::MusicIntent intent;
+            intent.seed = 9009;
+            intent.lengthBars = 1;
+            intent.requestId = midi::deterministicUuid(
+                intent.seed, "m9-release-matrix-" + juce::String(sampleRate)
+                    + "-" + juce::String(matrixBlockSize));
+            expect(matrix.generateCompositionCandidate(intent).wasOk()
+                       && matrix.acceptCompositionCandidate().wasOk(),
+                   "M9 Release matrix must generate and accept its one-bar composition");
+            matrix.prepareToPlay(sampleRate, matrixBlockSize);
+            expect(matrix.routeAcceptedMidi().wasOk(),
+                   "M9 Release matrix must publish its accepted schedule");
+
+            juce::AudioBuffer<float> matrixAudio(2, matrixBlockSize);
+            auto matrixBlocks = 0;
+            const auto matrixStart = std::chrono::steady_clock::now();
+            for (; matrixBlocks < 20'000 && matrix.isDirectMidiPlaying(); ++matrixBlocks)
+            {
+                juce::MidiBuffer matrixMidi;
+                matrixMidi.ensureSize(4096);
+                matrix.processBlock(matrixAudio, matrixMidi);
+            }
+            const auto matrixRenderSeconds = std::chrono::duration<double>(
+                std::chrono::steady_clock::now() - matrixStart).count();
+            const auto matrixAudioSeconds = static_cast<double>(matrixBlocks * matrixBlockSize)
+                / sampleRate;
+            const auto metrics = matrix.getDiagnosticsSnapshot();
+            const auto matrixRatio = matrixRenderSeconds / matrixAudioSeconds;
+            expect(matrixBlocks < 20'000 && metrics.nonFiniteOutputSamples == 0
+                       && metrics.directMidiOverflows == 0,
+                   "Every M9 Release matrix case must complete without non-finite or delivery faults");
+            expect(std::isfinite(matrixRatio) && matrixRatio < 1.0,
+                   "Every default M9 Release matrix case must render inside its audio deadline");
+            std::cout << "M9 Release matrix: sample-rate=" << sampleRate
+                      << ", block=" << matrixBlockSize
+                      << ", ratio=" << matrixRatio << 'x'
+                      << ", peak="
+                      << static_cast<double>(metrics.maximumOutputPeakMicro) / 1'000'000.0
+                      << ", voices=" << metrics.maximumActiveVoices
+                      << ", steals=" << metrics.voiceSteals << '\n';
+        }
+    }
+
+    {
+        PluginProcessor heavy(disabledPersistence());
+        midi::MusicIntent intent;
+        intent.seed = 9010;
+        intent.lengthBars = 1;
+        intent.requestId = midi::deterministicUuid(intent.seed, "m9-heavy-release-baseline");
+        expect(heavy.generateCompositionCandidate(intent).wasOk()
+                   && heavy.acceptCompositionCandidate().wasOk(),
+               "M9 heavy Release case must generate and accept its composition");
+        const auto set = [&heavy](const char* id, float normalised)
+        {
+            if (auto* parameter = heavy.state().getParameter(id))
+                parameter->setValueNotifyingHost(normalised);
+            else
+                expect(false, "M9 heavy Release case requires every stable parameter ID");
+        };
+        set(parameterIds::oscillatorAUnison, 1.0f);
+        set(parameterIds::oscillatorBUnison, 1.0f);
+        set(parameterIds::oscillatorBLevel, 0.8f);
+        set(parameterIds::filterResonance, 0.8f);
+        set(parameterIds::filterDrive, 0.5f);
+        set(parameterIds::distortionBypass, 0.0f);
+        set(parameterIds::chorusBypass, 0.0f);
+        set(parameterIds::delayBypass, 0.0f);
+        set(parameterIds::delayFeedback, 0.8f);
+        set(parameterIds::reverbBypass, 0.0f);
+        set(parameterIds::compressorBypass, 0.0f);
+        set(parameterIds::eqBypass, 0.0f);
+
+        constexpr auto heavySampleRate = 96000.0;
+        constexpr auto heavyBlockSize = 64;
+        heavy.prepareToPlay(heavySampleRate, heavyBlockSize);
+        expect(heavy.routeAcceptedMidi().wasOk(),
+               "M9 heavy Release case must publish its accepted schedule");
+        juce::AudioBuffer<float> heavyAudio(2, heavyBlockSize);
+        auto heavyBlocks = 0;
+        const auto heavyStart = std::chrono::steady_clock::now();
+        for (; heavyBlocks < 20'000 && heavy.isDirectMidiPlaying(); ++heavyBlocks)
+        {
+            juce::MidiBuffer heavyMidi;
+            heavyMidi.ensureSize(4096);
+            heavy.processBlock(heavyAudio, heavyMidi);
+        }
+        const auto heavyRenderSeconds = std::chrono::duration<double>(
+            std::chrono::steady_clock::now() - heavyStart).count();
+        const auto heavyAudioSeconds = static_cast<double>(heavyBlocks * heavyBlockSize)
+            / heavySampleRate;
+        const auto heavyMetrics = heavy.getDiagnosticsSnapshot();
+        const auto heavyRatio = heavyRenderSeconds / heavyAudioSeconds;
+        expect(heavyBlocks < 20'000 && heavyMetrics.nonFiniteOutputSamples == 0
+                   && heavyMetrics.directMidiOverflows == 0,
+               "M9 heavy Release case must complete without non-finite or delivery faults");
+        expect(std::isfinite(heavyRatio) && heavyRatio < 0.85,
+               "M9 heavy 96 kHz/64 case must retain at least fifteen percent render headroom");
+        std::cout << "M9 heavy Release baseline: sample-rate=" << heavySampleRate
+                  << ", block=" << heavyBlockSize << ", ratio=" << heavyRatio << 'x'
+                  << ", peak="
+                  << static_cast<double>(heavyMetrics.maximumOutputPeakMicro) / 1'000'000.0
+                  << ", over-unity-samples=" << heavyMetrics.overUnityOutputSamples
+                  << ", voices=" << heavyMetrics.maximumActiveVoices
+                  << ", steals=" << heavyMetrics.voiceSteals << '\n';
+    }
+#endif
+
+    PluginProcessor processor(disabledPersistence());
+    constexpr auto blockSize = 128;
+    processor.prepareToPlay(48000.0, blockSize);
+
+    auto* master = processor.state().getParameter(parameterIds::masterGain);
+    auto* oscillatorA = processor.state().getParameter(parameterIds::oscillatorLevel);
+    auto* oscillatorB = processor.state().getParameter(parameterIds::oscillatorBLevel);
+    expect(master != nullptr && oscillatorA != nullptr && oscillatorB != nullptr,
+           "M9 stress fixture requires the stable oscillator and master parameters");
+    if (master == nullptr || oscillatorA == nullptr || oscillatorB == nullptr)
+        return;
+
+    master->setValueNotifyingHost(1.0f);
+    oscillatorA->setValueNotifyingHost(1.0f);
+    oscillatorB->setValueNotifyingHost(1.0f);
+
+    juce::AudioBuffer<float> audio(2, blockSize);
+    juce::MidiBuffer dense;
+    for (int note = 48; note < 48 + synth::SynthEngine::maximumVoices; ++note)
+        dense.addEvent(juce::MidiMessage::noteOn(1, note, static_cast<juce::uint8>(127)), 0);
+    processor.processBlock(audio, dense);
+
+    for (int block = 0; block < 80; ++block)
+    {
+        juce::MidiBuffer continuing;
+        processor.processBlock(audio, continuing);
+    }
+
+    auto measured = processor.getDiagnosticsSnapshot();
+    expect(measured.maximumActiveVoices == synth::SynthEngine::maximumVoices,
+           "Dense M9 fixture must record the bounded maximum voice pressure");
+    expect(measured.maximumPreMasterPeakMicro > 0 && measured.maximumOutputPeakMicro > 0,
+           "Dense M9 fixture must record pre-master and output peaks");
+    expect(measured.overUnityOutputSamples > 0 && measured.maximumOutputPeakMicro > 1'000'000,
+           "Supported extreme gain settings must be classified as a reproducible level overload before repair");
+    expect(measured.nonFiniteOutputSamples == 0,
+           "The reproduced level overload must remain distinct from non-finite DSP failure");
+    std::cout << "M9 dense level baseline: pre-master="
+              << static_cast<double>(measured.maximumPreMasterPeakMicro) / 1'000'000.0
+              << ", output="
+              << static_cast<double>(measured.maximumOutputPeakMicro) / 1'000'000.0
+              << ", over-unity-samples=" << measured.overUnityOutputSamples << '\n';
+
+    juce::MidiBuffer stealing;
+    stealing.addEvent(juce::MidiMessage::noteOn(1, 84, static_cast<juce::uint8>(127)), 0);
+    processor.processBlock(audio, stealing);
+    measured = processor.getDiagnosticsSnapshot();
+    expect(measured.voiceSteals == 1,
+           "The seventeenth overlapping note must be classified separately as one voice steal");
+}
 }
 
 int main()
@@ -1037,8 +1258,9 @@ int main()
     testHistorySymlinkFailureIsolation();
     testHistoryDatabaseFailureIsolation();
     testBoundedProcessorDiagnostics();
+    testAudioStabilityTelemetryClassifiesDenseLevelPressure();
 
     if (failures == 0)
-        std::cout << "PASS: M1–M7 processor paths plus M8 bounded diagnostics\n";
+        std::cout << "PASS: M1–M8 processor paths plus M9 stability telemetry\n";
     return failures == 0 ? 0 : 1;
 }

@@ -39,3 +39,7 @@ Deliver offline text-to-intent, adaptive sound questions, bounded/explained para
 ## M8 — Release candidate hardening
 
 Deliver Release packaging notes, complete automated suite/validator/host matrix status, benchmarks, license/asset audit, recovery/diagnostics, install/routing/troubleshooting docs. Gate: all automated checks green, no critical/high known defect, unresolved human checks visible.
+
+## M9 — Audio stability and performance
+
+Reproduce and classify the producer-reported composition crack/distortion before adding more playback load. Deliver bounded peak/overload/voice telemetry, dense real-product stress fixtures, corrected gain staging and feedback containment, measured callback headroom, and understandable recovery diagnostics. Gate: finite and ceiling-safe dense arrangements, zero callback allocations, no unexplained deadline failure, complete Release/validator/install parity, and separate producer-confirmed Standalone/FL listening evidence. See [M9 Audio Stability](M9_AUDIO_STABILITY.md).
