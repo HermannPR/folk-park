@@ -17,10 +17,12 @@ function nameFor(note: number) {
 
 function isTypingTarget(target: EventTarget | null) {
   return target instanceof HTMLInputElement || target instanceof HTMLSelectElement
-    || target instanceof HTMLTextAreaElement || target instanceof HTMLButtonElement;
+    || target instanceof HTMLTextAreaElement
+    || (target instanceof HTMLElement && target.isContentEditable);
 }
 
-export function PianoKeyboard({ announce }: { announce: (message: string) => void }) {
+export function PianoKeyboard({ announce, compact = false }:
+  { announce: (message: string) => void; compact?: boolean }) {
   const sources = useRef(new Map<number, Set<string>>());
   const [active, setActive] = useState<Set<number>>(() => new Set());
   const [computerBase, setComputerBase] = useState(48);
@@ -62,11 +64,14 @@ export function PianoKeyboard({ announce }: { announce: (message: string) => voi
       const note = keyToNote.get(event.key.toLowerCase());
       if (note === undefined) return;
       event.preventDefault();
+      event.stopPropagation();
       start(note, `key:${event.code}`);
     };
     const up = (event: KeyboardEvent) => {
       const note = keyToNote.get(event.key.toLowerCase());
       if (note === undefined) return;
+      event.preventDefault();
+      event.stopPropagation();
       stop(note, `key:${event.code}`);
     };
     const visibility = () => { if (document.visibilityState !== "visible") stopEverything(); };
@@ -85,8 +90,8 @@ export function PianoKeyboard({ announce }: { announce: (message: string) => voi
   }, [start, stop, stopEverything]);
 
   const notes = Array.from({ length: lastNote - firstNote + 1 }, (_, index) => firstNote + index);
-  return <section className="surface wide-card keyboard-card">
-    <div className="section-heading"><div><span>♫</span><h2>Four-octave audition keyboard</h2></div><div className="keyboard-range"><small>C2–B5 · computer zone {nameFor(computerBase)}</small><button aria-label="Shift computer keyboard down one octave" disabled={computerBase <= 36} onClick={() => { stopEverything(); setComputerBase((value) => Math.max(36, value - 12)); }}>Oct −</button><button aria-label="Shift computer keyboard up one octave" disabled={computerBase >= 60} onClick={() => { stopEverything(); setComputerBase((value) => Math.min(60, value + 12)); }}>Oct +</button></div></div>
+  return <section className={`surface wide-card keyboard-card ${compact ? "compact" : ""}`}>
+    <div className="section-heading"><div><span>♫</span><h2>{compact ? "Always-on audition" : "Four-octave audition keyboard"}</h2></div><div className="keyboard-range"><small>C2–B5 · A–P zone {nameFor(computerBase)}</small><button aria-label="Shift computer keyboard down one octave" disabled={computerBase <= 36} onClick={() => { stopEverything(); setComputerBase((value) => Math.max(36, value - 12)); }}>Oct −</button><button aria-label="Shift computer keyboard up one octave" disabled={computerBase >= 60} onClick={() => { stopEverything(); setComputerBase((value) => Math.min(60, value + 12)); }}>Oct +</button></div></div>
     <div className="piano-keyboard" role="group" aria-label="Four-octave playable piano keyboard from C2 to B5">
       {notes.map((note) => {
         const black = blackPitchClasses.has(note % 12);
@@ -96,7 +101,7 @@ export function PianoKeyboard({ announce }: { announce: (message: string) => voi
         return <button key={note} type="button" className={`piano-key ${black ? "black" : "white"} ${active.has(note) ? "pressed" : ""}`}
           aria-label={`Play ${nameFor(note)}${computerKey ? `, computer key ${computerKey.toUpperCase()}` : ""}`}
           onPointerDown={(event) => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); start(note, `pointer:${event.pointerId}`); }}
-          onPointerUp={(event) => stop(note, `pointer:${event.pointerId}`)}
+          onPointerUp={(event) => { stop(note, `pointer:${event.pointerId}`); event.currentTarget.blur(); }}
           onPointerCancel={(event) => stop(note, `pointer:${event.pointerId}`)}
           onKeyDown={(event) => { if (!event.repeat && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); start(note, `access:${note}`); } }}
           onKeyUp={(event) => { if (event.key === "Enter" || event.key === " ") stop(note, `access:${note}`); }}>

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://folkpark.audio/schemas/synth-drum-kit-v1.json",
+  "title": "folk park SynthDrumKit",
+  "type": "object",
+  "required": [
+    "schemaVersion", "id", "kickTuneHz", "kickDecaySeconds", "kickClick",
+    "snareTuneHz", "snareDecaySeconds", "snareNoise", "closedHatDecaySeconds",
+    "openHatDecaySeconds", "hatMetal", "percussionTuneHz",
+    "percussionDecaySeconds", "drive", "outputGain"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "const": "synth_core_v1" },
+    "kickTuneHz": { "type": "number", "minimum": 30, "maximum": 100 },
+    "kickDecaySeconds": { "type": "number", "minimum": 0.04, "maximum": 2 },
+    "kickClick": { "type": "number", "minimum": 0, "maximum": 1 },
+    "snareTuneHz": { "type": "number", "minimum": 90, "maximum": 400 },
+    "snareDecaySeconds": { "type": "number", "minimum": 0.03, "maximum": 2 },
+    "snareNoise": { "type": "number", "minimum": 0, "maximum": 1 },
+    "closedHatDecaySeconds": { "type": "number", "minimum": 0.01, "maximum": 0.5 },
+    "openHatDecaySeconds": { "type": "number", "minimum": 0.05, "maximum": 3 },
+    "hatMetal": { "type": "number", "minimum": 0, "maximum": 1 },
+    "percussionTuneHz": { "type": "number", "minimum": 80, "maximum": 1200 },
+    "percussionDecaySeconds": { "type": "number", "minimum": 0.02, "maximum": 2 },
+    "drive": { "type": "number", "minimum": 0, "maximum": 1 },
+    "outputGain": { "type": "number", "minimum": 0, "maximum": 1 }
+  },
+  "additionalProperties": false
+}
