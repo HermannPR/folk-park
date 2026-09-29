@@ -670,8 +670,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout PluginProcessor::createParam
 
 void PluginProcessor::prepareToPlay(double newSampleRate, int maximumExpectedSamplesPerBlock)
 {
-    activeSampleRate = newSampleRate;
-    activeBlockSize = maximumExpectedSamplesPerBlock;
+    activeSampleRate.store(newSampleRate, std::memory_order_release);
+    activeBlockSize.store(maximumExpectedSamplesPerBlock, std::memory_order_release);
     engine.prepare(newSampleRate, maximumExpectedSamplesPerBlock);
     effectChain.prepare(newSampleRate, maximumExpectedSamplesPerBlock);
     masterGain.reset(newSampleRate, 0.02);
@@ -684,8 +684,8 @@ void PluginProcessor::prepareToPlay(double newSampleRate, int maximumExpectedSam
 
 void PluginProcessor::releaseResources()
 {
-    activeSampleRate = 0.0;
-    activeBlockSize = 0;
+    activeSampleRate.store(0.0, std::memory_order_release);
+    activeBlockSize.store(0, std::memory_order_release);
     engine.reset();
     effectChain.reset();
     directMidiPlayer.reset();
@@ -701,15 +701,18 @@ bool PluginProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 void PluginProcessor::processBlock(juce::AudioBuffer<float>& audio, juce::MidiBuffer& midi)
 {
     juce::ScopedNoDenormals noDenormals;
-    juce::ignoreUnused(activeSampleRate, activeBlockSize);
     if (panicRequested.exchange(false, std::memory_order_acq_rel))
         engine.panic();
 
     const auto previewEvents = previewMidiQueue.renderBlock(midi, 0);
     juce::ignoreUnused(previewEvents);
-    const auto directResult = directMidiPlayer.renderBlock(midi, audio.getNumSamples(), activeSampleRate);
+    const auto directResult = directMidiPlayer.renderBlock(
+        midi, audio.getNumSamples(), activeSampleRate.load(std::memory_order_relaxed));
     if (directResult.overflow)
+    {
+        directMidiOverflows.fetch_add(1, std::memory_order_relaxed);
         engine.panic();
+    }
 
     auto synthParameters = readSynthParameters();
     if (auto* playHead = getPlayHead())
@@ -726,12 +729,77 @@ void PluginProcessor::processBlock(juce::AudioBuffer<float>& audio, juce::MidiBu
         masterGainParameter->load(std::memory_order_relaxed), -60.0f));
 
     const auto channelCount = juce::jmin(2, audio.getNumChannels());
+    std::uint64_t containedSamples = 0;
     for (int sample = 0; sample < audio.getNumSamples(); ++sample)
     {
         const auto gain = masterGain.getNextValue();
         for (int channel = 0; channel < channelCount; ++channel)
-            audio.setSample(channel, sample, audio.getSample(channel, sample) * gain);
+        {
+            const auto output = audio.getSample(channel, sample) * gain;
+            if (std::isfinite(output))
+                audio.setSample(channel, sample, output);
+            else
+            {
+                audio.setSample(channel, sample, 0.0f);
+                ++containedSamples;
+            }
+        }
     }
+    if (containedSamples != 0)
+        nonFiniteOutputSamples.fetch_add(containedSamples, std::memory_order_relaxed);
+}
+
+bool PluginProcessor::previewNoteOn(int note, int velocity) noexcept
+{
+    if (previewMidiQueue.enqueueNoteOn(note, velocity))
+        return true;
+    previewMidiOverflows.fetch_add(1, std::memory_order_relaxed);
+    return false;
+}
+
+bool PluginProcessor::previewNoteOff(int note) noexcept
+{
+    if (previewMidiQueue.enqueueNoteOff(note))
+        return true;
+    previewMidiOverflows.fetch_add(1, std::memory_order_relaxed);
+    return false;
+}
+
+diagnostics::Snapshot PluginProcessor::getDiagnosticsSnapshot() const
+{
+    diagnostics::Snapshot snapshot;
+    snapshot.productVersion = FOLK_PARK_VERSION;
+    snapshot.buildType = FOLK_PARK_BUILD_TYPE;
+    snapshot.architecture = "x86_64";
+    snapshot.wrapperFormat = getWrapperTypeDescription(wrapperType);
+    snapshot.hostName = juce::PluginHostType().getHostDescription();
+    snapshot.hostVersion = "unavailable";
+    snapshot.sampleRate = activeSampleRate.load(std::memory_order_acquire);
+    snapshot.maximumBlockSize = activeBlockSize.load(std::memory_order_acquire);
+    snapshot.activeVoices = getActiveVoiceCount();
+
+    const auto persistence = getPersistenceStatus();
+    if (!persistence.enabled)
+    {
+        snapshot.preset = diagnostics::ServiceCode::unavailable;
+        snapshot.database = diagnostics::ServiceCode::unavailable;
+    }
+    else
+    {
+        snapshot.preset = !persistence.missingAssets.empty()
+            ? diagnostics::ServiceCode::missingAssets
+            : (persistence.presetAvailable ? diagnostics::ServiceCode::ready
+                                           : diagnostics::ServiceCode::degraded);
+        snapshot.database = persistence.historyAvailable ? diagnostics::ServiceCode::ready
+                                                         : diagnostics::ServiceCode::degraded;
+    }
+    snapshot.provider = diagnostics::ServiceCode::disabled;
+    snapshot.uiBridge = diagnostics::ServiceCode::ready;
+    snapshot.nonFiniteOutputSamples = nonFiniteOutputSamples.load(std::memory_order_relaxed);
+    snapshot.directMidiOverflows = directMidiOverflows.load(std::memory_order_relaxed);
+    snapshot.previewMidiOverflows = previewMidiOverflows.load(std::memory_order_relaxed);
+    snapshot.rejectedProjectStates = rejectedProjectStates.load(std::memory_order_relaxed);
+    return snapshot;
 }
 
 juce::File PluginProcessor::writeAcceptedMidiToTemporaryFile() const
@@ -1469,6 +1537,17 @@ void PluginProcessor::getStateInformation(juce::MemoryBlock& destination)
 
 void PluginProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
+    struct RejectionTally
+    {
+        std::atomic<std::uint64_t>& counter;
+        bool accepted = false;
+        ~RejectionTally()
+        {
+            if (!accepted)
+                counter.fetch_add(1, std::memory_order_relaxed);
+        }
+    } rejection{rejectedProjectStates};
+
     if (data == nullptr || sizeInBytes <= 0 || sizeInBytes > maximumPluginStateBytes)
         return;
     const auto candidateXml = getXmlFromBinary(data, sizeInBytes);
@@ -1567,13 +1646,17 @@ void PluginProcessor::setStateInformation(const void* data, int sizeInBytes)
             const std::lock_guard lock(projectStateMutex);
             pendingProjectRestore = PendingProjectRestore{
                 std::move(acceptedBundle), std::move(assistantSnapshot), dirty, historyEntryId};
+            rejection.accepted = true;
             return;
         }
         clearPendingProjectRestore();
         if (applyPresetCandidate(presetCandidate).failed())
             return;
-        (void) completeProjectRestore(presetCandidate.document, std::move(acceptedBundle),
-                                      std::move(assistantSnapshot), dirty, historyEntryId);
+        if (completeProjectRestore(presetCandidate.document, std::move(acceptedBundle),
+                                   std::move(assistantSnapshot), dirty,
+                                   historyEntryId).failed())
+            return;
+        rejection.accepted = true;
         return;
     }
 
@@ -1606,6 +1689,7 @@ void PluginProcessor::setStateInformation(const void* data, int sizeInBytes)
                                  std::memory_order_release);
     resetAssistantAudition();
     clearPendingProjectRestore();
+    rejection.accepted = true;
 }
 }
 

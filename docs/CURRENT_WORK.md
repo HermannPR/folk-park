@@ -1,6 +1,6 @@
 # Current work and mandatory agent handoff
 
-Last updated: 2026-08-23, America/Monterrey
+Last updated: 2026-08-24, America/Monterrey
 
 ## Read this first
 
@@ -34,7 +34,8 @@ The DOCX is the master product and engineering contract. Read it without modifyi
 ## Repository and Git state
 
 - Private repository: `HermannPR/folk-park`.
-- Current branch: `feat/m7-guided-assistant`, stacked exactly on `feat/m6-presets-history`.
+- Current branch: `feat/m8-release-hardening`, created at M7 handoff `eee67cf` and stacked exactly on `feat/m7-guided-assistant`.
+- Any M8 draft PR must use base exactly `feat/m7-guided-assistant` unless the documented stacked topology intentionally changes.
 - Any M7 draft PR must use base exactly `feat/m6-presets-history` unless the documented stacked topology intentionally changes.
 - M5 draft PR: <https://github.com/HermannPR/folk-park/pull/5>.
 - M6 private draft PR: <https://github.com/HermannPR/folk-park/pull/6>, base exactly `feat/m5-effects-preview`, head `feat/m6-presets-history`.
@@ -47,6 +48,14 @@ The DOCX is the master product and engineering contract. Read it without modifyi
 - Secure provider-settings checkpoint: `1415f70 Established secure Jarvis provider settings`.
 - Final M7 checkpoint: `5711496 Verified and documented the M7 checkpoint`.
 - M7 private draft PR: <https://github.com/HermannPR/folk-park/pull/7>, base exactly `feat/m6-presets-history`, head `feat/m7-guided-assistant`.
+- M8 contract checkpoint: `a6d9857 Established the M8 release hardening contract`.
+- M8 diagnostics checkpoint: `0b1c07e Implemented bounded release diagnostics`.
+- M8 runtime checkpoint: `203def5 Established deterministic runtime recovery evidence`.
+- M8 support/provenance checkpoint: `b92115b Established release support and provenance controls`.
+- M8 automated verification checkpoint: `e2df379 Verified and documented the M8 automated checkpoint`.
+- M8 private draft PR: <https://github.com/HermannPR/folk-park/pull/8>, base exactly `feat/m7-guided-assistant`, head `feat/m8-release-hardening`.
+- Post-M8 Compose repair checkpoint: `250c632 Hardened deferred Compose control updates`. The reported black WebView was traced to deferred React state updater callbacks reading a cleared `event.currentTarget`. The repair captures range/checkbox primitives before scheduling updates for all six macros, four part selectors, and both Settings presentation toggles. UI tests/lint/build pass 18/18, complete Release CTest passes 16/16, pluginval strictness 5 succeeds, and the repaired installed VST3 passes exact parity plus independent finite-audio MIDI rendering. Real Standalone/FL producer interaction remains pending.
+- Post-M8 Orbital Habitat implementation checkpoint: `b121e0e Implemented the Orbital Habitat visual system`. `ui/src/design-system.tsx` owns the reusable Button, IconButton, Panel, Sidebar, Navbar, Tabs, Slider, Knob, Toggle, Dropdown, Modal, Tooltip, TextInput, NumericInput, TextArea, ProgressBar, Meter, ContextMenu, Notification, and StatusIndicator primitives. `ui/src/styles.css` owns the complete token/material/background/responsive system; host controls preserve native JUCE gesture semantics. UI tests/lint/build pass 19/19, Release CTest passes 16/16, pluginval strictness 5 ends `SUCCESS`, and installed/build VST3 hash parity plus independent finite-audio MIDI render pass. Five real Release screenshots are retained under `evidence/m8/visual/`. FL Studio visual/input/listening checks remain human-required.
 - Earlier M6 commits are:
   - `735fb84 Established the M6 persistence and migration contracts`
   - `a69a8bc Implemented versioned native presets and validated assets`
@@ -74,7 +83,9 @@ Git rules:
 - M5: ordered Distortion → Chorus → tempo-synced Delay → Reverb → Compressor → Parametric EQ and isolated accepted-composition WAV rendering; automated gate passed; FL effects/render checks pending.
 - M6: native presets/assets/migration, transactional composition history, and editor-independent project recovery; automated gate verified; every FL persistence case remains human-required.
 - M7: composition text, guided Jarvis sound workflow, reversible A/B, optional secure provider boundary, and full automated/Release evidence; automated checkpoint verified, with every FL Studio case still human-required.
-- M8: host/release hardening, packaging, legal/asset audit, and release documentation; current continuation milestone, not yet implemented.
+- M8: host/release hardening, diagnostics, support/rollback tooling, legal/asset audit, and release documentation; complete automated checkpoint verified, with FL Studio and owner distribution decisions still pending.
+- Post-M8 visual system: Orbital Habitat reusable tokens/components, surreal CGI shell, physical host-aware controls, responsive/reduced-motion behavior, and real Release visual evidence are implemented and automatically verified.
+- Proposed next product milestone: Rhythm Lab is specified in `plans/RHYTHM_LAB.md`; implementation has not started and must not be confused with a shipped drum engine.
 
 Do not reimplement M0–M7. Preserve the oscillator displays, C2–B5 keyboard, held-key repeat behavior, effects, candidate/accepted MIDI boundary, accepted-only WAV workflow, transactional persistence, and explicit Jarvis A/B boundary while working on M8.
 
@@ -219,13 +230,18 @@ git log --oneline --decorate -12
 git diff --check
 git remote -v
 gh repo view HermannPR/folk-park --json visibility,nameWithOwner
-gh pr list --head feat/m6-presets-history --state all
-gh pr list --head feat/m7-guided-assistant --state all
+gh pr view 8 --json isDraft,state,baseRefName,headRefName,url
 ```
 
-Confirm the repository is still private, inspect every local change, and never discard work. Final M7 checkpoint `5711496` and draft PR #7 are pushed; only this M8 continuation handoff should be uncommitted before its own checkpoint. Clean UI/audit passes with 15/15 tests, Debug CTest passes 12/12, Release CTest passes 13/13, pluginval strictness 5 succeeds, installed/build VST3 parity and independent render pass, and real Release screenshots are retained. Review exact diffs, stage only the intended handoff paths, and use the impersonal subject `Established the M8 continuation handoff`.
+Confirm the repository remains private, branch `feat/m8-release-hardening` tracks its remote, and draft PR #8 remains stacked exactly on `feat/m7-guided-assistant`. Inspect every local change and never discard work. The complete M8 automated checkpoint is already committed and pushed; do not recreate the branch or repeat M0–M8 implementation.
 
-The M6 and M7 draft PRs already exist and the branches are correctly stacked. Preserve meaningful impersonal commits at every passing stage. The next boundary is M8 release hardening; do not enable a real remote adapter by assumption.
+The next exact boundary is human/owner evidence:
+
+1. For the real diagnostics visual, have Hermann open the Release Standalone, select `SETTINGS`, click `Preview diagnostics`, and leave the panel visible. Preview itself performs no clipboard/filesystem/network write. Capture only the real app window, retain it as `evidence/m8/standalone-m8-diagnostics.png`, hash it, then update `README.md`, `evidence/m8/verification.md`, `docs/M8_RELEASE_CHECKLIST.md`, and `docs/PROGRESS.md`. Never substitute a mockup or click Copy without explicit intent.
+2. Start with the six-step safe first session in `docs/FL_STUDIO_TEST_MATRIX.md`, using a new disposable FL project. Only Hermann's real observed result may replace `HUMAN RUN REQUIRED`; automated VST3 loading is not FL evidence. Stop before deeper/destructive recovery cases if discovery, insertion, audio, Stop/Panic, or project reopen fails.
+3. Use `docs/OWNER_RELEASE_DECISIONS.md` to record owner choices, then update the concise `docs/OPEN_DECISIONS.md` status before adding distribution work. Do not choose a CPU budget, JUCE license route, signing/notarization identity, legal identity, distribution/update channel, public privacy notice, asset approval, or remote provider by assumption.
+4. Re-run the complete Release/pluginval/install parity gate only if product/build code changes. Documentation-only human-evidence updates require focused link/diff/private-PR checks, not invented revalidation claims.
+5. Preserve meaningful impersonal commits and push only to the private M8 branch. Keep PR #8 a draft until the explicit remaining gates justify changing it.
 
 ## Current milestone: M8 release-candidate hardening
 
@@ -249,6 +265,56 @@ M8 starts from the verified M7 artifacts; it must not redesign or reimplement M0
 - Do not add a remote provider because Keychain exists. Provider selection remains open decision 5 and requires a separate privacy/consent review.
 - Do not claim signing/notarization, audible quality, FL compatibility, physical MIDI/audio-device behavior, or distribution readiness without exact evidence.
 - Keep the recruiter README factual and update screenshots only with real Release artifacts.
+
+### M8 diagnostics checkpoint established
+
+- `docs/M8_RELEASE_CHECKLIST.md` freezes defect severity, deliverables/evidence, diagnostics privacy, exact automated gates, and owner/human stop conditions.
+- ADR-0009 fixes a deterministic 4 KiB diagnostics preview, fixed sanitized codes/counters, callback-safe atomics, exact preview-before-copy enforcement, and the engineering-candidate label.
+- `src/diagnostics/Diagnostics.*` now formats only typed bounded configuration, fixed service codes, and counters; adversarial host text stops before newlines/path separators, and reports cannot reach 4 KiB.
+- The processor now publishes atomic sample-rate/block-size values, contains final non-finite output, and counts non-finite samples, direct/preview MIDI overflow, and rejected project state without callback formatting or allocation.
+- Settings implements a strict native Preview → exact-ID Copy workflow. Preview has no clipboard, filesystem, project, preference, database, provider, or network side effect.
+- UI tests/build: PASS, 16/16. Complete Debug Standalone/VST3 build and CTest: PASS, 13/13. Focused processor diagnostics and malformed-state integration: PASS. `git diff --check`: PASS.
+- No distribution setting, provider, owner decision, or FL Studio status changed. The prior M7 Release/pluginval evidence remains the latest complete Release gate.
+- `tests/RuntimeHardeningTests.cpp` now provides a practical 12-second default gate plus a bounded 120-second extended mode for finite synth/effects output, repeated note cycles, panic/release to zero voices, preview overflow recovery, and exact direct-MIDI Stop cleanup.
+- Final extended Debug observation on the documented Intel i9 Mac: 11,250 blocks / 120 simulated seconds at 48 kHz/512, four notes, 2×2 unison, all six effects, one panic; PASS in 87,280.9 ms (`0.727341×` realtime). This is evidence, not an owner-approved performance budget or FL result.
+- The processor integration suite reconstructs the editor three times while a host-held voice remains active. Complete Debug Standalone/VST3 build and CTest now pass 14/14; evidence is in `evidence/m8/runtime-hardening-debug.md`.
+- The legacy arbitrary `<4×` performance assertion is now a recorded finite positive measurement because M8 forbids inventing a product-owner CPU budget. Zero callback allocations and finite-output functional gates remain mandatory.
+- `scripts/verify_user_vst3.sh` performs read-only exact bundle, thin `x86_64`, deep/strict signature, executable hash, and size checks. Install defaults to no overwrite; `--replace` retains a timestamped rollback and verifies hash parity. Uninstall defaults to dry-run and `--execute` moves only the exact VST3 to Trash.
+- Install/repair/uninstall never touches `~/Library/Application Support/folk park`; presets, imported assets, history, projects, and exports remain producer data. `docs/SUPPORT_PLAYBOOK.md` documents backup, rescan, rollback, symptom recovery, and exact evidence fields.
+- `docs/PRIVACY.md`, `docs/PACKAGING.md`, `LICENSES.md`, and `THIRD_PARTY_NOTICES.md` now document offline/local data, diagnostics, private artifact contents, notice obligations, and unresolved legal/distribution gates.
+- The read-only release-material audit pins JUCE/VST3 license-file hashes and bundled React/React DOM/Scheduler/Three versions/licenses, rejects unreviewed runtime media/fonts/external UI URLs, and confirms built-ins/UI assets are project-authored code rather than bundled factory media.
+- Drag MIDI now uses unique temporary paths and the editor removes only its exact guarded non-symlink temp file on replacement/destruction. Focused MIDI, support-script, processor, and UI contract tests pass; installer dry-run verified the retained M7 Release bundle without changing it.
+- UI lint/contracts: PASS, 17/17. Complete Debug Standalone/VST3 build and CTest: PASS, 15/15. Read-only release-material audit: PASS.
+- Clean M8 Release build/CTest: PASS, 16/16 in 7.83 seconds. The packaged VST3 smoke instantiated and rendered finite centred stereo audio from MIDI.
+- Extended Release runtime: PASS, 11,250 blocks / 120 simulated seconds at 48 kHz/512 in 18,367 ms (`0.153058×` realtime); every sample remained finite and all runtime-recovery cases passed. This is not an owner-approved CPU budget.
+- pluginval 1.0.4 strictness 5: `SUCCESS`. The optional separate Steinberg-validator subtest remains unavailable because no validator executable is installed.
+- Release/installed VST3 hash: `9295e582e705837020f72f657105d5efd2213d5e8904dee628d7e55e52a82a84`. Release Standalone hash: `bb61054c5acf8f9fb3711acd49220dc6ddcf6508d4ea4bc5513d6e82c1778386`.
+- The exact validated M8 VST3 is installed. Thin `x86_64`, deep/strict signature, build/install hash parity, and independent installed-bundle MIDI render all pass. The prior M7 bundle is retained at `~/Library/Audio/Plug-Ins/VST3/folk park.vst3.backup-20260824T133139Z` for rollback; no producer data was touched.
+- Release-material, development-origin, authored-source `eval`, sensitive-token-form, seven-schema, repository-private, and diff checks pass. The one bundled `eval` occurrence is JUCE's pinned Android compatibility branch and is not used on Intel macOS.
+- `evidence/m8/verification.md` and the fresh strictness-5 validator log retain the exact automated result/hashes. The only visual evidence still pending is the real Release diagnostics panel after the producer performs the intentional Preview action; macOS denied accessibility automation, and no mockup or clipboard bypass is permitted.
+- Every FL Studio row remains `HUMAN RUN REQUIRED`. Signing/notarization, JUCE distribution licensing, final identity, asset approval, public privacy notice, remote provider, and an owner-approved CPU budget remain explicit owner decisions.
+- `docs/OWNER_RELEASE_DECISIONS.md` maps those gates to the exact 0.1 artifact identity, pinned JUCE 8 EULA, current Apple Developer ID/notarization requirements, ZIP/DMG/PKG and updater choices, privacy/asset/performance/provider boundaries, a recommended low-risk sequence, and one reply template. No choice or distribution action is authorized by that worksheet.
+
+### Post-M8 Compose control repair
+
+- The Compose macros were not native rotary controls; they were controlled React range inputs. Their handlers accessed `event.currentTarget.value` inside a functional `setMacros` updater. React may execute that updater after clearing `currentTarget`, which raised during state calculation and left only the WebView's black background.
+- Every affected handler now captures its primitive value synchronously. This covers Density, Rhythm, Tension, Human, Repeat, Variation, the four part checkboxes, and the two Settings presentation checkboxes.
+- `ui/src/interface-contract.test.ts` contains the regression boundary. UI tests/lint/build pass 18/18, and the serial embedded-UI Release rebuild plus complete CTest passes 16/16.
+- pluginval 1.0.4 strictness 5 ends `SUCCESS`; the log is retained at `evidence/m8/pluginval/pluginval-compose-repair-strictness-5.txt`.
+- The repaired bundle is installed at `~/Library/Audio/Plug-Ins/VST3/folk park.vst3` with executable SHA-256 `823bf765a1744b7de6e8232ef17ad4d93d209628e01dfd6f716b2dff14b0131d`. Thin `x86_64`, deep/strict signature verification, exact build/install parity, and an independent installed-bundle finite-stereo MIDI render pass. The former bundle remains at `~/Library/Audio/Plug-Ins/VST3/folk park.vst3.backup-20260824T140808Z`.
+- Do not claim a real interaction pass until Hermann moves the controls in the rebuilt Standalone and, separately, in FL Studio.
+
+### Post-M8 Orbital Habitat visual system
+
+- The interface now uses one code-native design system influenced by early pre-rendered CGI, synthetic materials, experimental workstation graphics, and psychedelic electronic culture. It does not reproduce third-party interface assets.
+- Shared design tokens cover the saturated palette, gradients, material highlights, depth, glows, shadows, radii, spacing, typography, and motion. CSS-authored egg/orbit/landscape geometry adds no runtime image, font, or network dependency.
+- Shared primitives cover all requested navigation, surface, input, feedback, overlay, meter, and status controls. Compose, Jarvis, modulation, native host controls, and Settings reuse the physical slider/knob/toggle language.
+- UI tests/lint/build pass 19/19. The final production bundle is 54.93 kB CSS (13.62 kB gzip) and 835.66 kB JavaScript (215.78 kB gzip); the only Vite warning is the known pinned JUCE Android compatibility helper.
+- Complete Release CTest passes 16/16. pluginval strictness 5 ends `SUCCESS` in `evidence/m8/pluginval/pluginval-orbital-theme-strictness-5.txt`.
+- Release/installed VST3 executable SHA-256 is `8b93eda7c06c28849fe825d99062fff31363bc2cba1c53725d1f2a3151354d71`; exact parity and the independent finite-stereo MIDI render pass. The previous bundle is retained at `~/Library/Audio/Plug-Ins/VST3/folk park.vst3.backup-20260824T143548Z`.
+- Release Standalone SHA-256 is `c34ff559eb46eeb347a6067d694473392f6f712529c0e20de4334e85f85175c9`.
+- Real Release visual inspection passes for Synth, Compose, Jarvis, FX, and History. These are appearance/navigation observations, not audible quality or FL Studio evidence.
+- The proposed next product-growth system is documented in `plans/RHYTHM_LAB.md`: hybrid synthesized/sampled drum voices, deterministic genre-aware patterns, lane locking/regeneration/editing, stems, and a rights-safe break slicer. Implementation has not started.
 
 ## Commands and local environment
 

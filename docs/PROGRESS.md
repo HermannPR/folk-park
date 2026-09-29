@@ -3,9 +3,82 @@
 ## Current checkpoint
 
 - Milestone: M8 — release-candidate hardening and distribution audit
-- Status: M7 automated checkpoint and private draft PR #7 are complete; M8 implementation has not started, and all FL Studio human runs remain required
-- Date: 2026-08-23 (America/Monterrey)
-- Branch: `feat/m7-guided-assistant`, stacked exactly on `feat/m6-presets-history`
+- Status: M8 complete automated checkpoint passes; real diagnostics screenshot, all FL Studio human runs, and owner distribution decisions remain required
+- Date: 2026-08-24 (America/Monterrey)
+- Branch: `feat/m8-release-hardening`, stacked exactly on `feat/m7-guided-assistant`
+
+## Post-M8 Compose control repair
+
+- Reproduced the reported black WebView after changing Compose macro controls as a React event-lifetime failure: the six macro handlers read `event.currentTarget` from inside deferred functional state updaters, after React was permitted to clear the event target.
+- Captured each primitive range/checkbox value synchronously before scheduling state updates. Applied the same correction to all six Compose macros, all four part selectors, and both Settings presentation toggles that shared the unsafe pattern.
+- Added an interface regression contract that rejects `event.currentTarget` access inside the affected deferred updaters.
+- UI tests/lint/build: PASS, 18/18. Reconfigured and rebuilt the embedded Release UI, Standalone, and VST3; complete Release CTest: PASS, 16/16, including packaged VST3 scan/instantiate/finite-audio rendering.
+- pluginval 1.0.4 strictness 5: `SUCCESS`, including editor lifecycle, state, automation, buses, and 44.1/48/96 kHz × 64/128/256/512/1024 samples. Retained log: `evidence/m8/pluginval/pluginval-compose-repair-strictness-5.txt`.
+- The exact repaired VST3 was installed with executable SHA-256 `823bf765a1744b7de6e8232ef17ad4d93d209628e01dfd6f716b2dff14b0131d`; architecture, deep/strict local signature, build/install parity, and an independent installed-bundle finite-stereo MIDI render pass.
+- The former installed bundle is preserved at `~/Library/Audio/Plug-Ins/VST3/folk park.vst3.backup-20260824T140808Z`. No presets, songs, history, user wavetables, exports, Application Support data, or other plug-ins were modified.
+- Producer interaction in the real Standalone and FL Studio remains human-required; automated validation does not convert either control-interaction row to PASS.
+
+## M8 checklist checkpoint
+
+- Froze the M8 release-candidate deliverables, evidence requirements, Critical/High defect gate, and the exact distinction between automated, owner-decision, and FL Studio human evidence.
+- Defined a deterministic 4 KiB opt-in diagnostic preview containing bounded configuration, sanitized subsystem codes, and lock-free fault counters only.
+- Prohibited prompts, credentials, paths, filenames, project/preset identity, audio/MIDI content, database rows, clipboard contents, persistence, and provider transmission from diagnostics.
+- ADR-0009 requires native enforcement of exact preview-before-copy and preserves message-thread-only formatting/clipboard work.
+- No signing, licensing, provider, distribution, or FL Studio decision is inferred by this checkpoint.
+
+## M8 bounded diagnostics checkpoint
+
+- Added a deterministic native report below 4 KiB with build type/version, x86_64 architecture, wrapper/host when safely supplied, sample rate, block size, active voices, fixed subsystem codes, and typed fault counters.
+- Host/build text is length-bounded and stops before line/path separators. Reports exclude paths, filenames, project/preset identity, prompts, audio/MIDI content, persistence rows/messages, provider data, credentials, and arbitrary workflow errors.
+- Converted active audio setup to atomic publication and added callback-safe relaxed counters for final non-finite containment, direct/preview MIDI queue overflow, and rejected host project state. Callback work remains bounded and does not format diagnostics.
+- Added an opaque preview session: only the exact current preview ID can retrieve the exact previewed text for native clipboard copying. React rejects malformed/oversized previews and disables Copy until Preview succeeds.
+- UI contracts/build: PASS, 16/16. Complete Debug Standalone and VST3 build: PASS. Complete Debug CTest: PASS, 13/13. Focused diagnostics and processor integration: PASS. `git diff --check`: PASS.
+- This is a Debug implementation checkpoint, not a final M8 Release gate. The M7 Release/pluginval/install evidence remains current; every FL Studio row remains `HUMAN RUN REQUIRED`.
+
+## M8 runtime-hardening Debug checkpoint
+
+- Added a deterministic runtime suite with a 12-second routine mode and bounded `FOLK_PARK_RUNTIME_SECONDS=120` evidence mode.
+- The suite checks every output sample for finiteness across repeated note cycles and all six effects, executes panic, waits for zero active voices, proves preview held-key idempotence and full-queue recovery, and proves direct-MIDI Stop emits the tracked note-off and clears pending/playing state.
+- Reconstructed and destroyed the bundled editor three times while a host-held note continued through the processor callback; audio and voice ownership remained independent from WebView lifetime.
+- Final extended Debug run: PASS — 11,250 blocks, 120 simulated seconds, 48 kHz/512, four notes, 2×2 unison, all effects, one panic, 87,280.9 ms internal elapsed, `0.727341×` realtime.
+- Complete Debug Standalone/VST3 build: PASS. Complete Debug CTest: PASS, 14/14. Retained evidence: `evidence/m8/runtime-hardening-debug.md`.
+- Removed the legacy arbitrary `<4×` CPU failure threshold while retaining finite output, positive measurement, zero callback allocations, and printed performance evidence. An owner-approved CPU budget remains unresolved.
+- No FL Studio, listening, physical device, Release parity, distribution, provider, or legal status changed.
+
+## M8 supportability and provenance checkpoint
+
+- Added read-only VST3 verification for exact bundle shape, thin `x86_64`, deep/strict signature, executable SHA-256, and size.
+- Made first install refuse an existing destination by default. Explicit `--replace` preserves a timestamped rollback, verifies copy hash parity, retains a failed candidate, and restores the previous bundle on verification failure.
+- Added dry-run-by-default uninstall that moves only the exact user VST3 to a unique Trash item on `--execute`; it never removes Application Support or producer work.
+- Added a full support playbook for backup, build, verify, install, FL rescan, repair, rollback, uninstall, diagnostics, no-sound/stuck-note/WebView/persistence/project-state recovery, and human evidence fields.
+- Added explicit privacy and private-packaging documents plus consolidated runtime notices and project asset inventory.
+- Added a read-only audit for the pinned JUCE/VST3 license files, exact bundled UI runtime versions/licenses, unexpected tracked runtime media/fonts, and external UI origins. Audit and shell contract tests: PASS.
+- Made concurrent drag MIDI paths unique and added guarded editor cleanup for only its exact app-generated temp file. UI contracts: PASS, 17/17. Focused MIDI/support/processor CTest: PASS, 3/3.
+- Installer dry-run verified the existing retained M7 Release VST3: thin `x86_64`, deep/strict signature verification, executable SHA-256 `b17c88bab2c1356c7b01980b96f918a28acbdd337f7ee2e437f9c63a7d7119ca`; no install or replacement was executed.
+- Complete Debug Standalone/VST3 build: PASS. Complete Debug CTest: PASS, 15/15 in 16.23 seconds. UI lint/contracts: PASS, 17/17.
+- JUCE license route, legal identity, public privacy notice, signing/notarization, installer/update channel, asset approval, provider, CPU budget, and every FL result remain unresolved owner/human gates.
+
+## M8 final automated verification checkpoint
+
+- Clean pinned UI install and production audit: PASS, 34 packages and 0 vulnerabilities. UI tests/lint/build: PASS, 17/17.
+- Complete Release Standalone/VST3 build and CTest: PASS, 16/16 in 7.83 seconds, including the packaged VST3 scan/instantiate/finite-stereo MIDI render.
+- Extended Release recovery run: PASS, 11,250 blocks / 120 simulated seconds at 48 kHz/512 in 18,367 ms (`0.153058×` realtime) with repeated notes, 2×2 unison, all effects, panic/release, preview overflow recovery, direct-MIDI Stop, and editor reconstruction.
+- Release VST3 and Standalone are thin Mach-O `x86_64`; the VST3 local ad-hoc signature verifies deeply/strictly. The unsigned Standalone remains a private engineering artifact.
+- pluginval 1.0.4 strictness 5: `SUCCESS`; log retained at `evidence/m8/pluginval/pluginval-release-strictness-5.txt`.
+- Installed user VST3: PASS; installed/build hash parity, architecture/signature verification, and independent MIDI rendering pass. The previous bundle remains as timestamped rollback; no Application Support or producer data was touched.
+- Release/installed VST3 SHA-256: `9295e582e705837020f72f657105d5efd2213d5e8904dee628d7e55e52a82a84`.
+- Release Standalone SHA-256: `bb61054c5acf8f9fb3711acd49220dc6ddcf6508d4ea4bc5513d6e82c1778386`.
+- Release-material, development-origin, authored-source `eval`, sensitive-token-form, seven-schema, private-repository, and diff gates pass. The one embedded `eval` belongs to JUCE's pinned Android user-script compatibility branch and is not invoked by the Intel macOS target.
+- Full result, methods, limitations, and hashes: `evidence/m8/verification.md`. The real Release diagnostics screenshot awaits the producer-visible Preview action because macOS denied accessibility automation; no mock visual or clipboard bypass is accepted.
+- Every FL Studio row remains `HUMAN RUN REQUIRED`. Owner decisions for CPU budget, JUCE distribution licensing, signing/notarization, identity, distribution, privacy notice, asset approval, and remote provider remain unresolved.
+
+## M8 owner decision-readiness checkpoint
+
+- Added `docs/OWNER_RELEASE_DECISIONS.md` as a non-authorizing worksheet for private/closed-beta/public/commercial intent; JUCE 8 licensee/route/eligibility/seats; stable product/legal identity; Apple Developer ID/notarization; ZIP/DMG/PKG and updates; public privacy; asset/name approval; FL-informed CPU budget; provider scope; and the no-Serum-state compatibility statement.
+- Mapped the exact current facts: `folk park` 0.1.0, `com.folkpark.audio.folkpark`, `FlPk/FkP1`, JUCE 8.0.13 at the pinned commit, ad-hoc VST3, unsigned Standalone, no notarization/installer/updater/network/provider, and private repository status.
+- Verified the controlling JUCE 8 EULA currently publishes Starter/Indie/Pro/Educational thresholds and terms, makes the Product Owner responsible for licensing, and defines Framework User seats. Agent-assisted development is not inferred; written JUCE clarification is required if relevant.
+- Verified Apple currently requires program membership, Developer ID signing, hardened-runtime/notarization preparation, and current notarization tooling for a normal outside-App-Store distribution path. No certificate, account, credential, purchase, signing, submission, or publication was accessed or performed.
+- Recommended—but did not authorize—the low-risk order: private review and FL smoke → owner/license/identity decisions → signed/notarized manual ZIP beta → PKG only after install/rollback evidence; offline-only/manual-update for 0.1.
 
 ## M7 contract checkpoint
 
@@ -274,6 +347,19 @@
 - `tests/PluginTests.cpp`
 - `tests/Vst3SmokeTests.cpp`
 
+## Post-M8 Orbital Habitat visual checkpoint
+
+- Established one original retro-CGI design language across Synth, Compose, Jarvis, FX, History, Settings, navigation, status, and overlays. No third-party interface asset, external runtime image/font, or network URL was added.
+- Added shared visual tokens for palette, gradients, physical materials, specular highlights, depth, glows, radii, spacing, typography, and motion, including low-graphics and reduced-motion fallbacks.
+- Added reusable Button, IconButton, Panel, Sidebar, Navbar, Tabs, Slider, Knob, Toggle, Dropdown, Modal, Tooltip, TextInput, NumericInput, TextArea, ProgressBar, Meter, ContextMenu, Notification, and StatusIndicator components.
+- Refactored host-aware sliders, knobs, selects, and toggles without changing JUCE parameter gesture ownership. Compose and Jarvis now reuse the same physical controls while retaining the deferred-event repair.
+- UI contracts/lint/build: PASS, 19/19. Production bundle: local 0.40 kB index, 54.93 kB CSS (13.62 kB gzip), and 835.66 kB JavaScript (215.78 kB gzip).
+- Complete Release CTest: PASS, 16/16. pluginval 1.0.4 strictness 5: `SUCCESS` across editor, processing, state, automation, buses, and its supported sample-rate/block matrix.
+- Installed/build VST3 exact executable hash parity and independent finite-audio MIDI render: PASS. VST3 SHA-256: `8b93eda7c06c28849fe825d99062fff31363bc2cba1c53725d1f2a3151354d71`; Standalone SHA-256: `c34ff559eb46eeb347a6067d694473392f6f712529c0e20de4334e85f85175c9`.
+- The previous user VST3 remains recoverable at `~/Library/Audio/Plug-Ins/VST3/folk park.vst3.backup-20260824T143548Z`. No project, preset, sample, history, export, or FL Studio data was touched.
+- Actual Release Standalone screenshots and visual/navigation inspection are retained for Synth, Compose, Jarvis, FX, and History under `evidence/m8/visual/`. This is not an audible or FL Studio pass.
+- Established `plans/RHYTHM_LAB.md` as the separate future drum-product plan. It requires audible hybrid drum voices, deterministic patterns, per-lane control, stems, and a licensed/original/user-import break slicer; implementation has not started.
+
 ## Human-required status
 
 - Standalone physical keyboard/audio-device playability: PARTIAL. Automated real-window C3 hold/repeat/release passed; listening through the user's selected audio device remains human.
@@ -305,4 +391,4 @@
 
 ## Next smallest verifiable task
 
-Implement and test the macOS Keychain credential abstraction plus honest offline/provider settings without enabling a real remote adapter. Keep every unexecuted FL Studio case marked HUMAN RUN REQUIRED.
+Capture the real Release diagnostics panel after Hermann deliberately clicks Preview, then run the safe first FL Studio session in `docs/FL_STUDIO_TEST_MATRIX.md` using a new disposable project. Record only Hermann's observed results; keep every unexecuted case `HUMAN RUN REQUIRED`. Do not begin rollback/uninstall, asset/database failure, signing, licensing, provider, or distribution work without its separate explicit owner boundary.

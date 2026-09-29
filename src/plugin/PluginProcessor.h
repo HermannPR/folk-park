@@ -2,6 +2,7 @@
 
 #include "assistant/AssistantAudition.h"
 #include "assistant/OfflineAssistant.h"
+#include "diagnostics/Diagnostics.h"
 #include "effects/EffectChain.h"
 #include "midi/CompositionSession.h"
 #include "midi/MidiDelivery.h"
@@ -147,14 +148,8 @@ public:
     {
         return directMidiPlayer.isPlaying() || directMidiPlayer.hasPendingSchedule();
     }
-    [[nodiscard]] bool previewNoteOn(int note, int velocity) noexcept
-    {
-        return previewMidiQueue.enqueueNoteOn(note, velocity);
-    }
-    [[nodiscard]] bool previewNoteOff(int note) noexcept
-    {
-        return previewMidiQueue.enqueueNoteOff(note);
-    }
+    [[nodiscard]] bool previewNoteOn(int note, int velocity) noexcept;
+    [[nodiscard]] bool previewNoteOff(int note) noexcept;
     void releasePreviewNotes() noexcept { previewMidiQueue.requestReleaseAll(); }
     [[nodiscard]] bool publishWavetable(int oscillatorIndex,
                                         const synth::WavetableBank& bank);
@@ -194,6 +189,7 @@ public:
         return wavetableImportService.getSnapshot();
     }
     [[nodiscard]] int getActiveVoiceCount() const noexcept { return engine.getActiveVoiceCount(); }
+    [[nodiscard]] diagnostics::Snapshot getDiagnosticsSnapshot() const;
     [[nodiscard]] juce::Result initialisePersistence();
     [[nodiscard]] persistence::PersistenceStatusSnapshot getPersistenceStatus() const;
     [[nodiscard]] persistence::PresetLibraryResult listPresets();
@@ -275,6 +271,10 @@ private:
     assistant::OfflineAssistantEngine offlineAssistant;
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> masterGain;
     std::atomic<bool> panicRequested{false};
+    std::atomic<std::uint64_t> nonFiniteOutputSamples{0};
+    std::atomic<std::uint64_t> directMidiOverflows{0};
+    std::atomic<std::uint64_t> previewMidiOverflows{0};
+    std::atomic<std::uint64_t> rejectedProjectStates{0};
 
     struct OscillatorParameterPointers
     {
@@ -371,8 +371,8 @@ private:
     juce::String lastHistoryEntryId;
     std::vector<juce::String> lastHistoryClipIds;
 
-    double activeSampleRate = 0.0;
-    int activeBlockSize = 0;
+    std::atomic<double> activeSampleRate{0.0};
+    std::atomic<int> activeBlockSize{0};
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginProcessor)
 };

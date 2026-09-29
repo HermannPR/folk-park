@@ -4,7 +4,23 @@
 
 `folk park` combines a playable dual-wavetable instrument, MIDI idea generation, an ordered effects chain, offline audio rendering, and crash-aware local persistence in one Standalone/VST3 product. Release 0.1 targets FL Studio on Intel (`x86_64`) macOS.
 
-> **Current status — M7 automated checkpoint verified.** The Intel Standalone/VST3 Release artifacts build, all 13 Release suites pass, pluginval 1.0.4 succeeds at strictness 5, and the installed VST3 independently renders audio from MIDI. M7 adds the connected offline Jarvis workspace, guided sound questions, explained reversible A/B proposals, text-to-composition candidates, and a native macOS Keychain boundary for a future opt-in provider. FL Studio checks remain explicitly human-required; distribution hardening remains M8.
+> **Current status — M8 automated checkpoint verified.** The private Intel Standalone/VST3 candidate passes 19/19 UI contracts, 16/16 Release suites, a 120-second deterministic recovery run, pluginval 1.0.4 at strictness 5, and an independent render through the exact installed VST3. FL Studio checks, listening, signing/notarization, JUCE distribution licensing, final identity, and public-distribution decisions remain explicitly unresolved; this is not yet a public binary release.
+
+> **Latest repair.** The Compose macros no longer retain React event objects inside deferred state updates, fixing the reported black interface when moving Repeat and the other musical controls. The focused UI gate passes 18/18, the rebuilt Release suite passes 16/16, pluginval strictness 5 ends `SUCCESS`, and the exact repaired VST3 is installed with verified hash parity plus an independent finite-audio MIDI render. Real Standalone control interaction and FL Studio confirmation remain producer-required.
+
+> **Latest visual checkpoint.** The complete interface now uses the original **Orbital Habitat** design system: reusable retro-CGI materials, physical controls, saturated instrument colors, coherent navigation, motion/reduced-motion tokens, and an authored surreal workstation environment. The final Release build passes 19/19 UI contracts, 16/16 native suites, pluginval strictness 5, installed-bundle hash parity, and an independent MIDI render. The screenshots below are captures of the real Release Standalone, not concept art.
+
+## Reviewer quick start
+
+This repository is designed to be evaluated as a working audio product rather than a static interface exercise:
+
+1. Start with the real Release screenshots in the product tour below.
+2. Read [Architecture](docs/ARCHITECTURE.md) and [Real-time safety](docs/REALTIME_SAFETY.md) for the native ownership and callback model.
+3. Review [M8 verification](evidence/m8/verification.md) for exact commands/results, artifact hashes, environment, retained validator output, and limitations.
+4. Inspect `src/plugin`, `src/synth`, `src/midi`, `src/persistence`, `src/assistant`, and `ui/src` using the repository guide below.
+5. Build with the pinned commands in [Build and run](#build-and-run). No API account or key is required for the complete offline/manual workflow.
+
+The strongest engineering themes are real-time safety, transactional state, deterministic generation, strict native/WebView contracts, failure isolation, evidence-based release claims, and producer-controlled AI assistance.
 
 ## Product tour
 
@@ -12,31 +28,31 @@
 
 Both oscillators display the real bounded wavetable data, current frame position, and derived spectrum. A four-octave C2–B5 keyboard supports touch/mouse play plus an octave-shiftable computer-key zone. Held macOS keys sustain once instead of retriggering from keyboard repeat.
 
-![folk park Synth workspace with dual wavetable visualizers and four-octave keyboard](evidence/m6/standalone-m6-synth.png)
+![folk park Orbital Habitat Synth workspace with dual wavetable visualizers and four-octave keyboard](evidence/m8/visual/orbital-synth.png)
 
 ### Compose musical ideas
 
 The deterministic composition engine creates chords, melody, bass, and arpeggios from seed, key, scale, tempo, length, and musical macro controls. A candidate can be inspected and edited in the piano roll; export, drag, routing, and WAV rendering use only an explicitly accepted result.
 
-![folk park Compose workspace with musical controls and generated piano roll](evidence/m6/standalone-m6-compose.png)
+![folk park Orbital Habitat Compose workspace with physical macro rods and generated piano roll](evidence/m8/visual/orbital-compose.png)
 
 ### Shape and render
 
 The fixed serial chain is Distortion → Chorus → tempo-synced Delay → Reverb → Compressor → Parametric EQ. Every stage has an independent gain-safe bypass, stable host parameters, bounded DSP, and a 10 ms transition. Accepted compositions can be rendered to stereo 24-bit/48 kHz WAV in an isolated offline engine without seeking or resetting live voices.
 
-![folk park FX workspace with the ordered six-stage effects chain](evidence/m6/standalone-m6-fx.png)
+![folk park Orbital Habitat FX workspace with physical knobs and the ordered effects chain](evidence/m8/visual/orbital-fx.png)
 
 ### Save, search, and recover
 
 Versioned `.folkparkpreset` files store the complete sound, modulation, effects, metadata, and content-addressed user wavetable references. Searchable SQLite composition history keeps stable IDs, lineage, favorites, tags, recoverable deletion, comparison, and recall. Missing assets produce an explicit exact-hash relink flow instead of a partial project mutation.
 
-![folk park History workspace with native preset and recovery controls](evidence/m6/standalone-m6-history.png)
+![folk park Orbital Habitat History workspace with native preset and recovery controls](evidence/m8/visual/orbital-history.png)
 
 ### Ask Jarvis without surrendering control
 
 The M7 workspace accepts a typed sound goal or musical idea. For sound design, producers can describe the result directly or use a walkthrough that asks no more than two focused questions at a time. Jarvis then shows its interpretation, assumptions, confidence, and every proposed current→new parameter value. Original A remains audible until the producer chooses proposal B; acceptance or rejection is always explicit. For composition, text creates only a candidate that must still be reviewed in the existing piano roll before delivery.
 
-![folk park Jarvis workspace actively auditioning proposal B with explained parameter changes and explicit acceptance](evidence/m7/standalone-m7-jarvis-ab.png)
+![folk park Orbital Habitat Jarvis workspace with typed and guided production workflows](evidence/m8/visual/orbital-jarvis.png)
 
 The current engine is intentionally honest: it is a deterministic offline production helper, not a general-purpose LLM. It requires no account, key, or network. A native settings panel reports that nothing leaves the Mac and no credential is configured. The typed provider and macOS Keychain boundaries exist for later opt-in integration, but no remote adapter has been selected or enabled; that still requires a product-owner choice, a provider-specific privacy disclosure, and per-request consent.
 
@@ -52,7 +68,16 @@ This is not only a UI prototype. The repository contains the instrument DSP, hos
 - **Composition is deterministic and testable.** One normalized intent and seed produce bounded host-independent events. Candidate and accepted bundles are separate so generation or editing cannot silently replace deliverable material.
 - **Offline rendering is isolated.** WAV preview uses separate synth/effect instances built from immutable snapshots, then validates the temporary output before replacing a user-approved destination.
 - **Credentials stay behind a native boundary.** The future-provider store accepts only bounded opaque bytes under exact identifiers, uses macOS Keychain with a device-only accessibility class, and never exposes credential values to React, presets, DAW state, logs, or Git.
+- **Diagnostics are inspectable before disclosure.** A producer can preview a deterministic sub-4-KiB technical report before copying it. It contains fixed build/host/audio/status fields and counters—not paths, project or preset names, prompts, audio, database content, or credentials.
 - **Evidence is retained.** Each milestone records tests, validator logs, artifact hashes, visual checks, known limitations, and the exact boundary between automation and human host verification.
+
+## Orbital Habitat visual system
+
+The interface is an original code-native translation of early pre-rendered CGI, experimental 1990s workstation graphics, tactile toys, and psychedelic electronic culture. It does not reproduce another product's interface or assets. CSS geometry creates the egg, orbital dock, distant forms, horizon grid, plastic slabs, rim light, ambient occlusion, and glossy controls; no external image, font, or runtime URL is required.
+
+Reusable design tokens cover the ultraviolet/lime/magenta/turquoise palette, material gradients, surface depth, specular highlights, shadows, glows, radii, spacing, typography, and spring-like timing. Shared React primitives include Button, IconButton, Panel, Sidebar, Navbar, Tabs, Slider, Knob, Toggle, Dropdown, Modal, Tooltip, TextInput, NumericInput, TextArea, ProgressBar, Meter, ContextMenu, Notification, and StatusIndicator. Host-aware versions preserve JUCE parameter gestures and automation ownership.
+
+The visual hierarchy stays functional: dark translucent work surfaces carry readable content; glossy physical controls sit above them; bright color is reserved for active state and focus; status gems sit at the top and bottom edges. Low-graphics and reduced-motion preferences remove decorative movement while keeping the same layout and control semantics.
 
 ## Architecture
 
@@ -120,7 +145,7 @@ Reliability tests cover malformed and oversized project state, future/duplicate/
 | --- | --- |
 | Audio/host | C++20, JUCE 8.0.13 pinned by commit, VST3 + Standalone |
 | DSP | Fixed-capacity custom wavetable, modulation, voice, filter, effects, and render engines |
-| UI | React 19, TypeScript, Vite, Three.js, bundled through JUCE WebView resources |
+| UI | React 19, TypeScript, Vite, Three.js, custom Orbital Habitat component/tokens system, bundled through JUCE WebView resources |
 | Persistence | Versioned JSON schemas, atomic native files, SHA-256 asset store, system SQLite |
 | Assistant | Deterministic offline parser/walkthrough, typed catalog proposals, asynchronous provider boundary, native macOS Keychain store |
 | Build | CMake presets, Ninja, Apple clang, Intel `x86_64` only for 0.1 |
@@ -182,6 +207,28 @@ The final M7 gate was verified on 2026-08-23 in America/Monterrey:
 
 Actual Release interaction verifies native privacy status, explained proposal creation, original/proposal switching, rejection restoring A, and the guided two-question flow advancing to its next pair. The screenshots in this section are real M7 Release captures. Complete logs, hashes, observations, and additional captures are retained under [evidence/m7](evidence/m7/). Automated success is not an FL Studio or audible-quality pass.
 
+## Verified M8 automated checkpoint
+
+M8 has established a native privacy-safe diagnostics surface and stronger fault containment without changing the sound/preset contracts. Audio configuration is atomically observable; final non-finite samples are replaced with silence; overflow and malformed-state events increment bounded counters. The Settings UI requires a complete preview before it can copy the exact report associated with that preview ID. Previewing performs no filesystem, preference, project, database, provider, network, or clipboard write.
+
+The final automated gate was verified on 2026-08-24 in America/Monterrey:
+
+| Gate | Result |
+| --- | --- |
+| Clean UI install/audit | PASS — 34 packages, 0 vulnerabilities |
+| UI contracts and strict TypeScript | PASS — 17/17 |
+| Debug native/integration suites | PASS — 15/15 |
+| Release native/integration + packaged VST3 smoke | PASS — 16/16 |
+| Extended Release recovery run | PASS — 120 simulated seconds, 11,250 blocks, finite output |
+| pluginval 1.0.4 strictness 5 | SUCCESS |
+| Release artifacts | Thin Mach-O `x86_64` Standalone and VST3 |
+| Installed VST3 parity | Exact hashes match; signature/architecture verify; independent MIDI render passes |
+| Release/installed VST3 SHA-256 | `9295e582e705837020f72f657105d5efd2213d5e8904dee628d7e55e52a82a84` |
+| Release Standalone SHA-256 | `bb61054c5acf8f9fb3711acd49220dc6ddcf6508d4ea4bc5513d6e82c1778386` |
+| Release material/security/schema scans | PASS — seven schemas; private repository confirmed |
+
+The Release runtime probe exercised repeated notes, 2×2 unison, all six effects, panic/release, preview-overflow recovery, direct-MIDI Stop, and three editor reconstructions while checking every output sample for finiteness. It measured `0.153058×` realtime on the documented Intel i9 machine. That is reproducible one-machine evidence, not an owner-approved CPU budget or an audible-quality claim. The complete report and validator log are retained under [evidence/m8](evidence/m8/).
+
 ## Build and run
 
 ### Requirements
@@ -237,6 +284,8 @@ Release products are generated at:
 
 For local FL Studio testing, `./scripts/install_user_vst3.sh release` copies the validated bundle to `~/Library/Audio/Plug-Ins/VST3/folk park.vst3`. This is an engineering install, not a signed/notarized distribution package.
 
+The installer is conservative: `--dry-run` is read-only, replacing an existing bundle requires explicit `--replace`, the previous bundle is retained for rollback, and architecture/signature/hash parity are verified. `./scripts/uninstall_user_vst3.sh --execute` moves only the exact VST3 to Trash and never touches presets, imported wavetable assets, history, exports, or DAW projects. The full operational guide is [Support playbook](docs/SUPPORT_PLAYBOOK.md); privacy behavior is documented in [Privacy](docs/PRIVACY.md).
+
 ## Repository guide
 
 | Path | Purpose |
@@ -249,6 +298,7 @@ For local FL Studio testing, `./scripts/install_user_vst3.sh release` copies the
 | `src/plugin` | JUCE host adapter, project state, native bridge, editor lifecycle |
 | `src/assistant` | Typed contracts, deterministic offline intent/proposal engine, and provider boundary |
 | `src/platform` | Native platform services, including the bounded macOS Keychain credential store |
+| `src/diagnostics` | Typed sub-4-KiB reports and exact preview-before-copy ownership |
 | `ui/src` | React workspaces, host controls, piano, visualizers, bridge validation |
 | `schemas` | Versioned public JSON compatibility contracts |
 | `tests` | DSP, property, persistence, bridge, real-time, and packaged VST3 coverage |
@@ -268,14 +318,18 @@ The canonical continuation point for another coding session is [docs/CURRENT_WOR
 | M5 | Six ordered effects and isolated accepted-composition WAV preview | Automated gate passed; FL effects/WAV checks pending |
 | M6 | Native presets, migrations, assets, searchable history, project recovery | Automated gate verified; FL persistence checks pending |
 | M7 | Offline Jarvis text workflow, adaptive sound questions, explained A/B proposals, optional secure provider | Automated gate verified; FL Jarvis/project checks pending |
-| M8 | FL Studio matrix, performance/recovery hardening, packaging, legal/asset audit, release docs | Coming next |
+| M8 | FL Studio matrix, diagnostics/performance/recovery hardening, packaging, legal/asset audit, release docs | Automated gate verified; FL human matrix and owner distribution decisions pending |
+| Post-M8 visual checkpoint | Orbital Habitat theme, reusable physical controls, coherent responsive shell | Implemented and automated gates verified; FL visual/input confirmation pending |
+| Rhythm Lab | Audible hybrid drum engine, genre-aware generation, lane locking/editing, stems, and safe break slicing | Product plan established; implementation not started |
 
 The connected M7 workflow now asks focused sound-design questions, translates complete answers into bounded explanations, and exposes reversible A/B plus explicit accept/reject in the product interface. Offline/manual operation remains complete; an optional model provider cannot bypass the parameter catalog, embed user keys, or directly control the DAW.
 
-Coming next, M8 turns the private engineering build into a release candidate: complete human FL Studio runs, x86_64 performance/recovery baselines, distribution signing/notarization decisions, licensing and asset-rights review, packaging, troubleshooting, and final release documentation.
+Next in M8: complete the human FL Studio matrix and resolve the owner decisions for CPU budget, signing/notarization, JUCE licensing, final identity, distribution, privacy notice, and asset approval. A diagnostics screenshot will be retained only from the real Release Standalone after the producer performs the intentional Preview action; no mockup will substitute for it.
+
+The next product-growth plan is [Rhythm Lab](plans/RHYTHM_LAB.md). It separates deterministic rhythm generation from an audible hybrid drum engine, adds per-lane lock/regenerate/edit controls, and treats Amen-style material as a licensed/original/user-import break-slicing workflow rather than silently bundling a copyrighted recording.
 
 ## Scope, originality, and release boundary
 
 `folk park` is an original product and does not copy Serum code, interface assets, presets, wavetables, private state formats, or license behavior. User audio is accepted only through the documented WAV conversion boundary.
 
-This repository currently produces private engineering artifacts. Public binary distribution remains blocked until JUCE distribution licensing, signing/notarization, final product identity, privacy/legal review, and asset-rights decisions are resolved. See [Compatibility and legal](docs/COMPATIBILITY_AND_LEGAL.md), [licenses](LICENSES.md), and [open decisions](docs/OPEN_DECISIONS.md).
+This repository currently produces private engineering artifacts. Public binary distribution remains blocked until JUCE distribution licensing, signing/notarization, final product identity, privacy/legal review, and asset-rights decisions are resolved. See [Compatibility and legal](docs/COMPATIBILITY_AND_LEGAL.md), [licenses](LICENSES.md), [third-party notices](THIRD_PARTY_NOTICES.md), [packaging notes](docs/PACKAGING.md), the detailed [owner release-decision worksheet](docs/OWNER_RELEASE_DECISIONS.md), and the concise [open-decision index](docs/OPEN_DECISIONS.md).

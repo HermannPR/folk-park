@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getNativeFunction } from "@juce/index.js";
+import { ProgressBar, Slider } from "./design-system.tsx";
 import { parseGuidedProgress, parseJarvisAuditionState, parseJarvisCompositionResult,
   type CompositionSnapshot, type GuidedProgress, type GuidedQuestion, type JarvisAuditionState,
   type JarvisCompositionResult } from "./protocol.ts";
@@ -222,12 +223,12 @@ export function JarvisView({ draft, onDraftChange, announce, refreshSound,
         {questionInputs.length === 0 && <p>Jarvis asks no more than two focused questions at a time. Start the walkthrough to define role, tone, articulation, movement, space, intensity, and genre.</p>}
         {questionInputs.map((question) => {
           const key = answerKeyByQuestionId[question.id];
-          return <label className="jarvis-question" key={question.id}><strong>{question.prompt}</strong><small>{question.purpose}</small>
-            {key === "intensity" ? <><input type="range" min="0" max="1" step="0.01" value={answers.intensity ?? .5} onChange={(event) => setAnswer(key, Number(event.currentTarget.value))} /><output>{(answers.intensity ?? .5).toFixed(2)}</output></>
-              : <input maxLength={key === "timbre" ? 256 : 128} value={String(answers[key] ?? "")} onChange={(event) => setAnswer(key, event.currentTarget.value)} placeholder={questionLabels[key]} />}
-          </label>;
+          return <div className="jarvis-question" key={question.id}><strong>{question.prompt}</strong><small>{question.purpose}</small>
+            {key === "intensity" ? <Slider label="Intensity" output={(answers.intensity ?? .5).toFixed(2)} tone="pink" min="0" max="1" step="0.01" value={answers.intensity ?? .5} onChange={(event) => setAnswer(key, Number(event.currentTarget.value))} />
+              : <input aria-label={question.prompt} maxLength={key === "timbre" ? 256 : 128} value={String(answers[key] ?? "")} onChange={(event) => setAnswer(key, event.currentTarget.value)} placeholder={questionLabels[key]} />}
+          </div>;
         })}
-        {progress !== null && <div className="progress-track" aria-label={`${Math.round(progress.completion * 100)}% complete`}><i style={{ width: `${progress.completion * 100}%` }} /></div>}
+        {progress !== null && <ProgressBar value={progress.completion} label={`${Math.round(progress.completion * 100)}% complete`} />}
         {questionInputs.length > 0 && <button disabled={busy || questionInputs.some((question) => {
           const value = answers[answerKeyByQuestionId[question.id]];
           return value === null || (typeof value === "string" && value.trim().length === 0);

@@ -27,6 +27,7 @@ private:
     void timerCallback() override;
 
     PluginProcessor& ownerProcessor;
+    diagnostics::PreviewSession diagnosticsPreviewSession;
     juce::WebSliderRelay masterGainRelay{parameterIds::masterGain};
     juce::WebSliderRelay cutoffRelay{parameterIds::filterCutoff};
     juce::WebSliderRelay attackRelay{parameterIds::ampAttack};

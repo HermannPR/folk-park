@@ -14,6 +14,7 @@ Build `folk park` 0.1 as an original Intel macOS x86_64 VST3 instrument and Stan
 - `src/synth`, `src/modulation`, `src/filters`, `src/effects`: real-time DSP only.
 - `src/midi`, `src/assistant`: bounded composition and validated intent outside the audio callback.
 - `src/persistence`, `src/platform`: filesystem, database, and Keychain abstractions.
+- `src/diagnostics`: bounded non-realtime technical reports and preview-before-copy enforcement.
 - `src/ui_bridge`, `ui`: message-thread bridge and bundled React/TypeScript UI.
 - `tests`: deterministic native tests and fixtures.
 - `docs`, `plans`, `evidence`: contracts, decisions, progress, and reproducible proof.

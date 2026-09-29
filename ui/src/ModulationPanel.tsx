@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getNativeFunction } from "@juce/index.js";
+import { Slider, Toggle } from "./design-system.tsx";
 import { parseUiSnapshot, type ModulationRouteSnapshot, type UiSnapshot } from "./protocol.ts";
 
 const setRoutes = getNativeFunction("setModulationRoutes");
@@ -40,9 +41,9 @@ export function ModulationPanel({ initial, onSnapshot, announce }:
       {routes.map((route, index) => <div className="route-row" key={index}>
         <label>Source<select aria-label={`Route ${index + 1} source`} value={route.source} onChange={(event) => update(index, { source: Number(event.currentTarget.value) })}>{sources.map((name, source) => <option key={name} value={source}>{name}</option>)}</select></label>
         <label>Destination<select aria-label={`Route ${index + 1} destination`} value={route.destination} onChange={(event) => update(index, { destination: Number(event.currentTarget.value) })}>{destinations.map((name, destination) => <option key={name} value={destination}>{name}</option>)}</select></label>
-        <label>Amount <output>{route.amount.toFixed(2)}</output><input aria-label={`Route ${index + 1} bipolar amount`} type="range" min="-1" max="1" step="0.01" value={route.amount} onChange={(event) => update(index, { amount: Number(event.currentTarget.value) })} /></label>
+        <Slider label="Amount" output={route.amount.toFixed(2)} tone="pink" aria-label={`Route ${index + 1} bipolar amount`} min="-1" max="1" step="0.01" value={route.amount} onChange={(event) => update(index, { amount: Number(event.currentTarget.value) })} />
         <label>Curve<select aria-label={`Route ${index + 1} curve`} value={route.curve} onChange={(event) => update(index, { curve: Number(event.currentTarget.value) })}>{curves.map((name, curve) => <option key={name} value={curve}>{name}</option>)}</select></label>
-        <label className="route-enabled"><input type="checkbox" checked={route.enabled} onChange={(event) => update(index, { enabled: event.currentTarget.checked })} />Enabled</label>
+        <Toggle className="route-enabled" label="Enabled" checked={route.enabled} onChange={(event) => update(index, { enabled: event.currentTarget.checked })} />
         <button aria-label={`Remove modulation route ${index + 1}`} onClick={() => { setLocalRoutes((current) => current.filter((_, routeIndex) => routeIndex !== index)); setDirty(true); }}>Remove</button>
       </div>)}
     </div>
