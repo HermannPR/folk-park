@@ -29,6 +29,7 @@ juce::Result WavetableImportService::request(const juce::File& file,
         if (state.status == Status::processing || state.status == Status::awaitingConfirmation)
             return juce::Result::fail("Finish or cancel the current wavetable import first");
         pendingBank.reset();
+        pendingSourceFile = juce::File{};
         state = {};
         state.status = Status::processing;
         state.oscillatorIndex = oscillatorIndex;
@@ -52,6 +53,7 @@ juce::Result WavetableImportService::request(const juce::File& file,
             state.metadata = result.metadata;
             state.preview = result.preview;
             pendingBank = std::move(result.bank);
+            pendingSourceFile = file;
         }
         else
         {
@@ -59,6 +61,7 @@ juce::Result WavetableImportService::request(const juce::File& file,
             state.oscillatorIndex = oscillatorIndex;
             state.message = result.status.getErrorMessage();
             pendingBank.reset();
+            pendingSourceFile = juce::File{};
         }
     }});
     return juce::Result::ok();
@@ -69,12 +72,15 @@ juce::Result WavetableImportService::confirm()
     const std::lock_guard lock(stateMutex);
     if (state.status != Status::awaitingConfirmation || pendingBank == nullptr)
         return juce::Result::fail("No converted wavetable is waiting for confirmation");
-    if (!publisher(state.oscillatorIndex, *pendingBank))
+    const auto publication = publisher(state.oscillatorIndex, *pendingBank,
+                                       state.metadata, pendingSourceFile);
+    if (publication.failed())
     {
-        state.message = "Audio exchange is busy; confirm again after the pending crossfade";
-        return juce::Result::fail(state.message);
+        state.message = publication.getErrorMessage();
+        return publication;
     }
     pendingBank.reset();
+    pendingSourceFile = juce::File{};
     state.status = Status::loaded;
     state.message = "Wavetable accepted and queued for a click-safe block-boundary swap";
     return juce::Result::ok();
@@ -85,6 +91,7 @@ void WavetableImportService::cancel()
     generation.fetch_add(1, std::memory_order_acq_rel);
     const std::lock_guard lock(stateMutex);
     pendingBank.reset();
+    pendingSourceFile = juce::File{};
     state.status = Status::cancelled;
     state.message = "Wavetable import cancelled without changing either oscillator";
 }

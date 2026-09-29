@@ -41,7 +41,7 @@ The WebView remains an adapter over host parameter attachments and explicit nati
 
 The pure composition engine normalizes a typed `MusicIntent`, derives one shared harmonic plan, and returns a validated bundle of host-independent `GeneratedClip` values. It has no processor, UI, file, network, or provider dependency. A non-real-time session coordinator owns separate candidate and accepted bundles; only an explicit Accept copies candidate state into the delivery boundary.
 
-Piano-roll presentation, SMF export/drag, and direct output all read the same validated events. SMF work and direct schedule construction happen off audio. Direct MIDI uses a fixed double schedule and atomic block-boundary publication; the callback performs bounded message insertion and note tracking without locks or owned-vector work. Accepted clips remain session-only until M6 persistence.
+Piano-roll presentation, SMF export/drag, and direct output all read the same validated events. SMF work and direct schedule construction happen off audio. Direct MIDI uses a fixed double schedule and atomic block-boundary publication; the callback performs bounded message insertion and note tracking without locks or owned-vector work. M6 persists accepted clips in bounded host project state and searchable local history without changing this delivery boundary.
 
 ## M4 presentation, visualization, and audition boundary
 
@@ -59,6 +59,14 @@ The real-time chain has one fixed serial order: Distortion, Chorus, tempo-synced
 
 Offline WAV rendering cannot access the live `SynthEngine` or `EffectChain`. An explicit accepted composition triggers a message-thread snapshot of synth/effect parameters, modulation routes, master gain, and shared immutable A/B banks. A single worker constructs separate engines, consumes their immutable exchanges before the first event, streams a bounded stereo 24-bit WAV to a temporary sibling, reopens and validates its rate/length/header, and only then replaces the producer-approved destination. Cancellation removes the temporary file and never stops live notes.
 
+## M6 persistence and recovery boundary
+
+`PersistenceCoordinator` owns preset files, content-addressed assets, and SQLite history on non-audio threads below one validated application-support root. Preset availability and history availability are separate so a database failure cannot block native sound recall or composition acceptance. Filesystem paths, JSON, and SQLite handles never cross into `processBlock`.
+
+A preset load prepares both oscillator banks and the complete modulation snapshot before one fixed-capacity block-boundary publication. Busy or invalid publication leaves the active engine unchanged. APVTS parameters and session identity update only after the complete native sound is accepted. Save As creates a new stable UUID unless the producer explicitly chooses to replace the current library preset.
+
+Host project state contains one bounded, versioned preset payload plus optional accepted composition and history lineage. Restoration validates the complete payload without an editor. If a referenced imported asset is unavailable, the processor retains the current parameters, wavetables, and composition while exposing an exact SHA-256/size recovery request. Only a matching explicit relink completes the pending transaction.
+
 ## ADRs
 
 - ADR-0001: JUCE pin and dependency acquisition.
@@ -66,5 +74,6 @@ Offline WAV rendering cannot access the live `SynthEngine` or `EffectChain`. An 
 - ADR-0004: Pure deterministic composition and shared MIDI delivery for M3 (accepted).
 - ADR-0005: Bundled React UI and bounded Three.js visualizer for M4 (accepted).
 - ADR-0006: Ordered effects and isolated offline preview for M5 (accepted).
+- ADR-0007: Versioned native presets, content-addressed assets, transactional history, and project recovery for M6 (accepted).
 
-History persistence and provider-secret decisions remain required before M6 and M7 respectively; no ADR claims completion yet.
+Provider-secret and assistant-acceptance decisions remain required for M7. Distribution licensing/signing and release packaging remain M8 boundaries.

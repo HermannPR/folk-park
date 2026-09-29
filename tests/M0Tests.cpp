@@ -211,11 +211,17 @@ void testWavetableBankAndConverter()
         auto publicationCount = 0;
         auto publishedTarget = -1;
         folkpark::synth::WavetableImportService importService(
-            [&publicationCount, &publishedTarget](int target, const folkpark::synth::WavetableBank& bank)
+            [&publicationCount, &publishedTarget](int target,
+                                                  const folkpark::synth::WavetableBank& bank,
+                                                  const auto& metadata,
+                                                  const juce::File& source)
             {
                 ++publicationCount;
                 publishedTarget = target;
-                return bank.isFiniteAndNormalised();
+                return bank.isFiniteAndNormalised() && !metadata.sourceSha256.isEmpty()
+                           && source.existsAsFile()
+                    ? juce::Result::ok()
+                    : juce::Result::fail("Confirmed import publication metadata is incomplete");
             });
         expect(importService.request(validFile, 1, 2048).wasOk(),
                "User-confirmed file selection must queue background conversion");

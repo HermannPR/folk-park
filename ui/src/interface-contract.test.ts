@@ -72,3 +72,27 @@ test("M5 exposes the complete ordered effect chain and isolated accepted WAV act
   assert.match(controls, /getToggleState/);
   assert.doesNotMatch(app, /Effects workspace is prepared/);
 });
+
+test("M6 exposes native preset recovery and transactional composition history", async () => {
+  const app = await readFile(resolve(sourceRoot, "App.tsx"), "utf8");
+  const view = await readFile(resolve(sourceRoot, "PersistenceView.tsx"), "utf8");
+  const editor = await readFile(resolve(sourceRoot, "../../src/plugin/PluginEditor.cpp"), "utf8");
+  for (const command of ["getPersistenceWorkspace", "savePreset", "loadPreset",
+    "choosePresetFile", "relinkPresetAsset", "setPresetFavorite", "recallHistory",
+    "setHistoryFavorite", "setHistoryDeleted", "compareHistory",
+    "setHistoryRetention", "cleanupHistory"])
+    assert.match(editor, new RegExp(`withNativeFunction\\("${command}"`));
+  assert.match(app, /<PersistenceView/);
+  assert.match(view, /Missing preset assets/);
+  assert.match(view, /Exact hash required/);
+  assert.match(view, /Compare selected/);
+  assert.match(view, /recoverable trash/);
+  assert.match(view, /window\.confirm/);
+  assert.match(view, /Save as new preset/);
+  assert.match(view, /new stable UUID/);
+  assert.match(view, /Explicitly replace current library preset/);
+  assert.match(editor, /permanently removes only expired non-favorites/);
+  assert.match(view, /Composition acceptance and audio remain available/);
+  assert.doesNotMatch(app, /History and preset persistence are prepared/);
+  assert.doesNotMatch(view, /https?:\/\//);
+});

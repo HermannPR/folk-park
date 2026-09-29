@@ -167,6 +167,10 @@ private:
     bool midiExportChooserActive = false;
     std::unique_ptr<juce::FileChooser> wavExportChooser;
     bool wavExportChooserActive = false;
+    std::unique_ptr<juce::FileChooser> presetImportChooser;
+    bool presetImportChooserActive = false;
+    std::unique_ptr<juce::FileChooser> presetRelinkChooser;
+    bool presetRelinkChooserActive = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginEditor)
 };

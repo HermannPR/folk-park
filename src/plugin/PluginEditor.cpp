@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstddef>
 #include <limits>
+#include <set>
 #include <span>
 
 namespace folkpark
@@ -59,6 +60,148 @@ bool strictBoolean(const juce::var& value, bool& output) noexcept
         return false;
     output = static_cast<bool>(value);
     return true;
+}
+
+bool boundedString(const juce::var& value,
+                   int maximumLength,
+                   juce::String& output,
+                   bool allowEmpty = true)
+{
+    if (!value.isString())
+        return false;
+    output = value.toString().trim();
+    return output.length() <= maximumLength && (allowEmpty || !output.isEmpty());
+}
+
+bool boundedTags(const juce::var& value, std::vector<juce::String>& output)
+{
+    const auto* array = value.getArray();
+    if (array == nullptr || array->size() > 24)
+        return false;
+    std::set<juce::String> unique;
+    for (const auto& item : *array)
+    {
+        juce::String tag;
+        if (!boundedString(item, 48, tag, false) || !unique.insert(tag).second)
+            return false;
+        output.push_back(tag);
+    }
+    return true;
+}
+
+juce::var stringArrayPayload(const std::vector<juce::String>& values)
+{
+    juce::Array<juce::var> result;
+    result.ensureStorageAllocated(static_cast<int>(values.size()));
+    for (const auto& value : values)
+        result.add(value);
+    return juce::var(result);
+}
+
+juce::var persistenceStatusPayload(const persistence::PersistenceStatusSnapshot& status)
+{
+    auto object = juce::DynamicObject::Ptr(new juce::DynamicObject());
+    object->setProperty("enabled", status.enabled);
+    object->setProperty("presetAvailable", status.presetAvailable);
+    object->setProperty("historyAvailable", status.historyAvailable);
+    object->setProperty("message", status.message);
+    object->setProperty("currentPresetId", status.currentPresetId);
+    object->setProperty("currentPresetName", status.currentPresetName);
+    object->setProperty("currentPresetDirty", status.currentPresetDirty);
+    object->setProperty("retentionDays", status.retentionDays);
+    juce::Array<juce::var> missing;
+    for (const auto& reference : status.missingAssets)
+    {
+        auto asset = juce::DynamicObject::Ptr(new juce::DynamicObject());
+        asset->setProperty("slot", persistence::stableId(reference.slot));
+        asset->setProperty("displayName", reference.recoveryDisplayName);
+        asset->setProperty("sha256", reference.sha256);
+        asset->setProperty("byteSize", reference.byteSize);
+        missing.add(juce::var(asset.get()));
+    }
+    object->setProperty("missingAssets", juce::var(missing));
+    return juce::var(object.get());
+}
+
+juce::var presetLibraryPayload(const persistence::PresetLibraryResult& library)
+{
+    juce::Array<juce::var> presets;
+    for (const auto& summary : library.presets)
+    {
+        auto object = juce::DynamicObject::Ptr(new juce::DynamicObject());
+        object->setProperty("id", summary.id);
+        object->setProperty("name", summary.name);
+        object->setProperty("author", summary.author);
+        object->setProperty("tags", stringArrayPayload(summary.tags));
+        object->setProperty("genre", summary.genre);
+        object->setProperty("emotion", summary.emotion);
+        object->setProperty("favorite", summary.favorite);
+        object->setProperty("missingAssets", summary.missingAssets);
+        object->setProperty("fileName", summary.fileName);
+        presets.add(juce::var(object.get()));
+    }
+    return juce::var(presets);
+}
+
+juce::var historyPayload(const persistence::HistorySearchResult& history)
+{
+    juce::Array<juce::var> entries;
+    for (const auto& summary : history.entries)
+    {
+        auto object = juce::DynamicObject::Ptr(new juce::DynamicObject());
+        object->setProperty("id", summary.id);
+        object->setProperty("parentId", summary.parentId);
+        object->setProperty("createdUnixMs", summary.createdUnixMs);
+        object->setProperty("updatedUnixMs", summary.updatedUnixMs);
+        object->setProperty("generatorVersion", summary.generatorVersion);
+        object->setProperty("promptSummary", summary.storePromptSummary
+            ? summary.promptSummary : juce::String{});
+        object->setProperty("presetId", summary.presetId);
+        object->setProperty("favorite", summary.favorite);
+        object->setProperty("tags", stringArrayPayload(summary.tags));
+        object->setProperty("deleted", summary.deleted);
+        entries.add(juce::var(object.get()));
+    }
+    return juce::var(entries);
+}
+
+juce::var persistenceWorkspacePayload(PluginProcessor& processor,
+                                      const persistence::HistorySearchQuery& query = {})
+{
+    const auto library = processor.listPresets();
+    const auto history = processor.searchHistory(query);
+    auto object = juce::DynamicObject::Ptr(new juce::DynamicObject());
+    object->setProperty("ok", library.status.wasOk());
+    object->setProperty("status", persistenceStatusPayload(processor.getPersistenceStatus()));
+    object->setProperty("presetError", library.status.wasOk()
+        ? juce::String{} : library.status.getErrorMessage());
+    object->setProperty("historyError", history.status.wasOk()
+        ? juce::String{} : history.status.getErrorMessage());
+    object->setProperty("presets", presetLibraryPayload(library));
+    object->setProperty("history", historyPayload(history));
+    return juce::var(object.get());
+}
+
+juce::var historyDetailPayload(const HistoryEntryDetail& detail)
+{
+    auto object = juce::DynamicObject::Ptr(new juce::DynamicObject());
+    object->setProperty("id", detail.summary.id);
+    object->setProperty("parentId", detail.summary.parentId);
+    object->setProperty("createdUnixMs", detail.summary.createdUnixMs);
+    object->setProperty("generatorVersion", detail.summary.generatorVersion);
+    object->setProperty("presetId", detail.summary.presetId);
+    object->setProperty("favorite", detail.summary.favorite);
+    object->setProperty("tags", stringArrayPayload(detail.summary.tags));
+    object->setProperty("seed", static_cast<juce::int64>(detail.intent.seed));
+    object->setProperty("key", midi::stableId(detail.intent.key));
+    object->setProperty("scale", midi::stableId(detail.intent.scale));
+    object->setProperty("tempoBpm", detail.intent.tempoBpm);
+    object->setProperty("bars", detail.intent.lengthBars);
+    object->setProperty("genre", midi::stableId(detail.intent.genreProfile));
+    object->setProperty("emotion", midi::stableId(detail.intent.emotion));
+    object->setProperty("clipCount", detail.clipCount);
+    object->setProperty("noteCount", detail.noteCount);
+    return juce::var(object.get());
 }
 
 juce::var compositionPayload(const PluginProcessor& processor)
@@ -147,6 +290,8 @@ juce::var completeUiSnapshot(PluginProcessor& processor)
     snapshot->setProperty("modulationRouteCount", static_cast<int>(routes.routeCount));
     snapshot->setProperty("modulationRoutes", modulationPayload(routes));
     snapshot->setProperty("composition", compositionPayload(processor));
+    snapshot->setProperty("persistence", persistenceStatusPayload(
+        processor.getPersistenceStatus()));
     snapshot->setProperty("wavetableA", wavetablePayload(processor.getWavetableUiSnapshot(0)));
     snapshot->setProperty("wavetableB", wavetablePayload(processor.getWavetableUiSnapshot(1)));
 
@@ -313,6 +458,8 @@ PluginEditor::PluginEditor(PluginProcessor& owner)
       eqMidQAttachment(*owner.state().getParameter(parameterIds::eqMidQ), eqMidQRelay, owner.state().undoManager),
       eqHighGainAttachment(*owner.state().getParameter(parameterIds::eqHighGain), eqHighGainRelay, owner.state().undoManager)
 {
+    const auto persistenceInitialisation = ownerProcessor.initialisePersistence();
+    juce::ignoreUnused(persistenceInitialisation);
     fallback.setText("folk park M2 - native fallback editor", juce::dontSendNotification);
     fallback.setJustificationType(juce::Justification::centred);
     fallback.setColour(juce::Label::textColourId, juce::Colours::white);
@@ -861,6 +1008,245 @@ juce::WebBrowserComponent::Options PluginEditor::browserOptions()
             ownerProcessor.cancelAcceptedWavRender();
             complete("Offline WAV cancellation requested; live voices were not touched");
         })
+        .withNativeFunction("getPersistenceWorkspace", [this](const auto& arguments, auto complete)
+        {
+            if (arguments.size() != 3)
+            {
+                complete("Persistence workspace requires search text and two bounded filters");
+                return;
+            }
+            juce::String text;
+            bool favoritesOnly = false;
+            bool includeDeleted = false;
+            if (!boundedString(arguments[0], 128, text)
+                || !strictBoolean(arguments[1], favoritesOnly)
+                || !strictBoolean(arguments[2], includeDeleted))
+            {
+                complete("Persistence workspace filters are malformed");
+                return;
+            }
+            complete(persistenceWorkspacePayload(ownerProcessor,
+                {text, favoritesOnly, includeDeleted, 100}));
+        })
+        .withNativeFunction("savePreset", [this](const auto& arguments, auto complete)
+        {
+            if (arguments.size() != 8)
+            {
+                complete("Preset save requires name, author, tags, genre, emotion, description, favorite, and overwrite");
+                return;
+            }
+            PresetSaveRequest request;
+            if (!boundedString(arguments[0], 96, request.name, false)
+                || !boundedString(arguments[1], 96, request.author)
+                || !boundedTags(arguments[2], request.tags)
+                || !boundedString(arguments[3], 64, request.genre)
+                || !boundedString(arguments[4], 64, request.emotion)
+                || !boundedString(arguments[5], 1024, request.description)
+                || !strictBoolean(arguments[6], request.favorite)
+                || !strictBoolean(arguments[7], request.allowOverwrite))
+            {
+                complete("Preset metadata is malformed or exceeds the native bounds");
+                return;
+            }
+            const auto result = ownerProcessor.saveCurrentPreset(request);
+            complete(result.wasOk() ? persistenceWorkspacePayload(ownerProcessor)
+                                    : juce::var(result.getErrorMessage()));
+        })
+        .withNativeFunction("loadPreset", [this](const auto& arguments, auto complete)
+        {
+            juce::String id;
+            if (arguments.size() != 1 || !boundedString(arguments[0], 64, id, false)
+                || !midi::isUuid(id))
+            {
+                complete("Preset load requires one valid stable ID");
+                return;
+            }
+            const auto result = ownerProcessor.loadLibraryPreset(id);
+            complete(result.wasOk() ? completeUiSnapshot(ownerProcessor)
+                                    : juce::var(result.getErrorMessage()));
+        })
+        .withNativeFunction("choosePresetFile", [this](const auto& arguments, auto finish)
+        {
+            if (!arguments.isEmpty())
+            {
+                finish("Preset import takes no arguments");
+                return;
+            }
+            if (presetImportChooserActive)
+            {
+                finish("A preset import chooser is already open");
+                return;
+            }
+            presetImportChooserActive = true;
+            presetImportChooser = std::make_unique<juce::FileChooser>(
+                "Import a folk park preset", juce::File{}, "*.folkparkpreset");
+            const auto safeEditor = juce::Component::SafePointer<PluginEditor>(this);
+            presetImportChooser->launchAsync(
+                juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+                [safeEditor, completionHandler = std::move(finish)](
+                    const juce::FileChooser& chooser) mutable
+                {
+                    if (safeEditor == nullptr)
+                        return;
+                    safeEditor->presetImportChooserActive = false;
+                    const auto file = chooser.getResult();
+                    if (file == juce::File{})
+                    {
+                        completionHandler("Preset import cancelled");
+                        return;
+                    }
+                    const auto result = safeEditor->ownerProcessor.importExternalPreset(file);
+                    completionHandler(result.wasOk()
+                        ? completeUiSnapshot(safeEditor->ownerProcessor)
+                        : juce::var(result.getErrorMessage()));
+                });
+        })
+        .withNativeFunction("relinkPresetAsset", [this](const auto& arguments, auto finish)
+        {
+            double slot = 0.0;
+            if (arguments.size() != 1 || !boundedNumber(arguments[0], 0.0, 1.0, slot)
+                || std::floor(slot) != slot)
+            {
+                finish("Preset relink requires oscillator slot 0 or 1");
+                return;
+            }
+            if (presetRelinkChooserActive)
+            {
+                finish("A missing-asset chooser is already open");
+                return;
+            }
+            presetRelinkChooserActive = true;
+            presetRelinkChooser = std::make_unique<juce::FileChooser>(
+                "Select the exact matching WAV asset", juce::File{}, "*.wav");
+            const auto safeEditor = juce::Component::SafePointer<PluginEditor>(this);
+            const auto assetSlot = slot == 0.0 ? persistence::AssetSlot::oscillatorA
+                                               : persistence::AssetSlot::oscillatorB;
+            presetRelinkChooser->launchAsync(
+                juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+                [safeEditor, assetSlot, completionHandler = std::move(finish)](
+                    const juce::FileChooser& chooser) mutable
+                {
+                    if (safeEditor == nullptr)
+                        return;
+                    safeEditor->presetRelinkChooserActive = false;
+                    const auto file = chooser.getResult();
+                    if (file == juce::File{})
+                    {
+                        completionHandler("Missing-asset recovery cancelled");
+                        return;
+                    }
+                    const auto result = safeEditor->ownerProcessor.relinkPendingPresetAsset(
+                        assetSlot, file);
+                    completionHandler(result.wasOk()
+                        ? completeUiSnapshot(safeEditor->ownerProcessor)
+                        : juce::var(result.getErrorMessage()));
+                });
+        })
+        .withNativeFunction("setPresetFavorite", [this](const auto& arguments, auto complete)
+        {
+            juce::String id;
+            bool favorite = false;
+            if (arguments.size() != 2 || !boundedString(arguments[0], 64, id, false)
+                || !midi::isUuid(id) || !strictBoolean(arguments[1], favorite))
+            {
+                complete("Preset favorite requires a valid ID and boolean");
+                return;
+            }
+            const auto result = ownerProcessor.setPresetFavorite(id, favorite);
+            complete(result.wasOk() ? persistenceWorkspacePayload(ownerProcessor)
+                                    : juce::var(result.getErrorMessage()));
+        })
+        .withNativeFunction("recallHistory", [this](const auto& arguments, auto complete)
+        {
+            juce::String id;
+            if (arguments.size() != 1 || !boundedString(arguments[0], 64, id, false)
+                || !midi::isUuid(id))
+            {
+                complete("History recall requires one valid stable ID");
+                return;
+            }
+            const auto result = ownerProcessor.recallHistory(id);
+            complete(result.wasOk() ? completeUiSnapshot(ownerProcessor)
+                                    : juce::var(result.getErrorMessage()));
+        })
+        .withNativeFunction("setHistoryFavorite", [this](const auto& arguments, auto complete)
+        {
+            juce::String id;
+            bool favorite = false;
+            if (arguments.size() != 2 || !boundedString(arguments[0], 64, id, false)
+                || !midi::isUuid(id) || !strictBoolean(arguments[1], favorite))
+            {
+                complete("History favorite requires a valid ID and boolean");
+                return;
+            }
+            const auto result = ownerProcessor.setHistoryFavorite(id, favorite);
+            complete(result.wasOk() ? persistenceWorkspacePayload(ownerProcessor)
+                                    : juce::var(result.getErrorMessage()));
+        })
+        .withNativeFunction("setHistoryDeleted", [this](const auto& arguments, auto complete)
+        {
+            juce::String id;
+            bool deleted = false;
+            if (arguments.size() != 2 || !boundedString(arguments[0], 64, id, false)
+                || !midi::isUuid(id) || !strictBoolean(arguments[1], deleted))
+            {
+                complete("History recovery state requires a valid ID and boolean");
+                return;
+            }
+            const auto result = ownerProcessor.setHistorySoftDeleted(id, deleted);
+            complete(result.wasOk() ? persistenceWorkspacePayload(ownerProcessor)
+                                    : juce::var(result.getErrorMessage()));
+        })
+        .withNativeFunction("compareHistory", [this](const auto& arguments, auto complete)
+        {
+            juce::String firstId;
+            juce::String secondId;
+            if (arguments.size() != 2
+                || !boundedString(arguments[0], 64, firstId, false)
+                || !boundedString(arguments[1], 64, secondId, false)
+                || firstId == secondId || !midi::isUuid(firstId) || !midi::isUuid(secondId))
+            {
+                complete("History comparison requires two different valid IDs");
+                return;
+            }
+            const auto first = ownerProcessor.inspectHistory(firstId);
+            const auto second = ownerProcessor.inspectHistory(secondId);
+            if (!first.has_value() || !second.has_value())
+            {
+                complete("One or both history entries could not be inspected");
+                return;
+            }
+            auto comparison = juce::DynamicObject::Ptr(new juce::DynamicObject());
+            comparison->setProperty("first", historyDetailPayload(*first));
+            comparison->setProperty("second", historyDetailPayload(*second));
+            complete(juce::var(comparison.get()));
+        })
+        .withNativeFunction("setHistoryRetention", [this](const auto& arguments, auto complete)
+        {
+            double days = 0.0;
+            if (arguments.size() != 1 || !boundedNumber(arguments[0], 1.0, 3650.0, days)
+                || std::floor(days) != days)
+            {
+                complete("History retention requires an integer from 1 to 3650 days");
+                return;
+            }
+            const auto result = ownerProcessor.setHistoryRetentionDays(static_cast<int>(days));
+            complete(result.wasOk() ? persistenceWorkspacePayload(ownerProcessor)
+                                    : juce::var(result.getErrorMessage()));
+        })
+        .withNativeFunction("cleanupHistory", [this](const auto& arguments, auto complete)
+        {
+            bool keepFavorites = true;
+            if (arguments.size() != 1 || !strictBoolean(arguments[0], keepFavorites)
+                || !keepFavorites)
+            {
+                complete("Release 0.1 cleanup permanently removes only expired non-favorites");
+                return;
+            }
+            const auto result = ownerProcessor.cleanupHistory(keepFavorites);
+            complete(result.status.wasOk() ? persistenceWorkspacePayload(ownerProcessor)
+                                           : juce::var(result.status.getErrorMessage()));
+        })
         .withResourceProvider([](const auto& url)
         {
             return resourceFor(url);
@@ -889,6 +1275,7 @@ void PluginEditor::timerCallback()
     const auto routes = ownerProcessor.getConfiguredModulationRoutes();
     const auto composition = ownerProcessor.getCompositionSnapshot();
     const auto rendered = ownerProcessor.getAcceptedWavRenderSnapshot();
+    const auto persistenceStatus = ownerProcessor.getPersistenceStatus();
     midiDrag->updateAvailability(composition.hasAccepted);
     auto snapshot = juce::DynamicObject::Ptr(new juce::DynamicObject());
     snapshot->setProperty("schemaVersion", 1);
@@ -913,6 +1300,7 @@ void PluginEditor::timerCallback()
     snapshot->setProperty("renderMessage", rendered.message);
     snapshot->setProperty("renderDestination", rendered.destination);
     snapshot->setProperty("renderDuration", rendered.durationSeconds);
+    snapshot->setProperty("persistence", persistenceStatusPayload(persistenceStatus));
     browser->emitEventIfBrowserIsVisible("processorSnapshot", juce::var(snapshot.get()));
 }
 

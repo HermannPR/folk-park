@@ -3,7 +3,9 @@ import { getNativeFunction } from "@juce/index.js";
 import { HostCombo, HostSlider, HostToggle, useHostNormalized } from "./host-controls.tsx";
 import { PianoKeyboard } from "./PianoKeyboard.tsx";
 import { ModulationPanel } from "./ModulationPanel.tsx";
-import { parseComposition, parseUiSnapshot, type CompositionSnapshot, type UiSnapshot } from "./protocol.ts";
+import { PersistenceView } from "./PersistenceView.tsx";
+import { parseComposition, parsePersistenceStatus, parseUiSnapshot,
+  type CompositionSnapshot, type UiSnapshot } from "./protocol.ts";
 import { WavetableVisual } from "./WavetableVisual.tsx";
 
 const tabs = ["SYNTH", "COMPOSE", "FX", "HISTORY", "SETTINGS"] as const;
@@ -212,10 +214,6 @@ function FxView({ snapshot, announce }: { snapshot: UiSnapshot; announce: (messa
   </div>;
 }
 
-function PlannedView({ milestone, title, children }: { milestone: string; title: string; children: React.ReactNode }) {
-  return <section className="surface planned"><span>{milestone}</span><h2>{title}</h2><p>{children}</p><div className="skeleton"><i /><i /><i /><i /></div></section>;
-}
-
 export default function App() {
   const [tab, setTab] = useState<Tab>("SYNTH");
   const [snapshot, setSnapshot] = useState<UiSnapshot | null>(null);
@@ -249,7 +247,9 @@ export default function App() {
             const renderDestination = typeof update.renderDestination === "string" ? update.renderDestination : current.renderDestination;
             const duration = Number(update.renderDuration);
             const renderDuration = Number.isFinite(duration) && duration >= 0 && duration <= 900 ? duration : current.renderDuration;
-            return { ...current, activeVoices: voices, renderStatus, renderMessage, renderDestination, renderDuration };
+            const persistence = parsePersistenceStatus(update.persistence) ?? current.persistence;
+            return { ...current, activeVoices: voices, renderStatus, renderMessage,
+              renderDestination, renderDuration, persistence };
           });
       }
     });
@@ -259,8 +259,8 @@ export default function App() {
   return <div className="app-shell">
     <div className="atmosphere" aria-hidden="true"><i /><i /><i /></div>
     <header className="app-header">
-      <div className="brand"><span>Silicon Dreams</span><h1>folk park</h1><small>0.1 · M5 effects + isolated WAV preview</small></div>
-      <div className="preset-stack"><button className="preset"><span>Current sound</span><strong>Init / session</strong><i>⌄</i></button><label className="assistant-preview"><span>Jarvis sound helper · M7</span><input disabled placeholder="Describe a sound — guided workflow coming" /></label></div>
+      <div className="brand"><span>Silicon Dreams</span><h1>folk park</h1><small>0.1 · M6 native presets + history</small></div>
+      <div className="preset-stack"><button className="preset" onClick={() => setTab("HISTORY")}><span>Current sound</span><strong>{snapshot?.persistence.currentPresetName ?? "Init / session"}{snapshot?.persistence.currentPresetDirty ? " *" : ""}</strong><i>⌄</i></button><label className="assistant-preview"><span>Jarvis sound helper · M7</span><input disabled placeholder="Describe a sound — guided workflow coming" /></label></div>
       <div className="header-status"><StatusPill good={snapshot !== null}>{snapshot === null ? "Bridge" : `${snapshot.activeVoices} voices`}</StatusPill><StatusPill good={snapshot?.architecture === "x86_64"}>x86_64</StatusPill><button onClick={() => void native.undo().then((value) => announce(String(value)))}>Undo</button><button onClick={() => void native.redo().then((value) => announce(String(value)))}>Redo</button><button className="panic" onClick={() => void native.panic().then((value) => announce(String(value)))}>Panic</button></div>
     </header>
     <nav className="navigation" aria-label="Primary">
@@ -276,7 +276,7 @@ export default function App() {
         {tab === "COMPOSE" && <ComposeView initial={snapshot.composition} announce={announce}
           publishComposition={(composition) => setSnapshot((current) => current === null ? null : { ...current, composition })} />}
         {tab === "FX" && <FxView snapshot={snapshot} announce={announce} />}
-        {tab === "HISTORY" && <PlannedView milestone="M6" title="History and preset persistence are prepared">Accepted clips remain session memory until the transactional M6 repository and migrations pass restart, failure, and recovery tests.</PlannedView>}
+        {tab === "HISTORY" && <PersistenceView announce={announce} refreshSoundSnapshot={refresh} />}
         {tab === "SETTINGS" && <section className="surface settings"><div className="section-heading"><div><span>UI</span><h2>Performance + accessibility</h2></div><small>Local presentation only</small></div><label><input type="checkbox" checked={preferences.lowGraphics} onChange={(event) => setPreferences((value) => ({ ...value, lowGraphics: event.currentTarget.checked }))} />Low Graphics · 2D canvas at 12 FPS</label><label><input type="checkbox" checked={preferences.reducedMotion} onChange={(event) => setPreferences((value) => ({ ...value, reducedMotion: event.currentTarget.checked }))} />Reduced Motion · render only on state changes</label><button onClick={() => void refresh()}>Request complete native snapshot</button><p>No remote fonts, trackers, CDNs, providers, or runtime assets are loaded.</p></section>}
       </>}
     </main>
