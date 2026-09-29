@@ -16,9 +16,9 @@ The intended final workflow is one connected instrument:
 4. Optionally ask the guided assistant for help. It asks focused sound-design questions, returns bounded parameter changes with reasons and uncertainty, supports reversible A/B audition, and waits for explicit acceptance.
 5. Save projects with searchable presets, history, migrations, and missing-asset recovery before the signed Release 0.1 package is called complete.
 
-## What works now — M4 checkpoint
+## What works now — M5 checkpoint
 
-- A bundled React/TypeScript Silicon Dreams interface with responsive Synth, Compose, FX, History, and Settings navigation. Planned M5–M7 surfaces are labelled honestly rather than presented as working features.
+- A bundled React/TypeScript Silicon Dreams interface with responsive Synth, Compose, FX, History, and Settings navigation. M6–M7 surfaces are labelled honestly rather than presented as working features.
 - Two live OSC A/B views render the actual bounded wavetable frames, current morph position, and derived spectrum. Three.js is capped at 30 FPS; Low Graphics uses a 12 FPS 2D waveform/spectrum fallback, Reduced Motion renders on state changes, and hidden views stop animation.
 - A four-octave C2–B5 touch/mouse piano plus an octave-shiftable A–P computer-key zone. Preview notes cross a fixed native queue, release on pointer cancel/blur/hide/editor close/panic, and held macOS keys sustain once without repeat retriggering.
 - Complete host-aware control surfaces for both oscillators, mixer, filter, three envelopes, four LFOs, and a reviewed 32-route modulation matrix. Header Undo/Redo synchronize pending APVTS state before acting.
@@ -43,10 +43,13 @@ The intended final workflow is one connected instrument:
 - One accepted `GeneratedClip` bundle feeds all MIDI delivery paths: multitrack SMF with tempo/time-signature metadata and explicit note-offs, reopen verification at multiple PPQ resolutions, temporary-file drag, save chooser export, and fixed-schedule direct MIDI with correct block offsets and tracked Stop note-offs.
 - Direct accepted MIDI also drives the internal synth. Publication is atomic at an audio-block boundary, and measured composition scheduling adds zero allocations to the callback with a pre-sized host MIDI buffer.
 - Strict `SoundIntent` and `ParameterProposal` schemas plus typed validators are present as the foundation for the requested guided sound walkthrough. The conversational assistant, provider integration, A/B audition, and parameter application are not implemented yet.
+- A fixed, independently bypassable serial chain: Distortion → Chorus → tempo-synced Delay → Reverb → Compressor → Parametric EQ. All 29 effect parameters are stable host automation/state surfaces, new instances default to gain-safe bypass, and each transition uses a 10 ms crossfade.
+- A complete host-aware FX workspace exposes every implemented effect control. Values are bounded at both the parameter and DSP boundaries, and malformed/non-finite samples cannot escape the chain.
+- Accepted compositions can be rendered to stereo 24-bit/48 kHz WAV on a worker thread. Rendering copies immutable synth, effect, modulation, and A/B wavetable snapshots into a separate engine, writes transactionally, validates the result before replacement, supports cancellation, and never resets or seeks live voices.
 
-The current build is a verified M4 engineering checkpoint, not the complete 0.1 instrument. UI checks passed 7/7, Debug passed 6/6 automated native suites, Release passed 7/7 including loading and rendering through the actual built VST3, and pluginval 1.0.4 strictness 5 passed. The validated Intel VST3 is installed in the current user's plug-in folder. FL Studio insertion, piano focus/repeat behavior, automation, state reopen, MIDI drag, and direct routing remain explicitly marked as human tests until they are performed in FL Studio.
+The current build is a verified M5 engineering checkpoint, not the complete 0.1 instrument. UI checks passed 8/8, Debug passed 8/8 automated native suites, Release passed 9/9 including loading and rendering through the actual built VST3, and pluginval 1.0.4 strictness 5 passed. The validated Intel VST3 is installed in the current user's plug-in folder. FL Studio insertion, piano focus/repeat behavior, effect automation/tempo sync, state reopen, MIDI drag/routing, and WAV import/playback remain explicitly marked as human tests until they are performed in FL Studio.
 
-Accepted compositions currently live in session memory and are deliberately not written into plug-in state until M6 history/persistence exists. Direct MIDI starts on the next audio block at the accepted clip tempo; transport-synchronized start/reposition behavior remains a host-level limitation to verify and refine. The M3 preview is MIDI-only; isolated WAV audition is M5.
+Accepted compositions currently live in session memory and are deliberately not written into plug-in state until M6 history/persistence exists. Direct MIDI starts on the next audio block at the accepted clip tempo; transport-synchronized start/reposition behavior remains a host-level limitation to verify and refine. M5 WAV rendering requires that session's explicit accepted bundle and writes only to the producer-selected destination.
 
 ## Coming soon and later
 
@@ -54,8 +57,8 @@ Accepted compositions currently live in session memory and are deliberately not 
 | --- | --- | --- |
 | M2 | Dual wavetable oscillators, safe user-WAV import, envelopes/LFOs, modulation matrix, multimode filter | Implemented foundation; FL Studio human run pending |
 | M3 | Deterministic chord, melody, bass, and arpeggio generation with candidate preview, acceptance, MIDI export/drag/direct route | Implemented foundation; FL Studio human drag/route run pending |
-| M4 | Full responsive Silicon Dreams React interface, actual live 2D/3D wavetable and spectrum views, safe four-octave touch/computer piano audition, interactive composition editing, accessible low-graphics mode | Current; automated gates passed, FL Studio human UI run pending |
-| M5 | Distortion, chorus, synced delay, reverb, compressor, EQ, and isolated WAV preview | Planned |
+| M4 | Full responsive Silicon Dreams React interface, actual live 2D/3D wavetable and spectrum views, safe four-octave touch/computer piano audition, interactive composition editing, accessible low-graphics mode | Implemented foundation; FL Studio human UI run pending |
+| M5 | Distortion, chorus, synced delay, reverb, compressor, EQ, and isolated WAV preview | Current; automated gates passed, FL Studio human effects/WAV run pending |
 | M6 | Searchable presets, reversible history, migrations, and crash-safe persistence | Planned |
 | M7 | Offline Jarvis text workflow and guided AI sound walkthrough; optional secure provider | Planned |
 | M8 | FL Studio matrix, performance hardening, packaging, legal/asset audit, and release documentation | Planned |

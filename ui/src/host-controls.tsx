@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getComboBoxState, getSliderState } from "@juce/index.js";
+import { getComboBoxState, getSliderState, getToggleState } from "@juce/index.js";
 
 type SliderProps = {
   id: string;
@@ -73,5 +73,25 @@ export function HostCombo({ id, relay, label }: ComboProps) {
     <select id={id} value={choice} onChange={(event) => state.setChoiceIndex(Number(event.currentTarget.value))}>
       {choices.map((name, index) => <option key={`${name}-${index}`} value={index}>{name}</option>)}
     </select>
+  </label>;
+}
+
+export function HostToggle({ id, relay, label }: ComboProps) {
+  const state = useMemo(() => getToggleState(relay), [relay]);
+  const [checked, setChecked] = useState(state.getValue());
+  useEffect(() => {
+    const update = () => setChecked(state.getValue());
+    const valueListener = state.valueChangedEvent.addListener(update);
+    const propertyListener = state.propertiesChangedEvent.addListener(update);
+    update();
+    return () => {
+      state.valueChangedEvent.removeListener(valueListener);
+      state.propertiesChangedEvent.removeListener(propertyListener);
+    };
+  }, [state]);
+  return <label className="host-control host-toggle" htmlFor={id}>
+    <span>{label}<output>{checked ? "Bypassed" : "Active"}</output></span>
+    <input id={id} type="checkbox" checked={checked}
+      onChange={(event) => state.setValue(event.currentTarget.checked)} />
   </label>;
 }

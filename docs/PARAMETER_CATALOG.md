@@ -91,3 +91,43 @@ The same exact six-field layout is appended for each of four LFOs. Rate changes 
 ## Modulation route state
 
 Routes are versioned plug-in state rather than host parameters. A route contains registered source and destination enums, a finite bipolar-normalized amount from -1 to 1, Linear/Exponential/S-curve, and Enabled. The complete matrix is capped at 32 and rejected transactionally if any field is invalid.
+
+## M5 ordered effect parameters
+
+All M5 effect parameters are appended after the complete M2 layout. Every processor starts bypassed so an older project and a new default instance retain the pre-M5 sound. Bypass transitions use a 10 ms wet-path crossfade; wet/dry controls are independent.
+
+The serial order is fixed: Distortion, Chorus, tempo-synced Delay, Reverb, Compressor, then Parametric EQ.
+
+| Stable ID | Display name | Type | Range / choices | Default | Units |
+| --- | --- | --- | --- | --- | --- |
+| `distBypass` | Distortion Bypass | Boolean | Off/On | On | — |
+| `distDrive` | Distortion Drive | Float | 0–36 / .01 | 6 | dB |
+| `distMix` | Distortion Mix | Float | 0–1 / .001 | .5 | ratio |
+| `distOutput` | Distortion Output | Float | -24–0 / .01 | -6 | dB |
+| `chorusBypass` | Chorus Bypass | Boolean | Off/On | On | — |
+| `chorusRate` | Chorus Rate | Float | .05–5 / .01 | .35 | Hz |
+| `chorusDepth` | Chorus Depth | Float | 0–20 / .01 | 6 | ms |
+| `chorusMix` | Chorus Mix | Float | 0–1 / .001 | .25 | ratio |
+| `delayBypass` | Delay Bypass | Boolean | Off/On | On | — |
+| `delayDivision` | Delay Division | Choice | 1 bar, 1/2, 1/4, 1/8, 1/16 | 1/4 | note value |
+| `delayFeedback` | Delay Feedback | Float | 0–.85 / .001 | .3 | ratio |
+| `delayMix` | Delay Mix | Float | 0–1 / .001 | .25 | ratio |
+| `reverbBypass` | Reverb Bypass | Boolean | Off/On | On | — |
+| `reverbRoomSize` | Reverb Room Size | Float | 0–1 / .001 | .45 | ratio |
+| `reverbDamping` | Reverb Damping | Float | 0–1 / .001 | .4 | ratio |
+| `reverbMix` | Reverb Mix | Float | 0–1 / .001 | .2 | ratio |
+| `compBypass` | Compressor Bypass | Boolean | Off/On | On | — |
+| `compThreshold` | Compressor Threshold | Float | -60–0 / .01 | -18 | dB |
+| `compRatio` | Compressor Ratio | Float | 1–20 / .01 | 4 | ratio |
+| `compAttack` | Compressor Attack | Float | .1–100 / .1 | 10 | ms |
+| `compRelease` | Compressor Release | Float | 10–1000 / .1 | 100 | ms |
+| `compMakeup` | Compressor Makeup | Float | 0–18 / .01 | 0 | dB |
+| `compMix` | Compressor Mix | Float | 0–1 / .001 | 1 | ratio |
+| `eqBypass` | EQ Bypass | Boolean | Off/On | On | — |
+| `eqLowGain` | EQ Low Shelf | Float | -18–18 / .01 | 0 | dB |
+| `eqMidFrequency` | EQ Mid Frequency | Float skew .3 | 20–20000 / 1 | 1000 | Hz |
+| `eqMidGain` | EQ Mid Gain | Float | -18–18 / .01 | 0 | dB |
+| `eqMidQ` | EQ Mid Q | Float | .1–10 / .01 | 1 | Q |
+| `eqHighGain` | EQ High Shelf | Float | -18–18 / .01 | 0 | dB |
+
+Effect values are copied atomically once per processor block. The DSP boundary clamps every value to this catalog and replaces non-finite values with the documented default before processing.

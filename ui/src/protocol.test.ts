@@ -16,6 +16,10 @@ const valid = {
   activeVoices: 2,
   importStatus: "idle",
   importMessage: "ready",
+  renderStatus: "idle",
+  renderMessage: "No accepted WAV has been rendered",
+  renderDestination: "",
+  renderDuration: 0,
   modulationRouteCount: 0,
   modulationRoutes: [],
   composition: {

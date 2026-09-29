@@ -56,15 +56,20 @@ void testStateRoundTrip()
     auto* filterMode = source.state().getParameter(folkpark::parameterIds::filterMode);
     auto* lfo4Shape = source.state().getParameter(folkpark::parameterIds::lfoShape[3]);
     auto* lfo1Rate = source.state().getParameter(folkpark::parameterIds::lfoRate[0]);
+    auto* distortionBypass = source.state().getParameter(folkpark::parameterIds::distortionBypass);
+    auto* delayFeedback = source.state().getParameter(folkpark::parameterIds::delayFeedback);
+    auto* eqMidGain = source.state().getParameter(folkpark::parameterIds::eqMidGain);
     expect(cutoff != nullptr && waveform != nullptr && oscillatorBLevel != nullptr
-               && filterMode != nullptr && lfo4Shape != nullptr && lfo1Rate != nullptr,
-           "Required M1/M2 parameters must exist");
+               && filterMode != nullptr && lfo4Shape != nullptr && lfo1Rate != nullptr
+               && distortionBypass != nullptr && delayFeedback != nullptr && eqMidGain != nullptr,
+           "Required M1–M5 parameters must exist");
     if (cutoff == nullptr || waveform == nullptr || oscillatorBLevel == nullptr
-        || filterMode == nullptr || lfo4Shape == nullptr || lfo1Rate == nullptr)
+        || filterMode == nullptr || lfo4Shape == nullptr || lfo1Rate == nullptr
+        || distortionBypass == nullptr || delayFeedback == nullptr || eqMidGain == nullptr)
         return;
 
-    expect(source.getParameters().size() == 73,
-           "M2 append-only public parameter layout must contain exactly 73 parameters");
+    expect(source.getParameters().size() == 102,
+           "M5 append-only public parameter layout must contain exactly 102 parameters");
     std::set<juce::String> stableIds;
     for (const auto* parameter : source.getParameters())
     {
@@ -80,6 +85,9 @@ void testStateRoundTrip()
     filterMode->setValueNotifyingHost(1.0f);
     lfo4Shape->setValueNotifyingHost(1.0f);
     lfo1Rate->setValueNotifyingHost(0.43f);
+    distortionBypass->setValueNotifyingHost(0.0f);
+    delayFeedback->setValueNotifyingHost(0.71f);
+    eqMidGain->setValueNotifyingHost(0.82f);
     const std::array routes{
         folkpark::synth::ModulationRoute{folkpark::synth::ModulationSource::lfo1,
                                         folkpark::synth::ModulationDestination::oscillatorAPosition,
@@ -105,6 +113,11 @@ void testStateRoundTrip()
     const auto* restoredFilterMode = restored.state().getParameter(folkpark::parameterIds::filterMode);
     const auto* restoredLfo4Shape = restored.state().getParameter(folkpark::parameterIds::lfoShape[3]);
     const auto* restoredLfo1Rate = restored.state().getParameter(folkpark::parameterIds::lfoRate[0]);
+    const auto* restoredDistortionBypass
+        = restored.state().getParameter(folkpark::parameterIds::distortionBypass);
+    const auto* restoredDelayFeedback
+        = restored.state().getParameter(folkpark::parameterIds::delayFeedback);
+    const auto* restoredEqMidGain = restored.state().getParameter(folkpark::parameterIds::eqMidGain);
     expect(std::abs(restoredCutoff->getValue() - cutoff->getValue()) <= 1.0e-7f,
            "Filter cutoff must survive state round trip");
     expect(std::abs(restoredWaveform->getValue() - waveform->getValue()) <= 1.0e-7f,
@@ -117,6 +130,12 @@ void testStateRoundTrip()
            "LFO 4 shape must survive state round trip");
     expect(std::abs(restoredLfo1Rate->getValue() - lfo1Rate->getValue()) <= 1.0e-7f,
            "LFO 1 rate must survive state round trip");
+    expect(std::abs(restoredDistortionBypass->getValue() - distortionBypass->getValue()) <= 1.0e-7f,
+           "M5 effect bypass must survive state round trip");
+    expect(std::abs(restoredDelayFeedback->getValue() - delayFeedback->getValue()) <= 1.0e-7f,
+           "M5 delay feedback must survive state round trip");
+    expect(std::abs(restoredEqMidGain->getValue() - eqMidGain->getValue()) <= 1.0e-7f,
+           "M5 parametric EQ gain must survive state round trip");
     const auto restoredRoutes = restored.getConfiguredModulationRoutes();
     expect(restoredRoutes.routeCount == routes.size(),
            "Validated modulation route count must survive state round trip");

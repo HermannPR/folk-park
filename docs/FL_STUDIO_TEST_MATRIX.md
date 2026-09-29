@@ -8,7 +8,7 @@ Environment at M0 intake:
 - macOS: 15.7.9 (24G830)
 - Architecture: x86_64-capable Intel host
 - Tester: Hermann Pauwells
-- M4 VST3 binary SHA-256: `58169e6dcfda3ee50298e6994ac6b9441cbc5c887d2b5fa0e0bae26932848188`
+- M5 VST3 binary SHA-256: `5ff08476376a4d37e0224623741c3e42a5e15cb52118b6259f33705c965126ac`
 
 | Case | Expected result | Actual | Evidence |
 | --- | --- | --- | --- |
@@ -32,7 +32,10 @@ Environment at M0 intake:
 | MIDI routing | Wrapper output port routes to a second instrument | HUMAN RUN REQUIRED | Pending |
 | Candidate note editing | Edit pitch/start/duration/velocity, verify accepted MIDI remains unchanged, accept again, then drag/direct-route the edit | HUMAN RUN REQUIRED | Native transactional edit tests passed; FL pending |
 | Immediate Undo/Redo | Move a host-aware UI control, immediately Undo, then Redo; host automation/state remain coherent | HUMAN RUN REQUIRED | Native APVTS timing regression passed; FL pending |
-| Preview WAV | Isolated render/import/play with correct length/rate | NOT IMPLEMENTED (M5) | Not claimable in M4 |
+| M5 ordered effects | Enable Distortion → Chorus → synced Delay → Reverb → Compressor → EQ; verify every control, order, independent bypass, and no objectionable clicks | HUMAN RUN REQUIRED | Automated isolated/serial DSP tests passed; listening in FL pending |
+| M5 tempo sync | Change FL tempo while delay is active and verify 1 bar through 1/16 timing and safe transitions | HUMAN RUN REQUIRED | Exact 120/240 BPM sample timing passed natively; FL transport pending |
+| M5 effect automation/state | Record representative FX controls and bypasses, save-close-reopen, and verify coherent recall | HUMAN RUN REQUIRED | All 102 parameters round-trip and pluginval automation passed; FL pending |
+| Preview WAV | Accept a composition, render WAV, import it into FL, and verify stereo 24-bit/48 kHz playback, expected musical length plus tail, and current sound/effects | HUMAN RUN REQUIRED | Header/rate/length/non-silence and live-engine isolation passed natively; FL import/listening pending |
 | UI focus/fallback | Shortcuts, low graphics, and WebView failure are safe | HUMAN RUN REQUIRED | Pending |
 | Offline render | Matches real-time within documented tolerance | HUMAN RUN REQUIRED | Pending |
 | Failure modes | Invalid state/provider/database/UI failure does not stop audio | HUMAN RUN REQUIRED | Pending |

@@ -21,9 +21,16 @@ declare module "@juce/index.js" {
     getChoiceIndex(): number;
     setChoiceIndex(value: number): void;
   };
+  export type ToggleState = {
+    valueChangedEvent: ListenerList;
+    propertiesChangedEvent: ListenerList;
+    getValue(): boolean;
+    setValue(value: boolean): void;
+  };
   export function getNativeFunction(name: string): (...arguments_: unknown[]) => Promise<unknown>;
   export function getSliderState(name: string): SliderState;
   export function getComboBoxState(name: string): ComboBoxState;
+  export function getToggleState(name: string): ToggleState;
 }
 
 type JuceBackend = {

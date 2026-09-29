@@ -48,6 +48,10 @@ export type UiSnapshot = {
   activeVoices: number;
   importStatus: string;
   importMessage: string;
+  renderStatus: string;
+  renderMessage: string;
+  renderDestination: string;
+  renderDuration: number;
   modulationRouteCount: number;
   modulationRoutes: ModulationRouteSnapshot[];
   composition: CompositionSnapshot;
@@ -135,6 +139,10 @@ export function parseUiSnapshot(value: unknown): UiSnapshot | null {
       || !isFiniteRange(value.activeVoices, 0, 16)
       || !isBoundedString(value.importStatus, 64)
       || !isBoundedString(value.importMessage, 512)
+      || !isBoundedString(value.renderStatus, 64)
+      || !isBoundedString(value.renderMessage, 512)
+      || !isBoundedString(value.renderDestination, 2048)
+      || !isFiniteRange(value.renderDuration, 0, 900)
       || !isFiniteRange(value.modulationRouteCount, 0, 32)
       || !Array.isArray(value.modulationRoutes)
       || value.modulationRoutes.length !== value.modulationRouteCount

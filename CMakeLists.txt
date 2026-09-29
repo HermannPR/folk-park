@@ -44,11 +44,15 @@ juce_add_plugin(FolkPark
     VST3_CATEGORIES Instrument Synth)
 
 target_sources(FolkPark PRIVATE
+    src/effects/EffectChain.cpp
+    src/effects/EffectChain.h
     src/plugin/PluginEditor.cpp
     src/plugin/PluginEditor.h
     src/plugin/PluginProcessor.cpp
     src/plugin/PluginProcessor.h
     src/plugin/ParameterIds.h
+    src/render/OfflinePreviewRenderer.cpp
+    src/render/OfflinePreviewRenderer.h
     src/midi/MidiProof.cpp
     src/midi/MidiProof.h
     src/midi/Composition.cpp
@@ -129,6 +133,48 @@ target_link_libraries(FolkParkTests PRIVATE
 enable_testing()
 add_test(NAME FolkParkNativeTests COMMAND FolkParkTests)
 
+juce_add_console_app(FolkParkEffectsTests PRODUCT_NAME "folk park effects tests")
+target_sources(FolkParkEffectsTests PRIVATE
+    tests/EffectsTests.cpp
+    src/effects/EffectChain.cpp
+    src/effects/EffectChain.h)
+target_include_directories(FolkParkEffectsTests PRIVATE src)
+target_compile_definitions(FolkParkEffectsTests PRIVATE JUCE_USE_CURL=0)
+target_link_libraries(FolkParkEffectsTests PRIVATE
+    juce::juce_audio_basics
+    juce::juce_dsp
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)
+add_test(NAME FolkParkEffectsChainTests COMMAND FolkParkEffectsTests)
+
+juce_add_console_app(FolkParkOfflinePreviewTests PRODUCT_NAME "folk park offline preview tests")
+target_sources(FolkParkOfflinePreviewTests PRIVATE
+    tests/OfflinePreviewTests.cpp
+    src/render/OfflinePreviewRenderer.cpp
+    src/render/OfflinePreviewRenderer.h
+    src/effects/EffectChain.cpp
+    src/effects/EffectChain.h
+    src/midi/Composition.cpp
+    src/midi/Composition.h
+    src/midi/MidiDelivery.cpp
+    src/midi/MidiDelivery.h
+    src/synth/SynthEngine.cpp
+    src/synth/SynthEngine.h
+    src/synth/Modulation.cpp
+    src/synth/Modulation.h
+    src/synth/WavetableBank.cpp
+    src/synth/WavetableBank.h
+    src/synth/WavetableExchange.cpp
+    src/synth/WavetableExchange.h)
+target_include_directories(FolkParkOfflinePreviewTests PRIVATE src)
+target_compile_definitions(FolkParkOfflinePreviewTests PRIVATE JUCE_USE_CURL=0)
+target_link_libraries(FolkParkOfflinePreviewTests PRIVATE
+    juce::juce_audio_formats
+    juce::juce_dsp
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)
+add_test(NAME FolkParkOfflinePreviewIsolationTests COMMAND FolkParkOfflinePreviewTests)
+
 juce_add_console_app(FolkParkCompositionTests PRODUCT_NAME "folk park composition tests")
 target_sources(FolkParkCompositionTests PRIVATE
     tests/CompositionTests.cpp
@@ -186,6 +232,8 @@ target_sources(FolkParkRealtimeTests PRIVATE
     src/midi/MidiDelivery.h
     src/midi/PreviewMidi.cpp
     src/midi/PreviewMidi.h
+    src/effects/EffectChain.cpp
+    src/effects/EffectChain.h
     src/synth/SynthEngine.cpp
     src/synth/SynthEngine.h
     src/synth/Modulation.cpp
@@ -213,6 +261,10 @@ target_sources(FolkParkPluginTests PRIVATE
     src/plugin/PluginProcessor.cpp
     src/plugin/PluginProcessor.h
     src/plugin/ParameterIds.h
+    src/effects/EffectChain.cpp
+    src/effects/EffectChain.h
+    src/render/OfflinePreviewRenderer.cpp
+    src/render/OfflinePreviewRenderer.h
     src/midi/MidiProof.cpp
     src/midi/MidiProof.h
     src/midi/Composition.cpp

@@ -35,7 +35,7 @@ WAV decoding, validation, cycle conversion, preview construction, SHA-256 metada
 
 The central modulation registry defines source/destination IDs, polarity, full scale, units, and smoothing expectations. Message/state code validates up to 32 routes and publishes one complete fixed snapshot. The callback never parses or partially mutates a matrix.
 
-The WebView remains an adapter over host parameter attachments and explicit native functions. File choice, confirmation, cancellation, route editing, and status happen on non-audio/UI boundaries. The full 32-route presentation is deferred to M4; the current editor intentionally presents one replace-all reviewed route.
+The WebView remains an adapter over host parameter attachments and explicit native functions. File choice, confirmation, cancellation, route editing, and status happen on non-audio/UI boundaries. M4 presents all 32 reviewed route slots while retaining the same transactional native publication.
 
 ## M3 composition and MIDI boundary
 
@@ -53,11 +53,18 @@ Touch/computer audition commands cross a fixed 64-command SPSC queue. The produc
 
 Composition-note editing remains non-real-time. Each edit copies the candidate, clamps and validates every affected value, stable-sorts events, validates the complete bundle, and then publishes transactionally. The accepted bundle is a separate immutable value until the producer explicitly accepts the edited candidate again.
 
+## M5 effects and offline-render boundary
+
+The real-time chain has one fixed serial order: Distortion, Chorus, tempo-synced Delay, Reverb, Compressor, then Parametric EQ. Each stage owns only preallocated callback state and a 10 ms bypass crossfade. The processor copies 29 append-only host parameter values at the block boundary; the DSP replaces non-finite values with catalog defaults and bounds output. The measured callback includes all six enabled stages and allocates zero times.
+
+Offline WAV rendering cannot access the live `SynthEngine` or `EffectChain`. An explicit accepted composition triggers a message-thread snapshot of synth/effect parameters, modulation routes, master gain, and shared immutable A/B banks. A single worker constructs separate engines, consumes their immutable exchanges before the first event, streams a bounded stereo 24-bit WAV to a temporary sibling, reopens and validates its rate/length/header, and only then replaces the producer-approved destination. Cancellation removes the temporary file and never stops live notes.
+
 ## ADRs
 
 - ADR-0001: JUCE pin and dependency acquisition.
 - ADR-0003: Fixed-capacity immutable wavetable and modulation exchange for M2 (accepted).
 - ADR-0004: Pure deterministic composition and shared MIDI delivery for M3 (accepted).
 - ADR-0005: Bundled React UI and bounded Three.js visualizer for M4 (accepted).
+- ADR-0006: Ordered effects and isolated offline preview for M5 (accepted).
 
 History persistence and provider-secret decisions remain required before M6 and M7 respectively; no ADR claims completion yet.

@@ -1,3 +1,4 @@
+#include "effects/EffectChain.h"
 #include "midi/Composition.h"
 #include "midi/MidiDelivery.h"
 #include "midi/PreviewMidi.h"
@@ -148,12 +149,22 @@ int main()
         std::cerr << "FAIL: preview MIDI allocation fixture must enqueue before measurement\n";
         return 1;
     }
+    folkpark::effects::EffectChain effects;
+    folkpark::effects::Parameters effectParameters;
+    effectParameters.distortionBypass = false;
+    effectParameters.chorusBypass = false;
+    effectParameters.delayBypass = false;
+    effectParameters.reverbBypass = false;
+    effectParameters.compressorBypass = false;
+    effectParameters.eqBypass = false;
+    effects.prepare(48000.0, blockSize);
 
     allocationProbe::count.store(0, std::memory_order_relaxed);
     allocationProbe::tracking.store(true, std::memory_order_release);
     for (int block = 0; block < 32; ++block)
     {
         engine.process(audio, midi, parameters);
+        effects.process(audio, effectParameters);
         directOutput.clear();
         const auto previewEvents = previewQueue.renderBlock(directOutput);
         juce::ignoreUnused(previewEvents);
@@ -173,6 +184,6 @@ int main()
         std::cerr << "FAIL: measured audio rendering allocated " << allocations << " time(s)\n";
         return 1;
     }
-    std::cout << "PASS: 32 audio blocks, including synth swaps, crossfade, direct MIDI, and preview keyboard, allocated 0 times\n";
+    std::cout << "PASS: 32 audio blocks, including synth, six effects, swaps, direct MIDI, and preview keyboard, allocated 0 times\n";
     return 0;
 }
