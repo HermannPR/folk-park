@@ -1,5 +1,7 @@
 #include "PluginEditor.h"
 
+#include "platform/CredentialStore.h"
+
 #include <BinaryData.h>
 #include <cmath>
 #include <cstddef>
@@ -233,6 +235,208 @@ juce::var compositionPayload(const PluginProcessor& processor)
         notes.add(juce::var(object.get()));
     }
     payload->setProperty("notes", juce::var(notes));
+    return juce::var(payload.get());
+}
+
+bool hasOnlyObjectProperties(const juce::DynamicObject& object,
+                             std::initializer_list<const char*> allowed)
+{
+    const auto& properties = object.getProperties();
+    for (int index = 0; index < properties.size(); ++index)
+    {
+        const auto name = properties.getName(index).toString();
+        auto found = false;
+        for (const auto* candidate : allowed)
+            found = found || name == candidate;
+        if (!found)
+            return false;
+    }
+    return true;
+}
+
+bool optionalAnswer(const juce::DynamicObject& object,
+                    const char* name,
+                    int maximumLength,
+                    juce::String& output)
+{
+    if (!object.hasProperty(name))
+        return true;
+    return boundedString(object.getProperty(name), maximumLength, output);
+}
+
+bool parseJarvisSoundInput(const juce::var& value,
+                           bool requirePrompt,
+                           assistant::AssistantRequest& request)
+{
+    const auto* object = value.getDynamicObject();
+    if (object == nullptr
+        || !hasOnlyObjectProperties(*object, {"entryMode", "seed", "prompt", "answers"})
+        || !object->hasProperty("entryMode") || !object->hasProperty("seed")
+        || !object->hasProperty("prompt") || !object->hasProperty("answers"))
+        return false;
+
+    juce::String mode;
+    juce::String prompt;
+    double seed = 0.0;
+    if (!boundedString(object->getProperty("entryMode"), 16, mode, false)
+        || (mode != "guided" && mode != "describe")
+        || !boundedNumber(object->getProperty("seed"), 0.0,
+                          static_cast<double>(std::numeric_limits<std::uint32_t>::max()), seed)
+        || std::floor(seed) != seed
+        || !boundedString(object->getProperty("prompt"),
+                          assistant::AssistantRequest::maximumPromptLength, prompt,
+                          !requirePrompt))
+        return false;
+
+    const auto* answers = object->getProperty("answers").getDynamicObject();
+    if (answers == nullptr
+        || !hasOnlyObjectProperties(*answers,
+            {"musicalRole", "timbre", "articulation", "movement", "space",
+             "intensity", "genreContext", "referenceDescription"}))
+        return false;
+
+    assistant::SoundIntent intent;
+    intent.seed = static_cast<std::uint32_t>(seed);
+    intent.entryMode = mode == "guided"
+        ? assistant::SoundEntryMode::guided : assistant::SoundEntryMode::describe;
+    if (!optionalAnswer(*answers, "musicalRole", 128, intent.answers.musicalRole)
+        || !optionalAnswer(*answers, "timbre", 256, intent.answers.timbre)
+        || !optionalAnswer(*answers, "articulation", 128, intent.answers.articulation)
+        || !optionalAnswer(*answers, "movement", 128, intent.answers.movement)
+        || !optionalAnswer(*answers, "space", 128, intent.answers.space)
+        || !optionalAnswer(*answers, "genreContext", 128, intent.answers.genreContext)
+        || !optionalAnswer(*answers, "referenceDescription", 512,
+                           intent.answers.referenceDescription))
+        return false;
+    if (answers->hasProperty("intensity"))
+    {
+        const auto intensityValue = answers->getProperty("intensity");
+        if (!intensityValue.isVoid())
+        {
+            double intensity = 0.0;
+            if (!boundedNumber(intensityValue, 0.0, 1.0, intensity))
+                return false;
+            intent.answers.intensity = static_cast<float>(intensity);
+        }
+    }
+    if (intent.entryMode == assistant::SoundEntryMode::describe
+        && intent.answers.referenceDescription.isEmpty())
+        intent.answers.referenceDescription = prompt;
+
+    const auto identity = prompt + "|" + mode + "|" + intent.answers.musicalRole + "|"
+        + intent.answers.timbre + "|" + intent.answers.articulation + "|"
+        + intent.answers.movement + "|" + intent.answers.space + "|"
+        + intent.answers.genreContext + "|" + intent.answers.referenceDescription
+        + (intent.answers.intensity.has_value()
+            ? "|" + juce::String(*intent.answers.intensity, 6) : "|unanswered");
+    intent.requestId = midi::deterministicUuid(intent.seed, "jarvis-ui-sound-" + identity);
+    request = {};
+    request.requestId = intent.requestId;
+    request.target = assistant::AssistantTarget::sound;
+    request.origin = assistant::AssistantOrigin::offline;
+    request.prompt = prompt.isEmpty() ? "Continue the guided sound walkthrough" : prompt;
+    request.soundIntent = std::move(intent);
+    return true;
+}
+
+juce::var guidedProgressPayload(const assistant::GuidedProgress& progress)
+{
+    auto payload = juce::DynamicObject::Ptr(new juce::DynamicObject());
+    payload->setProperty("ok", true);
+    payload->setProperty("completion", progress.completion);
+    payload->setProperty("readyForProposal", progress.readyForProposal);
+    juce::Array<juce::var> questions;
+    questions.ensureStorageAllocated(static_cast<int>(progress.questions.size()));
+    for (const auto& source : progress.questions)
+    {
+        auto question = juce::DynamicObject::Ptr(new juce::DynamicObject());
+        question->setProperty("id", source.id);
+        question->setProperty("prompt", source.prompt);
+        question->setProperty("purpose", source.purpose);
+        question->setProperty("required", source.required);
+        questions.add(juce::var(question.get()));
+    }
+    payload->setProperty("questions", juce::var(questions));
+    return juce::var(payload.get());
+}
+
+juce::var assistantAuditionPayload(const assistant::AssistantAuditionSnapshot& snapshot)
+{
+    auto payload = juce::DynamicObject::Ptr(new juce::DynamicObject());
+    payload->setProperty("ok", true);
+    payload->setProperty("status", assistant::stableId(snapshot.status));
+    payload->setProperty("active", snapshot.active());
+    payload->setProperty("audibleSide", assistant::stableId(snapshot.audibleSide));
+    payload->setProperty("message", snapshot.message);
+    if (!snapshot.proposal.has_value())
+    {
+        payload->setProperty("proposal", juce::var());
+        return juce::var(payload.get());
+    }
+
+    const auto& source = *snapshot.proposal;
+    auto proposal = juce::DynamicObject::Ptr(new juce::DynamicObject());
+    proposal->setProperty("proposalId", source.proposalId);
+    proposal->setProperty("requestId", source.requestId);
+    proposal->setProperty("explanation", source.explanation);
+    proposal->setProperty("confidence", source.confidence);
+    proposal->setProperty("requiresExplicitAcceptance", source.requiresExplicitAcceptance);
+    proposal->setProperty("assumptions", stringArrayPayload(source.assumptions));
+    juce::Array<juce::var> changes;
+    changes.ensureStorageAllocated(static_cast<int>(source.changes.size()));
+    for (const auto& sourceChange : source.changes)
+    {
+        auto change = juce::DynamicObject::Ptr(new juce::DynamicObject());
+        change->setProperty("parameterId", sourceChange.parameterId);
+        change->setProperty("currentNormalized", sourceChange.currentNormalized);
+        change->setProperty("proposedNormalized", sourceChange.proposedNormalized);
+        change->setProperty("reason", sourceChange.reason);
+        changes.add(juce::var(change.get()));
+    }
+    proposal->setProperty("changes", juce::var(changes));
+    payload->setProperty("proposal", juce::var(proposal.get()));
+    return juce::var(payload.get());
+}
+
+juce::var jarvisCompositionPayload(const PluginProcessor& processor,
+                                    const assistant::AssistantResponse& response)
+{
+    const auto& intent = *response.musicIntent;
+    auto intentPayload = juce::DynamicObject::Ptr(new juce::DynamicObject());
+    intentPayload->setProperty("requestId", intent.requestId);
+    intentPayload->setProperty("seed", static_cast<juce::int64>(intent.seed));
+    intentPayload->setProperty("key", midi::stableId(intent.key));
+    intentPayload->setProperty("scale", midi::stableId(intent.scale));
+    intentPayload->setProperty("tempoBpm", intent.tempoBpm);
+    intentPayload->setProperty("bars", intent.lengthBars);
+    intentPayload->setProperty("genre", midi::stableId(intent.genreProfile));
+    intentPayload->setProperty("emotion", midi::stableId(intent.emotion));
+    juce::Array<juce::var> parts;
+    for (std::size_t index = 0; index < intent.partCount; ++index)
+        parts.add(midi::stableId(intent.parts[index]));
+    intentPayload->setProperty("parts", juce::var(parts));
+
+    auto payload = juce::DynamicObject::Ptr(new juce::DynamicObject());
+    payload->setProperty("ok", true);
+    payload->setProperty("summary", response.summary);
+    payload->setProperty("intent", juce::var(intentPayload.get()));
+    payload->setProperty("composition", compositionPayload(processor));
+    return juce::var(payload.get());
+}
+
+juce::var assistantProviderStatusPayload()
+{
+    auto payload = juce::DynamicObject::Ptr(new juce::DynamicObject());
+    payload->setProperty("ok", true);
+    payload->setProperty("mode", "offline");
+    payload->setProperty("offlineAvailable", true);
+    payload->setProperty("remoteProviderAvailable", false);
+    payload->setProperty("selectedProvider", "");
+    payload->setProperty("keychainAvailable",
+                         platform::MacKeychainCredentialStore::platformSupported());
+    payload->setProperty("credentialConfigured", false);
+    payload->setProperty("message",
+        "Offline Jarvis is active. No remote provider is selected and no credential is requested.");
     return juce::var(payload.get());
 }
 
@@ -568,6 +772,160 @@ juce::WebBrowserComponent::Options PluginEditor::browserOptions()
             info->setProperty("version", FOLK_PARK_VERSION);
             info->setProperty("architecture", "x86_64");
             complete(juce::var(info.get()));
+        })
+        .withNativeFunction("getAssistantProviderStatus", [](const auto& arguments,
+                                                               auto complete)
+        {
+            if (!arguments.isEmpty())
+            {
+                complete("Assistant provider status takes no arguments");
+                return;
+            }
+            complete(assistantProviderStatusPayload());
+        })
+        .withNativeFunction("getJarvisState", [this](const auto& arguments, auto complete)
+        {
+            if (!arguments.isEmpty())
+            {
+                complete("Jarvis state takes no arguments");
+                return;
+            }
+            complete(assistantAuditionPayload(ownerProcessor.getAssistantAuditionSnapshot()));
+        })
+        .withNativeFunction("getJarvisQuestions", [this](const auto& arguments, auto complete)
+        {
+            assistant::AssistantRequest request;
+            if (arguments.size() != 1
+                || !parseJarvisSoundInput(arguments[0], false, request))
+            {
+                complete("Jarvis questions require one bounded guided or describe sound-intent object");
+                return;
+            }
+            complete(guidedProgressPayload(
+                ownerProcessor.getAssistantQuestions(*request.soundIntent)));
+        })
+        .withNativeFunction("createJarvisSoundProposal", [this](const auto& arguments,
+                                                                 auto complete)
+        {
+            assistant::AssistantRequest request;
+            if (arguments.size() != 1
+                || !parseJarvisSoundInput(arguments[0], true, request))
+            {
+                complete("Jarvis sound proposal requires one bounded guided or describe intent");
+                return;
+            }
+            const auto result = ownerProcessor.runOfflineAssistant(request);
+            if (result.status.failed() || !result.response.has_value()
+                || !result.response->parameterProposal.has_value())
+            {
+                complete(result.status.getErrorMessage());
+                return;
+            }
+            if (const auto begun = ownerProcessor.beginAssistantProposal(
+                    *result.response->parameterProposal); begun.failed())
+            {
+                complete(begun.getErrorMessage());
+                return;
+            }
+            auto payload = assistantAuditionPayload(
+                ownerProcessor.getAssistantAuditionSnapshot());
+            if (auto* object = payload.getDynamicObject())
+                object->setProperty("summary", result.response->summary);
+            complete(payload);
+        })
+        .withNativeFunction("auditionJarvisSide", [this](const auto& arguments, auto complete)
+        {
+            if (arguments.size() != 1 || !arguments[0].isString())
+            {
+                complete("Jarvis audition requires side original or proposal");
+                return;
+            }
+            const auto side = arguments[0].toString();
+            if (side != "original" && side != "proposal")
+            {
+                complete("Jarvis audition side must be original or proposal");
+                return;
+            }
+            const auto result = ownerProcessor.auditionAssistantSide(
+                side == "original" ? assistant::AuditionSide::original
+                                   : assistant::AuditionSide::proposal);
+            complete(result.wasOk()
+                ? assistantAuditionPayload(ownerProcessor.getAssistantAuditionSnapshot())
+                : juce::var(result.getErrorMessage()));
+        })
+        .withNativeFunction("acceptJarvisProposal", [this](const auto& arguments, auto complete)
+        {
+            if (!arguments.isEmpty())
+            {
+                complete("Jarvis acceptance takes no arguments");
+                return;
+            }
+            const auto result = ownerProcessor.acceptAssistantProposal();
+            complete(result.wasOk()
+                ? assistantAuditionPayload(ownerProcessor.getAssistantAuditionSnapshot())
+                : juce::var(result.getErrorMessage()));
+        })
+        .withNativeFunction("rejectJarvisProposal", [this](const auto& arguments, auto complete)
+        {
+            if (!arguments.isEmpty())
+            {
+                complete("Jarvis rejection takes no arguments");
+                return;
+            }
+            const auto result = ownerProcessor.rejectAssistantProposal();
+            complete(result.wasOk()
+                ? assistantAuditionPayload(ownerProcessor.getAssistantAuditionSnapshot())
+                : juce::var(result.getErrorMessage()));
+        })
+        .withNativeFunction("createJarvisComposition", [this](const auto& arguments,
+                                                               auto complete)
+        {
+            if (arguments.size() != 1)
+            {
+                complete("Jarvis composition requires one bounded prompt and seed object");
+                return;
+            }
+            const auto* object = arguments[0].getDynamicObject();
+            juce::String prompt;
+            double seed = 0.0;
+            if (object == nullptr
+                || !hasOnlyObjectProperties(*object, {"prompt", "seed"})
+                || !object->hasProperty("prompt") || !object->hasProperty("seed")
+                || !boundedString(object->getProperty("prompt"),
+                                  assistant::AssistantRequest::maximumPromptLength,
+                                  prompt, false)
+                || !boundedNumber(object->getProperty("seed"), 0.0,
+                    static_cast<double>(std::numeric_limits<std::uint32_t>::max()), seed)
+                || std::floor(seed) != seed)
+            {
+                complete("Jarvis composition prompt or seed is malformed or outside bounds");
+                return;
+            }
+
+            assistant::AssistantRequest request;
+            request.requestId = midi::deterministicUuid(
+                static_cast<std::uint32_t>(seed), "jarvis-ui-composition-" + prompt);
+            request.target = assistant::AssistantTarget::composition;
+            request.origin = assistant::AssistantOrigin::offline;
+            request.prompt = prompt;
+            midi::MusicIntent fallbackIntent;
+            fallbackIntent.requestId = request.requestId;
+            fallbackIntent.seed = static_cast<std::uint32_t>(seed);
+            request.compositionFallback = fallbackIntent;
+            const auto result = ownerProcessor.runOfflineAssistant(request);
+            if (result.status.failed() || !result.response.has_value()
+                || !result.response->musicIntent.has_value())
+            {
+                complete(result.status.getErrorMessage());
+                return;
+            }
+            if (const auto generated = ownerProcessor.generateCompositionCandidate(
+                    *result.response->musicIntent); generated.failed())
+            {
+                complete(generated.getErrorMessage());
+                return;
+            }
+            complete(jarvisCompositionPayload(ownerProcessor, *result.response));
         })
         .withNativeFunction("panic", [this](const auto&, auto complete)
         {

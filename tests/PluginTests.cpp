@@ -99,6 +99,31 @@ folkpark::PluginProcessor::PersistenceConfiguration disabledPersistence()
     return {false, {}};
 }
 
+folkpark::assistant::ParameterProposal makeAssistantProposal(
+    folkpark::PluginProcessor& processor,
+    std::uint64_t seed)
+{
+    using namespace folkpark;
+    assistant::ParameterProposal proposal;
+    proposal.proposalId = midi::deterministicUuid(seed, "processor-assistant-proposal");
+    proposal.requestId = midi::deterministicUuid(seed, "processor-assistant-request");
+    proposal.explanation = "A bounded processor A/B integration fixture";
+    proposal.confidence = 0.8f;
+    const auto current = processor.getAssistantParameterSnapshot();
+    for (const auto& value : current)
+    {
+        if (value.parameterId == parameterIds::filterCutoff)
+            proposal.changes.push_back({value.parameterId, value.normalized,
+                                        value.normalized < 0.6f ? 0.72f : 0.32f,
+                                        "Auditions a clearly different filter position"});
+        if (value.parameterId == parameterIds::reverbMix)
+            proposal.changes.push_back({value.parameterId, value.normalized,
+                                        value.normalized < 0.5f ? 0.58f : 0.18f,
+                                        "Auditions a clearly different spatial mix"});
+    }
+    return proposal;
+}
+
 struct TemporaryDirectory
 {
     TemporaryDirectory()
@@ -226,6 +251,196 @@ void testStateRoundTrip()
            "Processor boundary must reject unsupported modulation destinations");
     expect(restored.getConfiguredModulationRoutes().routeCount == routes.size(),
            "Rejected route candidate must not partially replace configured modulation state");
+}
+
+void testAssistantProposalAuditionAndAcceptance()
+{
+    using namespace folkpark;
+    PluginProcessor processor(disabledPersistence());
+    processor.prepareToPlay(48000.0, 256);
+    const auto parameters = processor.getAssistantParameterSnapshot();
+    expect(parameters.size()
+               == parameterIds::synthAndModulation.size() + parameterIds::allEffects.size()
+               && assistant::validateCurrentParameterValues(parameters).wasOk(),
+           "Processor must expose one valid normalized snapshot for all 102 host parameters");
+
+    auto* cutoff = processor.state().getParameter(parameterIds::filterCutoff);
+    auto* reverbMix = processor.state().getParameter(parameterIds::reverbMix);
+    expect(cutoff != nullptr && reverbMix != nullptr,
+           "Assistant processor fixture parameters must exist");
+    if (cutoff == nullptr || reverbMix == nullptr)
+        return;
+    const auto originalCutoff = cutoff->getValue();
+    const auto originalReverb = reverbMix->getValue();
+    const auto initiallyDirty = processor.getPersistenceStatus().currentPresetDirty;
+    const auto proposal = makeAssistantProposal(processor, 71001);
+
+    expect(processor.beginAssistantProposal(proposal).wasOk(),
+           "A current catalog-valid proposal must enter processor-owned A/B state");
+    expect(processor.beginAssistantProposal(proposal).failed(),
+           "An active processor A/B session must reject replacement without a decision");
+    expect(processor.getAssistantAuditionSnapshot().active()
+               && processor.getAssistantAuditionSnapshot().audibleSide
+                    == assistant::AuditionSide::original,
+           "Processor A/B must begin on original A without changing the sound");
+    const auto effectiveProposal = *processor.getAssistantAuditionSnapshot().proposal;
+    expect(processor.auditionAssistantSide(assistant::AuditionSide::proposal).wasOk()
+               && std::abs(cutoff->getValue() - effectiveProposal.changes[0].proposedNormalized) < 1.0e-6f
+               && std::abs(reverbMix->getValue() - effectiveProposal.changes[1].proposedNormalized) < 1.0e-6f,
+           "Audition B must update the exact normalized APVTS values");
+    expect(processor.getPersistenceStatus().currentPresetDirty == initiallyDirty,
+           "Temporary B audition must not mark the native sound permanently dirty");
+
+    juce::MemoryBlock activeState;
+    processor.getStateInformation(activeState);
+    PluginProcessor reopened(disabledPersistence());
+    reopened.prepareToPlay(48000.0, 256);
+    reopened.setStateInformation(activeState.getData(), static_cast<int>(activeState.getSize()));
+    const auto* reopenedCutoff = reopened.state().getParameter(parameterIds::filterCutoff);
+    const auto reopenedAudition = reopened.getAssistantAuditionSnapshot();
+    expect(reopenedCutoff != nullptr && reopenedAudition.active()
+               && reopenedAudition.status == assistant::AssistantSessionStatus::previewing
+               && reopenedAudition.audibleSide == assistant::AuditionSide::proposal
+               && std::abs(reopenedCutoff->getValue()
+                           - effectiveProposal.changes[0].proposedNormalized) < 1.0e-6f,
+           "Host project reopen must restore active proposal B and retained original A without an editor");
+    expect(reopened.auditionAssistantSide(assistant::AuditionSide::original).wasOk()
+               && std::abs(reopenedCutoff->getValue() - originalCutoff) < 1.0e-6f
+               && reopened.rejectAssistantProposal().wasOk(),
+           "A restored project A/B session must still switch and reject reversibly");
+
+    const auto activeXml = PluginProcessor::getXmlFromBinary(
+        activeState.getData(), static_cast<int>(activeState.getSize()));
+    expect(activeXml != nullptr, "Active assistant project state must reopen as JUCE XML");
+    if (activeXml != nullptr)
+    {
+        auto malformedTree = juce::ValueTree::fromXml(*activeXml);
+        auto session = malformedTree.getChildWithName("FolkParkProjectSession");
+        auto assistantState = session.getChildWithName("FolkParkAssistantAudition");
+        assistantState.setProperty("unexpected", "must reject", nullptr);
+        juce::MemoryBlock malformedState;
+        if (const auto malformedXml = malformedTree.createXml())
+            PluginProcessor::copyXmlToBinary(*malformedXml, malformedState);
+        PluginProcessor rejected(disabledPersistence());
+        auto* rejectedCutoff = rejected.state().getParameter(parameterIds::filterCutoff);
+        if (rejectedCutoff != nullptr)
+            rejectedCutoff->setValueNotifyingHost(0.91f);
+        const auto beforeRejected = rejectedCutoff != nullptr ? rejectedCutoff->getValue() : -1.0f;
+        rejected.setStateInformation(malformedState.getData(),
+                                     static_cast<int>(malformedState.getSize()));
+        expect(rejectedCutoff != nullptr
+                   && std::abs(rejectedCutoff->getValue() - beforeRejected) < 1.0e-7f
+                   && !rejected.getAssistantAuditionSnapshot().active(),
+               "Malformed assistant project state must reject before any live-sound mutation");
+    }
+
+    expect(processor.auditionAssistantSide(assistant::AuditionSide::original).wasOk()
+               && std::abs(cutoff->getValue() - originalCutoff) < 1.0e-6f
+               && std::abs(reverbMix->getValue() - originalReverb) < 1.0e-6f,
+           "Audition A must restore both captured values exactly");
+    expect(processor.auditionAssistantSide(assistant::AuditionSide::proposal).wasOk()
+               && processor.rejectAssistantProposal().wasOk()
+               && std::abs(cutoff->getValue() - originalCutoff) < 1.0e-6f
+               && std::abs(reverbMix->getValue() - originalReverb) < 1.0e-6f
+               && processor.getAssistantAuditionSnapshot().status
+                    == assistant::AssistantSessionStatus::rejected,
+           "Reject must restore A exactly and close the processor session");
+    expect(processor.getPersistenceStatus().currentPresetDirty == initiallyDirty,
+           "A rejected proposal must retain the original dirty-state boundary");
+
+    const auto accepted = makeAssistantProposal(processor, 71002);
+    const auto beganAccepted = processor.beginAssistantProposal(accepted);
+    const auto acceptedEffective = processor.getAssistantAuditionSnapshot().proposal;
+    expect(beganAccepted.wasOk() && acceptedEffective.has_value()
+               && processor.acceptAssistantProposal().wasOk()
+               && std::abs(cutoff->getValue()
+                           - acceptedEffective->changes[0].proposedNormalized) < 1.0e-6f
+               && processor.getAssistantAuditionSnapshot().status
+                    == assistant::AssistantSessionStatus::accepted,
+           "Accept must apply B and close the processor session explicitly");
+    expect(processor.getPersistenceStatus().currentPresetDirty,
+           "An explicitly accepted proposal must mark the current sound dirty");
+    expect(processor.acceptAssistantProposal().failed(),
+           "A finished proposal must not be accepted twice");
+
+    const auto invalidated = makeAssistantProposal(processor, 71003);
+    expect(processor.beginAssistantProposal(invalidated).wasOk(),
+           "A new proposal may begin after the preceding explicit decision");
+    cutoff->setValueNotifyingHost(cutoff->getValue() > 0.5f ? 0.22f : 0.82f);
+    const auto externallyEdited = cutoff->getValue();
+    expect(processor.auditionAssistantSide(assistant::AuditionSide::proposal).failed()
+               && processor.getAssistantAuditionSnapshot().status
+                    == assistant::AssistantSessionStatus::failed
+               && std::abs(cutoff->getValue() - externallyEdited) < 1.0e-6f,
+           "An external host edit must invalidate A/B without being overwritten");
+
+    juce::AudioBuffer<float> audio(2, 256);
+    auto midi = noteOnBuffer();
+    processor.processBlock(audio, midi);
+    expect(audio.getMagnitude(0, 0, audio.getNumSamples()) > 1.0e-7f,
+           "Assistant failure and A/B decisions must not stop finite active audio");
+}
+
+void testProcessorOfflineJarvisOrchestration()
+{
+    using namespace folkpark;
+    PluginProcessor processor(disabledPersistence());
+
+    assistant::AssistantRequest compositionRequest;
+    compositionRequest.requestId = midi::deterministicUuid(72001, "processor-jarvis-composition");
+    compositionRequest.target = assistant::AssistantTarget::composition;
+    compositionRequest.prompt = "Create an 8 bar F# harmonic minor arp and bass at 132 bpm";
+    midi::MusicIntent fallbackIntent;
+    fallbackIntent.requestId = compositionRequest.requestId;
+    fallbackIntent.seed = 72001;
+    compositionRequest.compositionFallback = fallbackIntent;
+    const auto composition = processor.runOfflineAssistant(compositionRequest);
+    expect(composition.status.wasOk() && composition.response.has_value()
+               && composition.response->musicIntent.has_value(),
+           "Processor must expose the deterministic offline composition assistant without an editor");
+    if (composition.response && composition.response->musicIntent)
+    {
+        expect(processor.generateCompositionCandidate(*composition.response->musicIntent).wasOk()
+                   && processor.getCompositionSnapshot().hasCandidate
+                   && !processor.getCompositionSnapshot().hasAccepted,
+               "Jarvis composition text must create only a reviewable candidate");
+    }
+
+    assistant::SoundIntent unanswered;
+    unanswered.requestId = midi::deterministicUuid(72002, "processor-jarvis-questions");
+    unanswered.entryMode = assistant::SoundEntryMode::guided;
+    const auto questions = processor.getAssistantQuestions(unanswered);
+    expect(questions.questions.size() == 2 && !questions.readyForProposal,
+           "Processor must expose the stable two-at-a-time offline walkthrough");
+
+    assistant::AssistantRequest soundRequest;
+    soundRequest.requestId = midi::deterministicUuid(72003, "processor-jarvis-sound");
+    soundRequest.target = assistant::AssistantTarget::sound;
+    soundRequest.prompt = "Build a bright plucky wide lead with spacious movement";
+    assistant::SoundIntent soundIntent;
+    soundIntent.requestId = soundRequest.requestId;
+    soundIntent.seed = 72003;
+    soundIntent.entryMode = assistant::SoundEntryMode::guided;
+    soundIntent.answers.musicalRole = "wide lead";
+    soundIntent.answers.timbre = "bright glassy";
+    soundIntent.answers.articulation = "plucky";
+    soundIntent.answers.movement = "moving";
+    soundIntent.answers.space = "spacious";
+    soundIntent.answers.intensity = 0.75f;
+    soundIntent.answers.genreContext = "melodic techno";
+    soundRequest.soundIntent = soundIntent;
+    const auto sound = processor.runOfflineAssistant(soundRequest);
+    expect(sound.status.wasOk() && sound.response.has_value()
+               && sound.response->parameterProposal.has_value(),
+           "Processor must map a complete guided intent against its real host snapshot");
+    if (sound.response && sound.response->parameterProposal)
+    {
+        expect(processor.beginAssistantProposal(*sound.response->parameterProposal).wasOk()
+                   && processor.getAssistantAuditionSnapshot().active()
+                   && processor.getAssistantAuditionSnapshot().audibleSide
+                        == assistant::AuditionSide::original,
+               "An offline sound response must enter review without silently applying B");
+    }
 }
 
 void testUiIndependenceAndPanic()
@@ -769,6 +984,8 @@ int main()
 {
     juce::ScopedJuceInitialiser_GUI initialiseGui;
     testStateRoundTrip();
+    testAssistantProposalAuditionAndAcceptance();
+    testProcessorOfflineJarvisOrchestration();
     testHostAwareUndoRedo();
     testUiIndependenceAndPanic();
     testCompositionAcceptanceAndProcessorRouting();
@@ -781,6 +998,6 @@ int main()
     testHistoryDatabaseFailureIsolation();
 
     if (failures == 0)
-        std::cout << "PASS: M1–M5 processor paths plus M6 preset/history/project-state recovery\n";
+        std::cout << "PASS: M1–M6 processor paths plus M7 reversible assistant A/B recovery\n";
     return failures == 0 ? 0 : 1;
 }

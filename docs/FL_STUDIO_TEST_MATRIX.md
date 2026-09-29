@@ -8,7 +8,7 @@ Environment at M0 intake:
 - macOS: 15.7.9 (24G830)
 - Architecture: x86_64-capable Intel host
 - Tester: Hermann Pauwells
-- Installed M6 VST3 binary SHA-256: `9b0fb548a4844b4384742e02248682fde8ffa479a19b9066c953dabc8c6572dc`
+- Installed M7 VST3 binary SHA-256: `b17c88bab2c1356c7b01980b96f918a28acbdd337f7ee2e437f9c63a7d7119ca`
 
 | Case | Expected result | Actual | Evidence |
 | --- | --- | --- | --- |
@@ -32,6 +32,11 @@ Environment at M0 intake:
 | M6 missing-asset recovery | Remove an isolated test asset, reopen safely without partial mutation, reject a wrong WAV, then relink the exact user-selected WAV | HUMAN RUN REQUIRED | Native hash/size rejection and exact relink transaction passed; FL chooser/listening pending |
 | M6 accepted composition/history reopen | Reopen the project, verify accepted MIDI remains deliverable, search/compare/recall history, and test recoverable trash | HUMAN RUN REQUIRED | Native project-state and SQLite restart/recall coverage passed; FL pending |
 | M6 database unavailable | Make only the history database unavailable and verify acceptance, presets, existing audio, and project state continue | HUMAN RUN REQUIRED | Native failure-isolation test passed; FL pending |
+| M7 offline Jarvis sound | Describe a sound, inspect every explanation/current→new value, audition A/B, reject to exact A, then create and explicitly accept a second proposal | HUMAN RUN REQUIRED | Release Standalone A/B/reject interaction passed; FL listening/host state pending |
+| M7 guided walkthrough | Answer role/timbre/articulation/movement/space/intensity/genre in focused steps, verify no more than two questions at once, and create a reviewable proposal | HUMAN RUN REQUIRED | Release Standalone advanced through the first two guided pairs; FL pending |
+| M7 assistant project reopen | Save with active A/B on A, repeat on B, close FL Studio, reopen, verify the correct audible side, then reject/accept safely | HUMAN RUN REQUIRED | Native editor-independent v2 recovery passed; FL pending |
+| M7 composition text | Ask Jarvis for chords/melody/bass/arp, verify only a candidate appears, edit it, explicitly accept, then drag/direct-route it | HUMAN RUN REQUIRED | Native/UI candidate-only boundary passed; FL delivery pending |
+| M7 provider/offline failure | Confirm Settings shows offline/no provider/no credential, disconnect networking, reopen UI, and verify Jarvis/manual audio continue without interruption | HUMAN RUN REQUIRED | Offline source/security/Standalone gates passed; FL failure/listening pending |
 | MIDI drag | Generated `.mid` drags into a supported FL Studio destination | HUMAN RUN REQUIRED | Pending |
 | MIDI routing | Wrapper output port routes to a second instrument | HUMAN RUN REQUIRED | Pending |
 | Candidate note editing | Edit pitch/start/duration/velocity, verify accepted MIDI remains unchanged, accept again, then drag/direct-route the edit | HUMAN RUN REQUIRED | Native transactional edit tests passed; FL pending |

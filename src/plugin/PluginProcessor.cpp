@@ -17,9 +17,11 @@ using Layout = juce::AudioProcessorValueTreeState::ParameterLayout;
 const juce::Identifier modulationRoutesType{"ModulationRoutes"};
 const juce::Identifier modulationRouteType{"ModulationRoute"};
 const juce::Identifier projectSessionType{"FolkParkProjectSession"};
-constexpr int projectSessionSchemaVersion = 1;
+constexpr int oldestProjectSessionSchemaVersion = 1;
+constexpr int projectSessionSchemaVersion = 2;
 constexpr int maximumPluginStateBytes = 8 * 1024 * 1024;
 constexpr auto projectSnapshotId = "00000000-0000-4000-8000-000000000001";
+thread_local bool assistantParameterWriteOnThisThread = false;
 
 bool hasOnlyProjectSessionProperties(const juce::ValueTree& state)
 {
@@ -34,6 +36,29 @@ bool hasOnlyProjectSessionProperties(const juce::ValueTree& state)
             return false;
     }
     return true;
+}
+
+bool hasOnlyProjectSessionChildren(const juce::ValueTree& state, int schemaVersion)
+{
+    if (schemaVersion == oldestProjectSessionSchemaVersion)
+        return state.getNumChildren() == 0;
+    if (state.getNumChildren() > 1)
+        return false;
+    return state.getNumChildren() == 0
+        || state.getChild(0).hasType("FolkParkAssistantAudition");
+}
+
+std::vector<assistant::CurrentParameterValue> assistantValuesForPreset(
+    const persistence::PresetDocument& document)
+{
+    std::vector<assistant::CurrentParameterValue> values;
+    values.reserve(parameterIds::synthAndModulation.size() + parameterIds::allEffects.size());
+    for (const auto& value : document.parameters)
+        values.push_back({value.id, value.normalized});
+    for (const auto& effect : document.effects)
+        for (const auto& value : effect.parameters)
+            values.push_back({value.id, value.normalized});
+    return values;
 }
 
 juce::var binaryPayload(const juce::String& text)
@@ -875,6 +900,150 @@ synth::ModulationSnapshot PluginProcessor::getConfiguredModulationRoutes() const
     return configuredModulationRoutes;
 }
 
+std::vector<assistant::CurrentParameterValue>
+PluginProcessor::getAssistantParameterSnapshot() const
+{
+    std::vector<assistant::CurrentParameterValue> snapshot;
+    snapshot.reserve(parameterIds::synthAndModulation.size() + parameterIds::allEffects.size());
+    const auto capture = [this, &snapshot](const auto& ids)
+    {
+        for (const auto* id : ids)
+            if (const auto* parameter = parameters.getParameter(id))
+                snapshot.push_back({id, parameter->getValue()});
+    };
+    capture(parameterIds::synthAndModulation);
+    capture(parameterIds::allEffects);
+    return snapshot;
+}
+
+void PluginProcessor::applyAssistantParameterValues(
+    std::span<const assistant::CurrentParameterValue> values)
+{
+    undoManager.beginNewTransaction("Audition Jarvis sound proposal");
+    assistantParameterWriteOnThisThread = true;
+    for (const auto& value : values)
+        if (auto* parameter = parameters.getParameter(value.parameterId))
+            parameter->setValueNotifyingHost(value.normalized);
+    assistantParameterWriteOnThisThread = false;
+}
+
+void PluginProcessor::parameterChanged(const juce::String&, float)
+{
+    if (!assistantParameterWriteOnThisThread)
+        parameterRevision.fetch_add(1, std::memory_order_relaxed);
+}
+
+juce::Result PluginProcessor::beginAssistantProposal(
+    const assistant::ParameterProposal& proposal)
+{
+    const std::lock_guard lock(assistantAuditionMutex);
+    const auto revisionBefore = parameterRevision.load(std::memory_order_acquire);
+    const auto current = getAssistantParameterSnapshot();
+    if (revisionBefore != parameterRevision.load(std::memory_order_acquire))
+        return juce::Result::fail("The sound changed while the assistant proposal was opening");
+    auto hostCanonicalProposal = proposal;
+    for (auto& change : hostCanonicalProposal.changes)
+    {
+        auto* parameter = parameters.getParameter(change.parameterId);
+        if (parameter == nullptr)
+            return juce::Result::fail("Assistant proposal references a missing host parameter");
+        const auto& range = parameter->getNormalisableRange();
+        const auto hostValue = range.snapToLegalValue(
+            parameter->convertFrom0to1(change.proposedNormalized));
+        change.proposedNormalized = parameter->convertTo0to1(hostValue);
+    }
+    const auto begun = assistantAudition.begin(hostCanonicalProposal, current);
+    if (begun.wasOk())
+        assistantRevisionBoundary = AssistantRevisionBoundary{revisionBefore, revisionBefore};
+    return begun;
+}
+
+juce::Result PluginProcessor::auditionAssistantSide(assistant::AuditionSide side)
+{
+    const std::lock_guard lock(assistantAuditionMutex);
+    if (!assistantRevisionBoundary.has_value())
+        return juce::Result::fail("No assistant A/B proposal is active");
+    if (parameterRevision.load(std::memory_order_acquire)
+        != assistantRevisionBoundary->expected)
+    {
+        assistantAudition.invalidate(
+            "Assistant A/B stopped because the host sound changed outside the session");
+        assistantRevisionBoundary.reset();
+        return juce::Result::fail(assistantAudition.snapshot().message);
+    }
+    const auto current = getAssistantParameterSnapshot();
+    const auto result = assistantAudition.audition(side, current, [this](auto values)
+    {
+        applyAssistantParameterValues(values);
+    });
+    if (result.wasOk())
+        assistantRevisionBoundary->expected = parameterRevision.load(std::memory_order_acquire);
+    else if (!assistantAudition.snapshot().active())
+        assistantRevisionBoundary.reset();
+    return result;
+}
+
+juce::Result PluginProcessor::acceptAssistantProposal()
+{
+    const std::lock_guard lock(assistantAuditionMutex);
+    if (!assistantRevisionBoundary.has_value())
+        return juce::Result::fail("No assistant A/B proposal is active");
+    if (parameterRevision.load(std::memory_order_acquire)
+        != assistantRevisionBoundary->expected)
+    {
+        assistantAudition.invalidate(
+            "Assistant A/B stopped because the host sound changed outside the session");
+        assistantRevisionBoundary.reset();
+        return juce::Result::fail(assistantAudition.snapshot().message);
+    }
+    const auto current = getAssistantParameterSnapshot();
+    const auto result = assistantAudition.accept(current, [this](auto values)
+    {
+        applyAssistantParameterValues(values);
+    });
+    if (result.wasOk())
+        parameterRevision.fetch_add(1, std::memory_order_release);
+    if (result.wasOk() || !assistantAudition.snapshot().active())
+        assistantRevisionBoundary.reset();
+    return result;
+}
+
+juce::Result PluginProcessor::rejectAssistantProposal()
+{
+    const std::lock_guard lock(assistantAuditionMutex);
+    if (!assistantRevisionBoundary.has_value())
+        return juce::Result::fail("No assistant A/B proposal is active");
+    if (parameterRevision.load(std::memory_order_acquire)
+        != assistantRevisionBoundary->expected)
+    {
+        assistantAudition.invalidate(
+            "Assistant A/B stopped because the host sound changed outside the session");
+        assistantRevisionBoundary.reset();
+        return juce::Result::fail(assistantAudition.snapshot().message);
+    }
+    const auto current = getAssistantParameterSnapshot();
+    const auto result = assistantAudition.reject(current, [this](auto values)
+    {
+        applyAssistantParameterValues(values);
+    });
+    if (result.wasOk() || !assistantAudition.snapshot().active())
+        assistantRevisionBoundary.reset();
+    return result;
+}
+
+assistant::AssistantAuditionSnapshot PluginProcessor::getAssistantAuditionSnapshot() const
+{
+    const std::lock_guard lock(assistantAuditionMutex);
+    return assistantAudition.snapshot();
+}
+
+void PluginProcessor::resetAssistantAudition()
+{
+    const std::lock_guard lock(assistantAuditionMutex);
+    assistantAudition.reset();
+    assistantRevisionBoundary.reset();
+}
+
 persistence::PresetDocument PluginProcessor::captureCurrentPreset(
     const persistence::PresetMetadata& metadata) const
 {
@@ -929,6 +1098,10 @@ juce::Result PluginProcessor::saveCurrentPreset(const PresetSaveRequest& request
 {
     if (persistenceCoordinator == nullptr)
         return juce::Result::fail("Persistence coordinator is unavailable");
+    const std::lock_guard assistantLock(assistantAuditionMutex);
+    if (assistantAudition.snapshot().active())
+        return juce::Result::fail(
+            "Accept or reject the active assistant A/B proposal before saving a preset");
     persistence::PresetMetadata metadata;
     const auto currentId = persistenceCoordinator->currentPresetId();
     metadata.id = request.allowOverwrite && midi::isUuid(currentId)
@@ -1004,6 +1177,7 @@ juce::Result PluginProcessor::applyPresetCandidate(
     persistenceCoordinator->markPresetApplied(candidate.document);
     cleanParameterRevision.store(parameterRevision.load(std::memory_order_acquire),
                                  std::memory_order_release);
+    resetAssistantAudition();
     return juce::Result::ok();
 }
 
@@ -1016,9 +1190,19 @@ void PluginProcessor::clearPendingProjectRestore()
 juce::Result PluginProcessor::completeProjectRestore(
     const persistence::PresetDocument& document,
     std::optional<midi::CompositionBundle> acceptedBundle,
+    std::optional<assistant::AssistantAuditionSnapshot> assistantSnapshot,
     bool dirty,
     const juce::String& historyEntryId)
 {
+    std::optional<assistant::AssistantAuditionSession> preparedAssistant;
+    if (assistantSnapshot.has_value())
+    {
+        preparedAssistant.emplace();
+        const auto presetValues = assistantValuesForPreset(document);
+        if (const auto restored = preparedAssistant->restore(*assistantSnapshot, presetValues);
+            restored.failed())
+            return restored;
+    }
     if (const auto restored = compositionSession.restoreProjectState(acceptedBundle);
         restored.failed())
         return restored;
@@ -1037,6 +1221,17 @@ juce::Result PluginProcessor::completeProjectRestore(
                                  std::memory_order_release);
     if (persistenceCoordinator != nullptr)
         persistenceCoordinator->restoreSessionStatus(document, dirty);
+    if (preparedAssistant.has_value())
+    {
+        const std::lock_guard lock(assistantAuditionMutex);
+        assistantAudition = std::move(*preparedAssistant);
+        const auto revision = parameterRevision.load(std::memory_order_acquire);
+        assistantRevisionBoundary = AssistantRevisionBoundary{revision, revision};
+    }
+    else
+    {
+        resetAssistantAudition();
+    }
     clearPendingProjectRestore();
     return juce::Result::ok();
 }
@@ -1075,7 +1270,8 @@ juce::Result PluginProcessor::relinkPendingPresetAsset(persistence::AssetSlot sl
     }
     return pending.has_value()
         ? completeProjectRestore(candidate.document, std::move(pending->acceptedBundle),
-                                 pending->dirty, pending->historyEntryId)
+                                 std::move(pending->assistantSnapshot), pending->dirty,
+                                 pending->historyEntryId)
         : juce::Result::ok();
 }
 
@@ -1219,6 +1415,7 @@ juce::AudioProcessorEditor* PluginProcessor::createEditor()
 
 void PluginProcessor::getStateInformation(juce::MemoryBlock& destination)
 {
+    const std::lock_guard assistantLock(assistantAuditionMutex);
     auto snapshot = parameters.copyState();
     if (const auto existingRoutes = snapshot.getChildWithName(modulationRoutesType); existingRoutes.isValid())
         snapshot.removeChild(existingRoutes, nullptr);
@@ -1256,6 +1453,10 @@ void PluginProcessor::getStateInformation(juce::MemoryBlock& destination)
             if (midi::isUuid(lastHistoryEntryId))
                 session.setProperty("historyEntryId", lastHistoryEntryId, nullptr);
         }
+        const auto assistantSnapshot = assistantAudition.snapshot();
+        if (assistantSnapshot.active())
+            session.appendChild(
+                assistant::serialiseAssistantAudition(assistantSnapshot), nullptr);
         snapshot.appendChild(session, nullptr);
     }
     if (const auto xml = snapshot.createXml())
@@ -1302,10 +1503,21 @@ void PluginProcessor::setStateInformation(const void* data, int sizeInBytes)
             || !projectSession.hasProperty("presetPayload")
             || !projectSession.hasProperty("currentPresetDirty")
             || !parseInteger(projectSession["schemaVersion"], sessionVersion)
-            || sessionVersion != projectSessionSchemaVersion
+            || sessionVersion < oldestProjectSessionSchemaVersion
+            || sessionVersion > projectSessionSchemaVersion
+            || !hasOnlyProjectSessionChildren(projectSession, sessionVersion)
             || !parseBoolean(projectSession["currentPresetDirty"], dirty)
             || persistenceCoordinator == nullptr)
             return;
+
+        std::optional<assistant::AssistantAuditionSnapshot> assistantSnapshot;
+        if (sessionVersion >= 2 && projectSession.getNumChildren() == 1)
+        {
+            assistantSnapshot.emplace();
+            if (assistant::parseAssistantAudition(projectSession.getChild(0),
+                                                  *assistantSnapshot).failed())
+                return;
+        }
 
         juce::String presetJson;
         if (!readBinaryPayload(projectSession["presetPayload"],
@@ -1339,19 +1551,29 @@ void PluginProcessor::setStateInformation(const void* data, int sizeInBytes)
             clearPendingProjectRestore();
             return;
         }
+        if (assistantSnapshot.has_value())
+        {
+            assistant::AssistantAuditionSession validationSession;
+            const auto presetValues = assistantValuesForPreset(presetCandidate.document);
+            if (validationSession.restore(*assistantSnapshot, presetValues).failed())
+            {
+                clearPendingProjectRestore();
+                return;
+            }
+        }
 
         if (!presetCandidate.readyToApply())
         {
             const std::lock_guard lock(projectStateMutex);
             pendingProjectRestore = PendingProjectRestore{
-                std::move(acceptedBundle), dirty, historyEntryId};
+                std::move(acceptedBundle), std::move(assistantSnapshot), dirty, historyEntryId};
             return;
         }
         clearPendingProjectRestore();
         if (applyPresetCandidate(presetCandidate).failed())
             return;
         (void) completeProjectRestore(presetCandidate.document, std::move(acceptedBundle),
-                                      dirty, historyEntryId);
+                                      std::move(assistantSnapshot), dirty, historyEntryId);
         return;
     }
 
@@ -1382,6 +1604,7 @@ void PluginProcessor::setStateInformation(const void* data, int sizeInBytes)
     }
     cleanParameterRevision.store(parameterRevision.load(std::memory_order_acquire),
                                  std::memory_order_release);
+    resetAssistantAudition();
     clearPendingProjectRestore();
 }
 }
