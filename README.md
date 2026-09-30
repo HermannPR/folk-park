@@ -2,17 +2,17 @@
 
 <p><img src="https://img.shields.io/badge/C%2B%2B-00599C?style=flat-square&logo=cplusplus&logoColor=white" height="20" alt="C++"> <img src="https://img.shields.io/badge/JUCE-8D6E63?style=flat-square" height="20" alt="JUCE"> <img src="https://img.shields.io/badge/VST3-6A1B9A?style=flat-square" height="20" alt="VST3"></p>
 
-**An original wavetable synthesizer and deterministic composition assistant for Intel macOS.**
+**An original wavetable synthesizer (VST3/Standalone) and deterministic composition assistant, written in C++20 with JUCE.**
 
-> **Implementation branches:** The verified M8 engineering candidate is reviewed on [`feat/m8-release-hardening`](https://github.com/HermannPR/folk-park/tree/feat/m8-release-hardening). Active synthesized-drum development is reviewed on [`feat/rhythm-lab-r1`](https://github.com/HermannPR/folk-park/tree/feat/rhythm-lab-r1). The default branch keeps this recruiter-facing overview while private stacked PRs and required FL Studio/owner gates remain open.
+**Author:** [Hermann Pauwells Rivera](https://hermannpr.github.io/) (solo personal project, 2026) · **Stack:** C++20, JUCE, CMake, SQLite, React/TypeScript WebView UI
+
+![folk park Synth workspace](evidence/m8/visual/orbital-synth.png)
 
 `folk park` combines a playable dual-wavetable instrument, MIDI idea generation, an ordered effects chain, offline audio rendering, and crash-aware local persistence in one Standalone/VST3 product. Release 0.1 targets FL Studio on Intel (`x86_64`) macOS.
 
-> **Current status — M8 automated checkpoint verified.** The private Intel Standalone/VST3 candidate passes 19/19 UI contracts, 16/16 Release suites, a 120-second deterministic recovery run, pluginval 1.0.4 at strictness 5, and an independent render through the exact installed VST3. FL Studio checks, listening, signing/notarization, JUCE distribution licensing, final identity, and public-distribution decisions remain explicitly unresolved; this is not yet a public binary release.
-
-> **Latest repair.** The Compose macros no longer retain React event objects inside deferred state updates, fixing the reported black interface when moving Repeat and the other musical controls. The focused UI gate passes 18/18, the rebuilt Release suite passes 16/16, pluginval strictness 5 ends `SUCCESS`, and the exact repaired VST3 is installed with verified hash parity plus an independent finite-audio MIDI render. Real Standalone control interaction and FL Studio confirmation remain producer-required.
-
-> **Latest visual checkpoint.** The complete interface now uses the original **Orbital Habitat** design system: reusable retro-CGI materials, physical controls, saturated instrument colors, coherent navigation, motion/reduced-motion tokens, and an authored surreal workstation environment. The final Release build passes 19/19 UI contracts, 16/16 native suites, pluginval strictness 5, installed-bundle hash parity, and an independent MIDI render. The screenshots below are captures of the real Release Standalone, not concept art.
+> **Status: M8 automated checkpoint verified.** The Intel Standalone/VST3 build passes 19/19 UI contracts, 16/16 Release test suites, a 120-second deterministic recovery run, pluginval 1.0.4 at strictness 5, and an independent render through the installed VST3. FL Studio sign-off, listening tests, signing/notarization and JUCE distribution licensing are still open, so there is no public binary release yet. The screenshots below are captures of the real Release Standalone, not concept art.
+>
+> **Branches:** the verified M8 candidate lives on [`feat/m8-release-hardening`](https://github.com/HermannPR/folk-park/tree/feat/m8-release-hardening); synthesized-drum work continues on [`feat/rhythm-lab-r1`](https://github.com/HermannPR/folk-park/tree/feat/rhythm-lab-r1). The default branch holds this overview.
 
 ## Reviewer quick start
 
@@ -72,7 +72,7 @@ This is not only a UI prototype. The repository contains the instrument DSP, hos
 - **Composition is deterministic and testable.** One normalized intent and seed produce bounded host-independent events. Candidate and accepted bundles are separate so generation or editing cannot silently replace deliverable material.
 - **Offline rendering is isolated.** WAV preview uses separate synth/effect instances built from immutable snapshots, then validates the temporary output before replacing a user-approved destination.
 - **Credentials stay behind a native boundary.** The future-provider store accepts only bounded opaque bytes under exact identifiers, uses macOS Keychain with a device-only accessibility class, and never exposes credential values to React, presets, DAW state, logs, or Git.
-- **Diagnostics are inspectable before disclosure.** A producer can preview a deterministic sub-4-KiB technical report before copying it. It contains fixed build/host/audio/status fields and counters—not paths, project or preset names, prompts, audio, database content, or credentials.
+- **Diagnostics are inspectable before disclosure.** A producer can preview a deterministic sub-4-KiB technical report before copying it. It contains fixed build/host/audio/status fields and counters, not paths, project or preset names, prompts, audio, database content, or credentials.
 - **Evidence is retained.** Each milestone records tests, validator logs, artifact hashes, visual checks, known limitations, and the exact boundary between automation and human host verification.
 
 ## Orbital Habitat visual system
@@ -161,10 +161,10 @@ Verified on 2026-08-23 in America/Monterrey:
 
 | Gate | Result |
 | --- | --- |
-| Clean UI install/audit | PASS — 0 npm vulnerabilities |
-| UI contracts and strict TypeScript | PASS — 10/10 |
-| Debug native/integration suites | PASS — 10/10 |
-| Release native/integration + packaged VST3 smoke | PASS — 11/11 |
+| Clean UI install/audit | PASS: 0 npm vulnerabilities |
+| UI contracts and strict TypeScript | PASS: 10/10 |
+| Debug native/integration suites | PASS: 10/10 |
+| Release native/integration + packaged VST3 smoke | PASS: 11/11 |
 | pluginval 1.0.4 strictness 5 | SUCCESS |
 | Audio matrix | 44.1/48/96 kHz × 64/128/256/512/1024 samples |
 | Release artifacts | Thin Mach-O `x86_64` Standalone and VST3 |
@@ -197,14 +197,14 @@ The final M7 gate was verified on 2026-08-23 in America/Monterrey:
 
 | Gate | Result |
 | --- | --- |
-| Clean UI install/audit | PASS — 0 npm vulnerabilities |
-| UI contracts and strict TypeScript | PASS — 15/15 |
-| Debug native/integration suites | PASS — 12/12 |
-| Release native/integration + packaged VST3 smoke | PASS — 13/13 |
+| Clean UI install/audit | PASS: 0 npm vulnerabilities |
+| UI contracts and strict TypeScript | PASS: 15/15 |
+| Debug native/integration suites | PASS: 12/12 |
+| Release native/integration + packaged VST3 smoke | PASS: 13/13 |
 | pluginval 1.0.4 strictness 5 | SUCCESS |
 | Audio matrix | 44.1/48/96 kHz × 64/128/256/512/1024 samples |
 | Release artifacts | Thin Mach-O `x86_64` Standalone and VST3 |
-| Native Keychain round trip | PASS — bounded store/read/update/remove with exact cleanup |
+| Native Keychain round trip | PASS: bounded store/read/update/remove with exact cleanup |
 | Installed VST3 parity | Installed/build hashes match; independent MIDI render passes |
 | Release/installed VST3 SHA-256 | `b17c88bab2c1356c7b01980b96f918a28acbdd337f7ee2e437f9c63a7d7119ca` |
 | Release Standalone SHA-256 | `4523ffa815cfcdd7fb4d666644f75dde82869f6ebf673f9707f31314c8d3b1da` |
@@ -219,17 +219,17 @@ The final automated gate was verified on 2026-08-24 in America/Monterrey:
 
 | Gate | Result |
 | --- | --- |
-| Clean UI install/audit | PASS — 34 packages, 0 vulnerabilities |
-| UI contracts and strict TypeScript | PASS — 17/17 |
-| Debug native/integration suites | PASS — 15/15 |
-| Release native/integration + packaged VST3 smoke | PASS — 16/16 |
-| Extended Release recovery run | PASS — 120 simulated seconds, 11,250 blocks, finite output |
+| Clean UI install/audit | PASS: 34 packages, 0 vulnerabilities |
+| UI contracts and strict TypeScript | PASS: 17/17 |
+| Debug native/integration suites | PASS: 15/15 |
+| Release native/integration + packaged VST3 smoke | PASS: 16/16 |
+| Extended Release recovery run | PASS: 120 simulated seconds, 11,250 blocks, finite output |
 | pluginval 1.0.4 strictness 5 | SUCCESS |
 | Release artifacts | Thin Mach-O `x86_64` Standalone and VST3 |
 | Installed VST3 parity | Exact hashes match; signature/architecture verify; independent MIDI render passes |
 | Release/installed VST3 SHA-256 | `9295e582e705837020f72f657105d5efd2213d5e8904dee628d7e55e52a82a84` |
 | Release Standalone SHA-256 | `bb61054c5acf8f9fb3711acd49220dc6ddcf6508d4ea4bc5513d6e82c1778386` |
-| Release material/security/schema scans | PASS — seven schemas; private repository confirmed |
+| Release material/security/schema scans | PASS: seven schemas; private repository confirmed |
 
 The Release runtime probe exercised repeated notes, 2×2 unison, all six effects, panic/release, preview-overflow recovery, direct-MIDI Stop, and three editor reconstructions while checking every output sample for finiteness. It measured `0.153058×` realtime on the documented Intel i9 machine. That is reproducible one-machine evidence, not an owner-approved CPU budget or an audible-quality claim. The complete report and validator log are retained under [evidence/m8](https://github.com/HermannPR/folk-park/tree/feat/rhythm-lab-r1/evidence/m8/).
 
